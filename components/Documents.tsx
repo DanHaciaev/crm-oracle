@@ -130,6 +130,7 @@ export default function Documents() {
           onChange={(e) => setTypeFilter(e.target.value)}
           className="border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/10 bg-white"
         >
+            
           <option value="all">Все типы</option>
           {uniqueTypes.map((t) => (
             <option key={t} value={t}>{FILE_TYPE_LABEL[t]?.label ?? t}</option>
