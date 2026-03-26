@@ -200,7 +200,7 @@ export default function Documents() {
                     <TableCell>
                       <div className="flex justify-center gap-2">
                         <a href={url} target="_blank" rel="noopener noreferrer" className="px-3 py-1 text-xs rounded-md border hover:bg-gray-50 transition">Открыть</a>
-                        <a href={url} download={doc.name} className="px-3 py-1 text-xs rounded-md border border-black bg-black text-white hover:bg-gray-800 transition hidden sm:inline-flex">Скачать</a>
+                        <a href={url} download={doc.name} className="px-3 py-1 text-xs rounded-md border border-black bg-black text-white hover:bg-gray-800 transition">Скачать</a>
                         <button onClick={() => setDeleteTarget(doc)} className="px-3 py-1 text-xs rounded-md border border-red-200 text-red-500 hover:bg-red-50 transition">Удалить</button>
                       </div>
                     </TableCell>
