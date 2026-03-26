@@ -20,11 +20,11 @@ export function AppSidebar() {
 
   const links = [
     { name: "Dashboard",  href: "/dashboard" },
-    { name: "Клиенты",    href: "/clients" },
-    { name: "Задачи",     href: "/tasks" },
-    { name: "Документы",  href: "/documents" },
-    { name: "Отчётность", href: "/reports" },
-    { name: "Настройки",  href: "/users" },
+    { name: "Clients",    href: "/clients" },
+    { name: "Tasks",     href: "/tasks" },
+    { name: "Users", href: "/users" },
+    { name: "Report", href: "/reports" },
+    { name: "Documents",  href: "/documents" },
   ]
 
   return (
@@ -57,7 +57,7 @@ export function AppSidebar() {
 
       <SidebarFooter className="flex flex-row items-center justify-between mt-auto border-t border-zinc-800 p-4 text-xs text-zinc-400">
         <span>Сегодня: {today}</span>
-        <Link href="/dashboard/profile">
+        <Link href="/profile">
           <User className="w-4 h-4 text-zinc-400 hover:text-white transition-colors" />
         </Link>
       </SidebarFooter>
