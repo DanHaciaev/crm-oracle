@@ -1,11 +1,16 @@
 import oracledb from "oracledb";
 import path from "path";
 
+const walletDir = process.env.WALLET_DIR!;
+const walletLocation = path.isAbsolute(walletDir)
+  ? walletDir
+  : path.resolve(process.cwd(), walletDir);
+
 const dbConfig = {
   user:           process.env.DB_USER!,
   password:       process.env.DB_PASSWORD!,
   connectString:  process.env.CONNECT_STRING!,
-  walletLocation: path.resolve(process.cwd(), process.env.WALLET_DIR!),
+  walletLocation,
   walletPassword: process.env.WALLET_PASSWORD!,
 };
 
@@ -27,6 +32,7 @@ export async function query<T extends Record<string, unknown> = Record<string, u
     await conn.close();
   }
 }
+
 export async function execute(
   sql: string,
   binds: oracledb.BindParameters = []
