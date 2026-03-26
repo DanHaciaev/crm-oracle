@@ -408,7 +408,7 @@ export default function Board() {
 
   return (
     <>
-      <div className="flex items-center justify-between px-4 pt-4">
+      <div className="flex justify-between px-4 pt-4 flex-col gap-4 board:flex-row board:items-center">
         <div className="flex gap-2">
           {[
             { value: "all",            label: "Все задачи" },
@@ -426,12 +426,12 @@ export default function Board() {
             </button>
           ))}
         </div>
-        <button onClick={() => setModal({ defaultStatus: "created" })} className="px-4 py-2 text-sm rounded-lg bg-black text-white hover:bg-gray-800 transition">
+        <button onClick={() => setModal({ defaultStatus: "created" })} className="px-4 py-2 text-sm rounded-lg bg-black text-white hover:bg-gray-800 transition ml-auto">
           + Добавить задачу
         </button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 p-4">
+      <div className="grid boards:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 p-4">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           {Object.entries(columns).map(([columnId, tasks]) => (
             <div key={columnId} className="flex flex-col bg-gray-100 rounded-lg p-3 min-w-0">

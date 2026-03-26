@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import {
+  Table, TableBody, TableCell,
+  TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
 
 const FILE_TYPE_LABEL: Record<string, { label: string; icon: string }> = {
   image:   { label: "Изображение", icon: "🖼️" },
@@ -24,8 +28,8 @@ interface Document {
   created_at: string;
 }
 
-interface Task   { id: number; title: string; }
-interface User   { id: number; email: string; first_name: string | null; last_name: string | null; }
+interface Task { id: number; title: string; }
+interface User { id: number; email: string; first_name: string | null; last_name: string | null; }
 
 function formatSize(bytes: number | null) {
   if (!bytes) return "—";
@@ -35,16 +39,16 @@ function formatSize(bytes: number | null) {
 }
 
 export default function Documents() {
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [tasks, setTasks]         = useState<Task[]>([]);
-  const [users, setUsers]         = useState<User[]>([]);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState<string | null>(null);
-  const [search, setSearch]       = useState("");
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [taskFilter, setTaskFilter] = useState("all");
+  const [documents, setDocuments]       = useState<Document[]>([]);
+  const [tasks, setTasks]               = useState<Task[]>([]);
+  const [users, setUsers]               = useState<User[]>([]);
+  const [loading, setLoading]           = useState(true);
+  const [error, setError]               = useState<string | null>(null);
+  const [search, setSearch]             = useState("");
+  const [typeFilter, setTypeFilter]     = useState("all");
+  const [taskFilter, setTaskFilter]     = useState("all");
   const [deleteTarget, setDeleteTarget] = useState<Document | null>(null);
-  const [deleting, setDeleting]   = useState(false);
+  const [deleting, setDeleting]         = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -54,9 +58,7 @@ export default function Documents() {
         fetch("/api/tasks"),
         fetch("/api/users/for-tasks"),
       ]);
-
       if (!docsRes.ok) { setError("Ошибка загрузки документов"); setLoading(false); return; }
-
       setDocuments(await docsRes.json());
       setTasks(await tasksRes.json());
       setUsers(await usersRes.json());
@@ -77,14 +79,12 @@ export default function Documents() {
   async function handleDelete(doc: Document) {
     setDeleting(true);
     await fetch("/api/delete-file", {
-      method:  "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ fileName: doc.full_name }),
+      method: "DELETE", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fileName: doc.full_name }),
     });
     await fetch("/api/documents", {
-      method:  "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ id: doc.id }),
+      method: "DELETE", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: doc.id }),
     });
     setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
     setDeleteTarget(null);
@@ -110,6 +110,7 @@ export default function Documents() {
 
   return (
     <div className="p-6">
+      {/* Заголовок */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold">Документы</h1>
@@ -117,20 +118,20 @@ export default function Documents() {
         </div>
       </div>
 
+      {/* Фильтры */}
       <div className="flex flex-wrap gap-3 mb-6">
         <input
           type="text"
           placeholder="Поиск по названию..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/10 w-64"
+          className="border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/10 w-full sm:w-64"
         />
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
           className="border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/10 bg-white"
         >
-            
           <option value="all">Все типы</option>
           {uniqueTypes.map((t) => (
             <option key={t} value={t}>{FILE_TYPE_LABEL[t]?.label ?? t}</option>
@@ -156,58 +157,62 @@ export default function Documents() {
         )}
       </div>
 
+      {/* Таблица */}
       {filtered.length === 0 ? (
         <div className="border rounded-xl p-8 text-center text-sm text-gray-400">Документы не найдены</div>
       ) : (
-        <div className="border rounded-xl overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Файл</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Тип</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Размер</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Задача</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Загрузил</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Дата</th>
-                <th className="text-center px-4 py-3 text-xs font-medium text-gray-500">Действия</th>
-              </tr>
-            </thead>
-            <tbody>
+        <div className="border rounded-xl overflow-auto">
+          <Table>
+            <TableHeader className="sticky top-0 z-20 bg-white">
+              <TableRow>
+                <TableHead className="text-center">Файл</TableHead>
+                <TableHead className="text-center">Тип</TableHead>
+                <TableHead className="text-center">Размер</TableHead>
+                <TableHead className="text-center">Задача</TableHead>
+                <TableHead className="text-center">Загрузил</TableHead>
+                <TableHead className="text-center">Дата</TableHead>
+                <TableHead className="text-center">Действия</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {filtered.map((doc) => {
                 const typeInfo = FILE_TYPE_LABEL[doc.file_type ?? "other"] ?? { label: "Другое", icon: "📄" };
                 const url      = `https://13.63.74.74/files/${doc.full_name}`;
                 return (
-                  <tr key={doc.id} className="border-t hover:bg-gray-50 transition">
-                    <td className="px-4 py-3">
+                  <TableRow key={doc.id}>
+                    <TableCell className="flex mx-auto max-w-fit">
                       <div className="flex items-center gap-2">
                         <span>{typeInfo.icon}</span>
-                        <span className="text-sm font-medium truncate max-w-48">{doc.name}</span>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate max-w-45">{doc.name}</p>
+                        </div>
                       </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{typeInfo.label}</span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">{formatSize(doc.size)}</td>
-                    <td className="px-4 py-3 text-sm text-gray-500 max-w-32 truncate">{getTaskTitle(doc.task_id)}</td>
-                    <td className="px-4 py-3 text-sm text-gray-500">{getUserName(doc.uploaded_by)}</td>
-                    <td className="px-4 py-3 text-sm text-gray-500">
+                    </TableCell>
+                    <TableCell className=" text-center">
+                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-center">{typeInfo.label}</span>
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-500 text-center">{formatSize(doc.size)}</TableCell>
+                    <TableCell className="text-sm text-gray-500 max-w-32 truncate text-center">{getTaskTitle(doc.task_id)}</TableCell>
+                    <TableCell className="text-sm text-gray-500 text-center">{getUserName(doc.uploaded_by)}</TableCell>
+                    <TableCell className="text-sm text-gray-500 text-center">
                       {new Date(doc.created_at).toLocaleDateString("ru-RU")}
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell>
                       <div className="flex justify-center gap-2">
                         <a href={url} target="_blank" rel="noopener noreferrer" className="px-3 py-1 text-xs rounded-md border hover:bg-gray-50 transition">Открыть</a>
-                        <a href={url} download={doc.name} className="px-3 py-1 text-xs rounded-md border border-black bg-black text-white hover:bg-gray-800 transition">Скачать</a>
+                        <a href={url} download={doc.name} className="px-3 py-1 text-xs rounded-md border border-black bg-black text-white hover:bg-gray-800 transition hidden sm:inline-flex">Скачать</a>
                         <button onClick={() => setDeleteTarget(doc)} className="px-3 py-1 text-xs rounded-md border border-red-200 text-red-500 hover:bg-red-50 transition">Удалить</button>
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
 
+      {/* Модалка удаления */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4">
