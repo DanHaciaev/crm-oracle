@@ -9,6 +9,10 @@
   --breakpoint-boards: 500px;
 }
 
+[data-dnd-draggable] {
+  touch-action: none;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -128,9 +132,11 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+
   html {
     @apply font-sans;
   }

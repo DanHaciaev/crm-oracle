@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragOverlay, useDroppable } from "@dnd-kit/core";
+import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, DragOverlay, useDroppable } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useRouter } from "next/navigation";
@@ -28,19 +28,19 @@ interface User {
 type Columns = Record<string, Task[]>;
 
 const COLUMN_LABELS: Record<string, string> = {
-  created:     "Создано",
+  created: "Создано",
   in_progress: "В работе",
-  review:      "Ревью",
-  changes:     "Правки",
-  done:        "Готово",
+  review: "Ревью",
+  changes: "Правки",
+  done: "Готово",
 };
 
 const COLUMN_CARD_STYLE: Record<string, { bg: string; text: string }> = {
-  created:     { bg: "#94A3B8", text: "#fff" },
+  created: { bg: "#94A3B8", text: "#fff" },
   in_progress: { bg: "#F59E0B", text: "#fff" },
-  review:      { bg: "#3B82F6", text: "#fff" },
-  changes:     { bg: "#EF4444", text: "#fff" },
-  done:        { bg: "#22C55E", text: "#fff" },
+  review: { bg: "#3B82F6", text: "#fff" },
+  changes: { bg: "#EF4444", text: "#fff" },
+  done: { bg: "#22C55E", text: "#fff" },
 };
 
 const EMPTY_COLUMNS: Columns = { created: [], in_progress: [], review: [], changes: [], done: [] };
@@ -118,9 +118,9 @@ function AddTaskModal({ defaultStatus, onClose, onAdd, users }: {
     if (!form.title.trim()) return;
     setSaving(true);
     const res = await fetch("/api/tasks", {
-      method:  "POST",
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ ...form, assigned_to: form.assigned_to || null }),
+      body: JSON.stringify({ ...form, assigned_to: form.assigned_to || null }),
     });
     const data = await res.json();
     setSaving(false);
@@ -157,13 +157,13 @@ function EditTaskModal({ task, onClose, onSave, onDelete, users }: {
   users: User[];
 }) {
   const [form, setForm] = useState<Record<string, string>>({
-    title:       task.title,
+    title: task.title,
     description: task.description ?? "",
-    status:      task.status,
+    status: task.status,
     assigned_to: task.assigned_to ? String(task.assigned_to) : "",
   });
-  const [saving, setSaving]               = useState(false);
-  const [deleting, setDeleting]           = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   async function handleSave() {
@@ -171,9 +171,9 @@ function EditTaskModal({ task, onClose, onSave, onDelete, users }: {
     setSaving(true);
     const payload = { ...form, assigned_to: form.assigned_to ? Number(form.assigned_to) : null };
     const res = await fetch("/api/tasks", {
-      method:  "PUT",
+      method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ id: task.id, ...payload }),
+      body: JSON.stringify({ id: task.id, ...payload }),
     });
     setSaving(false);
     if (!res.ok) return alert("Ошибка сохранения");
@@ -184,9 +184,9 @@ function EditTaskModal({ task, onClose, onSave, onDelete, users }: {
   async function handleDelete() {
     setDeleting(true);
     const res = await fetch("/api/tasks", {
-      method:  "DELETE",
+      method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ id: task.id }),
+      body: JSON.stringify({ id: task.id }),
     });
     setDeleting(false);
     if (!res.ok) return alert("Ошибка удаления");
@@ -243,7 +243,7 @@ function TaskCard({ task, columnId, style, assignedUser, onEdit }: {
   assignedUser: User | null;
   onEdit?: () => void;
 }) {
-  const router    = useRouter();
+  const router = useRouter();
   const cardStyle = COLUMN_CARD_STYLE[columnId] ?? { bg: "#94A3B8", text: "#fff" };
 
   return (
@@ -282,7 +282,7 @@ function SortableItem({ task, columnId, assignedUser, onEdit }: {
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: String(task.id) });
   return (
-    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing mb-2">
+    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, touchAction: "none" }} {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing mb-2">
       <TaskCard task={task} columnId={columnId} assignedUser={assignedUser} onEdit={onEdit} style={{ opacity: isDragging ? 0.3 : 1 }} />
     </div>
   );
@@ -296,17 +296,29 @@ function DroppableColumn({ id, children }: { id: string; children: React.ReactNo
 export default function Board() {
   const { user: currentUser } = useAuth();
 
-  const [columns, setColumns]       = useState<Columns>(EMPTY_COLUMNS);
-  const [allTasks, setAllTasks]     = useState<Task[]>([]);
-  const [users, setUsers]           = useState<User[]>([]);
+  const [columns, setColumns] = useState<Columns>(EMPTY_COLUMNS);
+  const [allTasks, setAllTasks] = useState<Task[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [activeTask, setActiveTask] = useState<{ task: Task; columnId: string } | null>(null);
-  const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState<string | null>(null);
-  const [modal, setModal]           = useState<{ defaultStatus: string } | null>(null);
-  const [editTask, setEditTask]     = useState<Task | null>(null);
-  const [filter, setFilter]         = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [modal, setModal] = useState<{ defaultStatus: string } | null>(null);
+  const [editTask, setEditTask] = useState<Task | null>(null);
+  const [filter, setFilter] = useState("all");
 
-  const sensors = useSensors(useSensor(PointerSensor));
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // мышь — начинать drag после 8px движения
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,      // ждать 250мс перед началом drag
+        tolerance: 5,    // допустимое смещение пальца во время ожидания
+      },
+    })
+  );
 
   const fetchTasks = useCallback(async () => {
     setLoading(true);
@@ -361,8 +373,8 @@ export default function Board() {
     const { active, over } = event;
     if (!over) return;
 
-    const activeId       = String(active.id);
-    const overId         = String(over.id);
+    const activeId = String(active.id);
+    const overId = String(over.id);
     const sourceColumnId = findColumnByTaskId(activeId);
     if (!sourceColumnId) return;
 
@@ -370,7 +382,7 @@ export default function Board() {
     if (!destColumnId) return;
 
     if (sourceColumnId === destColumnId) {
-      const tasks    = columns[sourceColumnId];
+      const tasks = columns[sourceColumnId];
       const oldIndex = tasks.findIndex((t) => String(t.id) === activeId);
       const newIndex = tasks.findIndex((t) => String(t.id) === overId);
       if (oldIndex !== newIndex && newIndex !== -1) {
@@ -379,23 +391,23 @@ export default function Board() {
       }
     } else {
       const sourceTasks = [...columns[sourceColumnId]];
-      const destTasks   = [...columns[destColumnId]];
+      const destTasks = [...columns[destColumnId]];
       const sourceIndex = sourceTasks.findIndex((t) => String(t.id) === activeId);
       const [movedTask] = sourceTasks.splice(sourceIndex, 1);
-      const updated     = { ...movedTask, status: destColumnId };
+      const updated = { ...movedTask, status: destColumnId };
       destTasks.push(updated);
 
       setColumns({ ...columns, [sourceColumnId]: sourceTasks, [destColumnId]: destTasks });
       setAllTasks((prev) => prev.map((t) => t.id === movedTask.id ? updated : t));
 
       const res = await fetch("/api/tasks", {
-        method:  "PUT",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({
-          id:          movedTask.id,
-          title:       movedTask.title,
+        body: JSON.stringify({
+          id: movedTask.id,
+          title: movedTask.title,
           description: movedTask.description,
-          status:      destColumnId,
+          status: destColumnId,
           assigned_to: movedTask.assigned_to,
         }),
       });
@@ -404,23 +416,22 @@ export default function Board() {
   };
 
   if (loading) return <div className="p-4 text-sm text-gray-400">Загрузка...</div>;
-  if (error)   return <div className="p-4 text-sm text-red-500">Ошибка: {error}</div>;
+  if (error) return <div className="p-4 text-sm text-red-500">Ошибка: {error}</div>;
 
   return (
     <>
       <div className="flex justify-between px-4 pt-4 flex-col gap-4 board:flex-row board:items-center">
         <div className="flex gap-2">
           {[
-            { value: "all",            label: "Все задачи" },
+            { value: "all", label: "Все задачи" },
             { value: "assigned_to_me", label: "Назначены мне" },
-            { value: "created_by_me",  label: "Созданы мной" },
+            { value: "created_by_me", label: "Созданы мной" },
           ].map(({ value, label }) => (
             <button
               key={value}
               onClick={() => setFilter(value)}
-              className={`px-3 py-1.5 text-xs rounded-lg border transition ${
-                filter === value ? "bg-black text-white border-black" : "bg-white text-gray-600 hover:bg-gray-50"
-              }`}
+              className={`px-3 py-1.5 text-xs rounded-lg border transition ${filter === value ? "bg-black text-white border-black" : "bg-white text-gray-600 hover:bg-gray-50"
+                }`}
             >
               {label}
             </button>
