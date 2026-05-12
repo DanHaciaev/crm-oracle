@@ -46,7 +46,7 @@ export async function GET(request: Request) {
     WITH LAST_MSG AS (
       SELECT APP_USER_ID, BODY, DIRECTION, FILE_TYPE,
              ROW_NUMBER() OVER (PARTITION BY APP_USER_ID ORDER BY CREATED_AT DESC, ID DESC) AS RN
-        FROM CRM_CHAT_MESSAGES
+        FROM AGRO_CRM_CHAT_MESSAGES
     )
     SELECT
       au.ID,
@@ -62,7 +62,7 @@ export async function GET(request: Request) {
       lm.BODY      AS LAST_BODY,
       lm.DIRECTION AS LAST_DIR,
       lm.FILE_TYPE AS LAST_FILE_TYPE
-    FROM APP_USERS au
+    FROM AGRO_CRM_APP_USERS au
     LEFT JOIN AGRO_CUSTOMERS c ON c.ID = au.CUSTOMER_ID
     LEFT JOIN LAST_MSG       lm ON lm.APP_USER_ID = au.ID AND lm.RN = 1
     WHERE au.ARCHIVED = :1

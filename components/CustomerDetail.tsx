@@ -35,7 +35,7 @@ interface CustomerDetail {
   customer_type: string | null;
   active:        boolean;
   created_at:    string | null;
-  app_users:     AppUser[];
+  AGRO_CRM_APP_USERS:     AppUser[];
   bindings:      Binding[];
 }
 
@@ -131,9 +131,9 @@ export default function CustomerDetail({ id }: { id: string }) {
       <section className="border border-zinc-800 rounded-xl p-5">
         <h2 className="text-base font-semibold mb-4">Telegram</h2>
 
-        {data.app_users.length > 0 ? (
+        {data.AGRO_CRM_APP_USERS.length > 0 ? (
           <div className="space-y-3">
-            {data.app_users.map((u) => (
+            {data.AGRO_CRM_APP_USERS.map((u) => (
               <div key={u.id} className="flex items-center justify-between gap-4 border border-emerald-500/20 bg-emerald-500/5 rounded-lg px-4 py-3">
                 <div className="text-sm">
                   <div>

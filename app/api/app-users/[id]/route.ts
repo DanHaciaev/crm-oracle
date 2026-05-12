@@ -11,7 +11,7 @@ async function requireAuth() {
 
 async function logEvent(appUserId: number, eventType: string, payload: string | null, actorUserId: number) {
   await execute(
-    `INSERT INTO CRM_APP_USER_EVENTS (APP_USER_ID, EVENT_TYPE, PAYLOAD, ACTOR_USER)
+    `INSERT INTO AGRO_CRM_APP_USER_EVENTS (APP_USER_ID, EVENT_TYPE, PAYLOAD, ACTOR_USER)
      VALUES (:1, :2, :3, :4)`,
     [appUserId, eventType, payload, actorUserId]
   );
@@ -49,7 +49,7 @@ export async function PATCH(
   const action = body.action;
 
   const existing = await query<AppUserRow>(
-    `SELECT ID, STATUS, CUSTOMER_ID FROM APP_USERS WHERE ID = :1`,
+    `SELECT ID, STATUS, CUSTOMER_ID FROM AGRO_CRM_APP_USERS WHERE ID = :1`,
     [appUserId]
   );
   if (existing.length === 0) {
@@ -69,7 +69,7 @@ export async function PATCH(
         return NextResponse.json({ error: "Клиент не найден" }, { status: 404 });
       }
       await execute(
-        `UPDATE APP_USERS SET CUSTOMER_ID = :1, STATUS = 'linked' WHERE ID = :2`,
+        `UPDATE AGRO_CRM_APP_USERS SET CUSTOMER_ID = :1, STATUS = 'linked' WHERE ID = :2`,
         [customerId, appUserId]
       );
       await logEvent(appUserId, "linked", `customer_id=${customerId}`, auth.id);
@@ -78,7 +78,7 @@ export async function PATCH(
 
     case "unlink": {
       await execute(
-        `UPDATE APP_USERS SET CUSTOMER_ID = NULL, STATUS = 'pending' WHERE ID = :1`,
+        `UPDATE AGRO_CRM_APP_USERS SET CUSTOMER_ID = NULL, STATUS = 'pending' WHERE ID = :1`,
         [appUserId]
       );
       await logEvent(appUserId, "unlinked", null, auth.id);
@@ -87,7 +87,7 @@ export async function PATCH(
 
     case "block": {
       await execute(
-        `UPDATE APP_USERS SET STATUS = 'blocked' WHERE ID = :1`,
+        `UPDATE AGRO_CRM_APP_USERS SET STATUS = 'blocked' WHERE ID = :1`,
         [appUserId]
       );
       await logEvent(appUserId, "blocked", null, auth.id);
@@ -97,7 +97,7 @@ export async function PATCH(
     case "unblock": {
       const newStatus = existing[0].CUSTOMER_ID ? "linked" : "pending";
       await execute(
-        `UPDATE APP_USERS SET STATUS = :1 WHERE ID = :2`,
+        `UPDATE AGRO_CRM_APP_USERS SET STATUS = :1 WHERE ID = :2`,
         [newStatus, appUserId]
       );
       await logEvent(appUserId, "unblocked", null, auth.id);
@@ -106,7 +106,7 @@ export async function PATCH(
 
     case "archive": {
       await execute(
-        `UPDATE APP_USERS SET ARCHIVED = 'Y', UNREAD_COUNT = 0 WHERE ID = :1`,
+        `UPDATE AGRO_CRM_APP_USERS SET ARCHIVED = 'Y', UNREAD_COUNT = 0 WHERE ID = :1`,
         [appUserId]
       );
       await logEvent(appUserId, "archived", null, auth.id);
@@ -115,7 +115,7 @@ export async function PATCH(
 
     case "unarchive": {
       await execute(
-        `UPDATE APP_USERS SET ARCHIVED = 'N' WHERE ID = :1`,
+        `UPDATE AGRO_CRM_APP_USERS SET ARCHIVED = 'N' WHERE ID = :1`,
         [appUserId]
       );
       await logEvent(appUserId, "unarchived", null, auth.id);
@@ -129,7 +129,7 @@ export async function PATCH(
 
 /**
  * DELETE /api/app-users/[id] — hard delete.
- * Сносит APP_USERS + все CRM_CHAT_MESSAGES + CRM_APP_USER_EVENTS этого юзера.
+ * Сносит AGRO_CRM_APP_USERS + все CRM_CHAT_MESSAGES + CRM_APP_USER_EVENTS этого юзера.
  * CRM_TG_BINDINGS — обнуляет APP_USER_ID (сохраняем историю токенов).
  */
 export async function DELETE(
@@ -145,10 +145,10 @@ export async function DELETE(
     return NextResponse.json({ error: "Bad id" }, { status: 400 });
   }
 
-  await execute(`DELETE FROM CRM_CHAT_MESSAGES WHERE APP_USER_ID = :1`, [appUserId]);
-  await execute(`DELETE FROM CRM_APP_USER_EVENTS WHERE APP_USER_ID = :1`, [appUserId]);
-  await execute(`UPDATE CRM_TG_BINDINGS SET APP_USER_ID = NULL WHERE APP_USER_ID = :1`, [appUserId]);
-  await execute(`DELETE FROM APP_USERS WHERE ID = :1`, [appUserId]);
+  await execute(`DELETE FROM AGRO_CRM_CHAT_MESSAGES WHERE APP_USER_ID = :1`, [appUserId]);
+  await execute(`DELETE FROM AGRO_CRM_APP_USER_EVENTS WHERE APP_USER_ID = :1`, [appUserId]);
+  await execute(`UPDATE AGRO_CRM_TG_BINDINGS SET APP_USER_ID = NULL WHERE APP_USER_ID = :1`, [appUserId]);
+  await execute(`DELETE FROM AGRO_CRM_APP_USERS WHERE ID = :1`, [appUserId]);
 
   return NextResponse.json({ success: true });
 }

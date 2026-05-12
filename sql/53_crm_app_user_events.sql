@@ -1,5 +1,5 @@
 -- ============================================================
--- CRM_APP_USER_EVENTS — аудит-лог событий по APP_USERS:
+-- CRM_APP_USER_EVENTS — аудит-лог событий по AGRO_CRM_APP_USERS:
 --   start, start_with_token, linked, blocked, unblocked, unlinked
 --   Помогает дебажить флоу и видеть историю взаимодействия
 --   c каждым бот-юзером.
@@ -16,7 +16,7 @@ CREATE TABLE CRM_APP_USER_EVENTS (
   ACTOR_USER   NUMBER,
   CREATED_AT   TIMESTAMP       DEFAULT SYSTIMESTAMP,
   CONSTRAINT PK_CRM_APP_USER_EVENTS  PRIMARY KEY (ID),
-  CONSTRAINT FK_CRM_AUE_USER         FOREIGN KEY (APP_USER_ID) REFERENCES APP_USERS(ID),
+  CONSTRAINT FK_CRM_AUE_USER         FOREIGN KEY (APP_USER_ID) REFERENCES AGRO_CRM_APP_USERS(ID),
   CONSTRAINT FK_CRM_AUE_ACTOR        FOREIGN KEY (ACTOR_USER)  REFERENCES AGRO_USERS(ID),
   CONSTRAINT CK_CRM_AUE_TYPE         CHECK (EVENT_TYPE IN (
     'start','start_with_token','linked','unlinked','blocked','unblocked','message_in'

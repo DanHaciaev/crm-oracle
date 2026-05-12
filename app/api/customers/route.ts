@@ -37,10 +37,10 @@ export async function GET() {
       au.ID                AS APP_USER_ID,
       au.TELEGRAM_USERNAME AS TG_USERNAME,
       au.TELEGRAM_CHAT_ID  AS TG_CHAT_ID,
-      (SELECT COUNT(*) FROM CRM_TG_BINDINGS b
+      (SELECT COUNT(*) FROM AGRO_CRM_TG_BINDINGS b
         WHERE b.CUSTOMER_ID = c.ID AND b.STATUS = 'pending') AS PENDING_INVITES
     FROM AGRO_CUSTOMERS c
-    LEFT JOIN APP_USERS au
+    LEFT JOIN AGRO_CRM_APP_USERS au
       ON au.CUSTOMER_ID = c.ID AND au.STATUS = 'linked'
     ORDER BY c.NAME
   `);
@@ -113,11 +113,11 @@ export async function POST(request: Request) {
   const linkAppUserId = Number(body.link_app_user_id);
   if (Number.isFinite(linkAppUserId) && linkAppUserId > 0 && customerId) {
     await execute(
-      `UPDATE APP_USERS SET CUSTOMER_ID = :1, STATUS = 'linked' WHERE ID = :2`,
+      `UPDATE AGRO_CRM_APP_USERS SET CUSTOMER_ID = :1, STATUS = 'linked' WHERE ID = :2`,
       [customerId, linkAppUserId]
     );
     await execute(
-      `INSERT INTO CRM_APP_USER_EVENTS (APP_USER_ID, EVENT_TYPE, PAYLOAD, ACTOR_USER)
+      `INSERT INTO AGRO_CRM_APP_USER_EVENTS (APP_USER_ID, EVENT_TYPE, PAYLOAD, ACTOR_USER)
        VALUES (:1, 'linked', :2, :3)`,
       [linkAppUserId, `customer_id=${customerId} (created from chat)`, auth.id]
     );

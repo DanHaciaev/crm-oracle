@@ -78,14 +78,14 @@ export async function GET(
   const appUsers = await query<AppUserRow>(
     `SELECT ID, TELEGRAM_CHAT_ID, TELEGRAM_USERNAME, TELEGRAM_FIRST_NAME,
             TELEGRAM_LAST_NAME, STATUS, FIRST_SEEN, LAST_SEEN
-       FROM APP_USERS
+       FROM AGRO_CRM_APP_USERS
       WHERE CUSTOMER_ID = :1 AND STATUS = 'linked'`,
     [customerId]
   );
 
   const bindings = await query<BindingRow>(
     `SELECT ID, INVITE_TOKEN, STATUS, CREATED_AT, EXPIRES_AT, BOUND_AT
-       FROM CRM_TG_BINDINGS
+       FROM AGRO_CRM_TG_BINDINGS
       WHERE CUSTOMER_ID = :1
       ORDER BY CREATED_AT DESC`,
     [customerId]
@@ -103,7 +103,7 @@ export async function GET(
     customer_type:  c.CUSTOMER_TYPE,
     active:         c.ACTIVE === "Y",
     created_at:     iso(c.CREATED_AT),
-    app_users: appUsers.map((u) => ({
+    AGRO_CRM_APP_USERS: appUsers.map((u) => ({
       id:               u.ID,
       telegram_chat_id: u.TELEGRAM_CHAT_ID,
       telegram_username:u.TELEGRAM_USERNAME,

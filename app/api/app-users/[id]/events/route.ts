@@ -40,7 +40,7 @@ export async function GET(
   const rows = await query<EventRow>(
     `SELECT e.ID, e.EVENT_TYPE, e.PAYLOAD, e.ACTOR_USER,
             au.USERNAME AS ACTOR_NAME, e.CREATED_AT
-       FROM CRM_APP_USER_EVENTS e
+       FROM AGRO_CRM_APP_USER_EVENTS e
        LEFT JOIN AGRO_USERS au ON au.ID = e.ACTOR_USER
       WHERE e.APP_USER_ID = :1
       ORDER BY e.CREATED_AT DESC, e.ID DESC`,

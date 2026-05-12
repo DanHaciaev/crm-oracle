@@ -41,7 +41,7 @@ export async function POST(
   }
 
   await execute(
-    `INSERT INTO CRM_TG_BINDINGS
+    `INSERT INTO AGRO_CRM_TG_BINDINGS
        (CUSTOMER_ID, INVITE_TOKEN, CREATED_BY, EXPIRES_AT)
      VALUES
        (:1, :2, :3, SYSTIMESTAMP + NUMTODSINTERVAL(:4, 'DAY'))`,
@@ -76,7 +76,7 @@ export async function DELETE(
   }
 
   await execute(
-    `UPDATE CRM_TG_BINDINGS
+    `UPDATE AGRO_CRM_TG_BINDINGS
         SET STATUS = 'revoked'
       WHERE ID = :1 AND CUSTOMER_ID = :2 AND STATUS = 'pending'`,
     [body.binding_id, customerId]

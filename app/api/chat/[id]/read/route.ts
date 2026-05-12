@@ -23,7 +23,7 @@ export async function PATCH(
   }
 
   await execute(
-    `UPDATE APP_USERS SET UNREAD_COUNT = 0 WHERE ID = :1`,
+    `UPDATE AGRO_CRM_APP_USERS SET UNREAD_COUNT = 0 WHERE ID = :1`,
     [appUserId]
   );
 

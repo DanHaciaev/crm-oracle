@@ -45,7 +45,7 @@ export async function GET(request: Request) {
             au.TELEGRAM_FIRST_NAME, au.TELEGRAM_LAST_NAME, au.LANGUAGE_CODE,
             au.STATUS, au.CUSTOMER_ID, c.NAME AS CUSTOMER_NAME,
             au.FIRST_SEEN, au.LAST_SEEN
-       FROM APP_USERS au
+       FROM AGRO_CRM_APP_USERS au
        LEFT JOIN AGRO_CUSTOMERS c ON c.ID = au.CUSTOMER_ID
        ${where}
       ORDER BY au.LAST_SEEN DESC NULLS LAST`,

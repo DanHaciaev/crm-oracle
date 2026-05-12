@@ -44,7 +44,7 @@ export async function GET(
   const rows = await query<MessageRow>(
     `SELECT m.ID, m.DIRECTION, m.BODY, m.FILE_ID, m.FILE_TYPE, m.STATUS,
             m.SENT_BY_USER, u.USERNAME AS SENT_BY_NAME, m.CREATED_AT
-       FROM CRM_CHAT_MESSAGES m
+       FROM AGRO_CRM_CHAT_MESSAGES m
        LEFT JOIN AGRO_USERS u ON u.ID = m.SENT_BY_USER
       WHERE m.APP_USER_ID = :1
       ORDER BY m.CREATED_AT ASC, m.ID ASC`,
@@ -85,7 +85,7 @@ export async function POST(
   }
 
   const users = await query<{ TELEGRAM_CHAT_ID: number; STATUS: string }>(
-    `SELECT TELEGRAM_CHAT_ID, STATUS FROM APP_USERS WHERE ID = :1`,
+    `SELECT TELEGRAM_CHAT_ID, STATUS FROM AGRO_CRM_APP_USERS WHERE ID = :1`,
     [appUserId]
   );
   if (users.length === 0) {
@@ -97,7 +97,7 @@ export async function POST(
 
   // Insert as pending first (так если sendText упадёт — у нас останется запись).
   await execute(
-    `INSERT INTO CRM_CHAT_MESSAGES
+    `INSERT INTO AGRO_CRM_CHAT_MESSAGES
        (APP_USER_ID, DIRECTION, BODY, STATUS, SENT_BY_USER)
      VALUES (:1, 'out', :2, 'pending', :3)`,
     [appUserId, text, auth.id]
@@ -106,7 +106,7 @@ export async function POST(
   // Достанем ID только что вставленной строки (самой свежей out от этого юзера).
   const inserted = await query<{ ID: number }>(
     `SELECT ID FROM (
-       SELECT ID FROM CRM_CHAT_MESSAGES
+       SELECT ID FROM AGRO_CRM_CHAT_MESSAGES
         WHERE APP_USER_ID = :1 AND DIRECTION = 'out'
         ORDER BY ID DESC
      ) WHERE ROWNUM = 1`,
@@ -117,18 +117,18 @@ export async function POST(
   try {
     const tgMsgId = await sendText(Number(users[0].TELEGRAM_CHAT_ID), text);
     await execute(
-      `UPDATE CRM_CHAT_MESSAGES SET STATUS = 'sent', TG_MESSAGE_ID = :1 WHERE ID = :2`,
+      `UPDATE AGRO_CRM_CHAT_MESSAGES SET STATUS = 'sent', TG_MESSAGE_ID = :1 WHERE ID = :2`,
       [tgMsgId, messageId]
     );
     await execute(
-      `UPDATE APP_USERS SET LAST_MESSAGE_AT = SYSTIMESTAMP WHERE ID = :1`,
+      `UPDATE AGRO_CRM_APP_USERS SET LAST_MESSAGE_AT = SYSTIMESTAMP WHERE ID = :1`,
       [appUserId]
     );
     return NextResponse.json({ success: true, message_id: messageId, tg_message_id: tgMsgId });
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
     await execute(
-      `UPDATE CRM_CHAT_MESSAGES SET STATUS = 'failed', ERROR = :1 WHERE ID = :2`,
+      `UPDATE AGRO_CRM_CHAT_MESSAGES SET STATUS = 'failed', ERROR = :1 WHERE ID = :2`,
       [errMsg.slice(0, 2000), messageId]
     );
     return NextResponse.json({ error: `Telegram отклонил: ${errMsg}` }, { status: 502 });

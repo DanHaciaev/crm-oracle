@@ -5,9 +5,9 @@
 // (DB_USER / DB_PASSWORD / CONNECT_STRING / ORACLE_CLIENT_DIR from .env).
 // Uses Thick mode (Instant Client) — required for Oracle 11g.
 
-import fs       from "node:fs";
-import path     from "node:path";
-import process  from "node:process";
+import fs from "node:fs";
+import path from "node:path";
+import process from "node:process";
 import oracledb from "oracledb";
 
 // --- load .env (no dotenv dep — small parser) ------------------------------
@@ -38,27 +38,65 @@ if (!fs.existsSync(filePath)) {
 
 // --- split SQL by `/` terminator lines -------------------------------------
 function splitStatements(sql) {
-  const lines  = sql.split(/\r?\n/);
-  const chunks = [];
-  let buf      = [];
-  for (const line of lines) {
-    if (line.trim() === "/") {
-      const text = buf.join("\n").trim();
-      if (text) chunks.push(text);
-      buf = [];
-    } else {
-      buf.push(line);
+  const lines = sql.split(/\r?\n/);
+
+  const statements = [];
+  let buffer = [];
+  let inPlsql = false;
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    const upper = line.toUpperCase();
+
+    // skip empty comment-only lines
+    if (!line || line.startsWith("--")) {
+      continue;
+    }
+
+    // detect PL/SQL block start
+    if (
+      upper.startsWith("CREATE OR REPLACE TRIGGER") ||
+      upper.startsWith("CREATE OR REPLACE PROCEDURE") ||
+      upper.startsWith("CREATE OR REPLACE FUNCTION") ||
+      upper.startsWith("DECLARE") ||
+      upper.startsWith("BEGIN")
+    ) {
+      inPlsql = true;
+    }
+
+    buffer.push(rawLine);
+
+    // PL/SQL ends with /
+    if (inPlsql) {
+      if (line === "/") {
+        statements.push(
+          buffer.join("\n").replace(/\/\s*$/, "").trim()
+        );
+        buffer = [];
+        inPlsql = false;
+      }
+      continue;
+    }
+
+    // normal SQL ends with ;
+    if (line.endsWith(";")) {
+      statements.push(
+        buffer.join("\n").replace(/;\s*$/, "").trim()
+      );
+      buffer = [];
     }
   }
-  const tail = buf.join("\n").trim();
-  if (tail) chunks.push(tail);
-  return chunks
-    .filter((c) => c.split("\n").some((l) => l.trim() && !l.trim().startsWith("--")))
-    .map(prepareStatement);
+
+  // tail
+  if (buffer.length) {
+    statements.push(buffer.join("\n").trim());
+  }
+
+  return statements.filter(Boolean);
 }
 
 function prepareStatement(chunk) {
-  const upper   = chunk.toUpperCase();
+  const upper = chunk.toUpperCase();
   const isPlsql =
     /^\s*(DECLARE|BEGIN)\b/m.test(upper) ||
     /^\s*CREATE\s+(OR\s+REPLACE\s+)?(TRIGGER|PROCEDURE|FUNCTION|PACKAGE|TYPE\s+BODY)\b/m.test(upper);
@@ -72,12 +110,12 @@ oracledb.initOracleClient(libDir ? { libDir } : undefined);
 
 // --- run -------------------------------------------------------------------
 const dbConfig = {
-  user:          process.env.DB_USER,
-  password:      process.env.DB_PASSWORD,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
   connectString: process.env.CONNECT_STRING,
 };
 
-const sql        = fs.readFileSync(filePath, "utf8");
+const sql = fs.readFileSync(filePath, "utf8");
 const statements = splitStatements(sql);
 
 console.log(`File: ${path.relative(process.cwd(), filePath)}`);

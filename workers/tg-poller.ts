@@ -2,8 +2,8 @@
 // Run with: npm run poller
 //
 // Commands:
-//   /start           — registers/touches APP_USERS; if user already linked, greets.
-//   /start <token>   — links APP_USERS to AGRO_CUSTOMERS via CRM_TG_BINDINGS.
+//   /start           — registers/touches AGRO_CRM_APP_USERS; if user already linked, greets.
+//   /start <token>   — links AGRO_CRM_APP_USERS to AGRO_CUSTOMERS via CRM_TG_BINDINGS.
 //   /help            — explain what bot does, how to get linked.
 //   /status          — show current link state.
 // Other messages    — touch LAST_SEEN; ignore (no reply) until Phase 3 chat.
@@ -52,7 +52,7 @@ async function execute(sql: string, binds: unknown[] = []): Promise<void> {
 async function logEvent(appUserId: number, eventType: string, payload?: string) {
   try {
     await execute(
-      `INSERT INTO CRM_APP_USER_EVENTS (APP_USER_ID, EVENT_TYPE, PAYLOAD)
+      `INSERT INTO AGRO_CRM_APP_USER_EVENTS (APP_USER_ID, EVENT_TYPE, PAYLOAD)
        VALUES (:1, :2, :3)`,
       [appUserId, eventType, payload ?? null]
     );
@@ -72,7 +72,7 @@ async function touchAppUser(ctx: Context): Promise<{
   const u      = ctx.from;
 
   await execute(
-    `MERGE INTO APP_USERS au
+    `MERGE INTO AGRO_CRM_APP_USERS au
      USING (SELECT :1 AS CHAT_ID, :2 AS UNAME, :3 AS FNAME, :4 AS LNAME, :5 AS LANG FROM DUAL) src
      ON (au.TELEGRAM_CHAT_ID = src.CHAT_ID)
      WHEN MATCHED THEN
@@ -91,7 +91,7 @@ async function touchAppUser(ctx: Context): Promise<{
     ID: number; STATUS: string; CUSTOMER_ID: number | null; CUSTOMER_NAME: string | null;
   }>(
     `SELECT au.ID, au.STATUS, au.CUSTOMER_ID, c.NAME AS CUSTOMER_NAME
-       FROM APP_USERS au
+       FROM AGRO_CRM_APP_USERS au
        LEFT JOIN AGRO_CUSTOMERS c ON c.ID = au.CUSTOMER_ID
       WHERE au.TELEGRAM_CHAT_ID = :1`,
     [chatId]
@@ -163,7 +163,7 @@ bot.command("start", async (ctx) => {
       ID: number; CUSTOMER_ID: number; STATUS: string; EXPIRES_AT: Date | null;
     }>(
       `SELECT ID, CUSTOMER_ID, STATUS, EXPIRES_AT
-         FROM CRM_TG_BINDINGS WHERE INVITE_TOKEN = :1`,
+         FROM AGRO_CRM_TG_BINDINGS WHERE INVITE_TOKEN = :1`,
       [inviteToken]
     );
     if (bindings.length === 0) {
@@ -176,19 +176,19 @@ bot.command("start", async (ctx) => {
     if (b.STATUS === "revoked") { await ctx.reply("⚠️ Эта ссылка была отозвана.");     return; }
     if (b.STATUS === "expired") { await ctx.reply("⚠️ Срок действия ссылки истёк.");   return; }
     if (b.EXPIRES_AT && new Date(b.EXPIRES_AT).getTime() < Date.now()) {
-      await execute(`UPDATE CRM_TG_BINDINGS SET STATUS = 'expired' WHERE ID = :1`, [b.ID]);
+      await execute(`UPDATE AGRO_CRM_TG_BINDINGS SET STATUS = 'expired' WHERE ID = :1`, [b.ID]);
       await ctx.reply("⚠️ Срок действия ссылки истёк. Попросите менеджера новую.");
       return;
     }
 
     await execute(
-      `UPDATE APP_USERS
+      `UPDATE AGRO_CRM_APP_USERS
           SET CUSTOMER_ID = :1, STATUS = 'linked', LAST_SEEN = SYSTIMESTAMP
         WHERE ID = :2`,
       [b.CUSTOMER_ID, user.id]
     );
     await execute(
-      `UPDATE CRM_TG_BINDINGS
+      `UPDATE AGRO_CRM_TG_BINDINGS
           SET STATUS = 'bound', APP_USER_ID = :1, BOUND_AT = SYSTIMESTAMP
         WHERE ID = :2`,
       [user.id, b.ID]
@@ -296,13 +296,13 @@ bot.on("message", async (ctx) => {
     if (!body && !fileId) return; // нечего сохранять
 
     await execute(
-      `INSERT INTO CRM_CHAT_MESSAGES
+      `INSERT INTO AGRO_CRM_CHAT_MESSAGES
          (APP_USER_ID, DIRECTION, BODY, TG_MESSAGE_ID, FILE_ID, FILE_TYPE, STATUS)
        VALUES (:1, 'in', :2, :3, :4, :5, 'sent')`,
       [user.id, body, ctx.message?.message_id ?? null, fileId, fileType]
     );
     await execute(
-      `UPDATE APP_USERS
+      `UPDATE AGRO_CRM_APP_USERS
           SET LAST_MESSAGE_AT = SYSTIMESTAMP,
               UNREAD_COUNT    = UNREAD_COUNT + 1,
               ARCHIVED        = 'N'

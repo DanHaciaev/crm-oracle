@@ -1,11 +1,11 @@
 -- ============================================================
 -- CRM_CHAT_MESSAGES — переписка с бот-юзерами.
--- Одна строка на сообщение, привязка к APP_USERS.
--- Денормализация в APP_USERS: LAST_MESSAGE_AT + UNREAD_COUNT
+-- Одна строка на сообщение, привязка к AGRO_CRM_APP_USERS.
+-- Денормализация в AGRO_CRM_APP_USERS: LAST_MESSAGE_AT + UNREAD_COUNT
 -- для быстрой сортировки inbox-а и счётчиков.
 -- ============================================================
 
-ALTER TABLE APP_USERS ADD (
+ALTER TABLE AGRO_CRM_APP_USERS ADD (
   LAST_MESSAGE_AT  TIMESTAMP,
   UNREAD_COUNT     NUMBER DEFAULT 0 NOT NULL
 );
@@ -27,7 +27,7 @@ CREATE TABLE CRM_CHAT_MESSAGES (
   ERROR          VARCHAR2(2000),
   CREATED_AT     TIMESTAMP       DEFAULT SYSTIMESTAMP,
   CONSTRAINT PK_CRM_CHAT_MESSAGES   PRIMARY KEY (ID),
-  CONSTRAINT FK_CRM_CM_APPUSER      FOREIGN KEY (APP_USER_ID)  REFERENCES APP_USERS(ID),
+  CONSTRAINT FK_CRM_CM_APPUSER      FOREIGN KEY (APP_USER_ID)  REFERENCES AGRO_CRM_APP_USERS(ID),
   CONSTRAINT FK_CRM_CM_SENTBY       FOREIGN KEY (SENT_BY_USER) REFERENCES AGRO_USERS(ID),
   CONSTRAINT CK_CRM_CM_DIR          CHECK (DIRECTION IN ('in','out')),
   CONSTRAINT CK_CRM_CM_FTYPE        CHECK (FILE_TYPE IS NULL OR FILE_TYPE IN ('document','photo','voice','video','audio','sticker')),
