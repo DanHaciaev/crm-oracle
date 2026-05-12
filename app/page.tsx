@@ -4,11 +4,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function AuthPage() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState<string | null>(null);
-  const router                = useRouter();
 
-  const [form, setForm] = useState({ username: "", password: "" });
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+
+  const [form, setForm] = useState({
+    username: "admin",
+    password: "Artgranit2026",
+  });
 
   function updateForm(key: "username" | "password", value: string) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -20,9 +25,9 @@ export default function AuthPage() {
     setLoading(true);
 
     const res = await fetch("/api/auth/login", {
-      method:  "POST",
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify(form),
+      body: JSON.stringify(form),
     });
     const data = await res.json().catch(() => ({} as { error?: string }));
     setLoading(false);
