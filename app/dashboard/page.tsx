@@ -1,13 +1,13 @@
 "use client";
 
 import Layout from "@/components/Layout";
-import Charts from "@/components/Charts";
+import MainPage from "@/components/mainPage";
 
 export default function Dashboard() {
 
   return (
     <Layout>
-      <Charts />
+      <MainPage/>
     </Layout>
   );
 }

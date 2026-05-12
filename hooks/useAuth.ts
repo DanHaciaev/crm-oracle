@@ -3,18 +3,17 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-interface User {
-  id: string;
-  email: string;
+export interface AuthUser {
+  id:         number;
+  username:   string;
   first_name: string | null;
-  last_name: string | null;
-  role: string;
-  avatar_url: string | null;
+  last_name:  string | null;
+  role:       "admin" | "manager";
   created_at: string;
 }
 
 export function useAuth() {
-  const [user, setUser]       = useState<User | null>(null);
+  const [user, setUser]       = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const router                = useRouter();
 
@@ -23,7 +22,7 @@ export function useAuth() {
       .then((r) => r.json())
       .then((data) => {
         if (data.error) setUser(null);
-        else setUser(data);
+        else            setUser(data as AuthUser);
         setLoading(false);
       })
       .catch(() => { setUser(null); setLoading(false); });

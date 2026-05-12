@@ -4,9 +4,9 @@ import bcrypt from "bcryptjs";
 const JWT_SECRET = process.env.JWT_SECRET!;
 
 export interface TokenPayload {
-  id: string;
-  email: string;
-  role: string;
+  id:       number;
+  username: string;
+  role:     "admin" | "manager";
 }
 
 export function hashPassword(password: string): string {

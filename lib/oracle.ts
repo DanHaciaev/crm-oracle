@@ -1,17 +1,21 @@
 import oracledb from "oracledb";
-import path from "path";
 
-const walletDir = process.env.WALLET_DIR!;
-const walletLocation = path.isAbsolute(walletDir)
-  ? walletDir
-  : path.resolve(process.cwd(), walletDir);
+// Oracle 11g requires Thick mode via Instant Client.
+// initOracleClient must be called exactly once per Node process.
+// In Next.js dev, modules can re-execute on HMR — guard via globalThis.
+declare global {
+  var _oracledbInited: boolean | undefined;
+}
+if (!globalThis._oracledbInited) {
+  const libDir = process.env.ORACLE_CLIENT_DIR;
+  oracledb.initOracleClient(libDir ? { libDir } : undefined);
+  globalThis._oracledbInited = true;
+}
 
 const dbConfig = {
-  user:           process.env.DB_USER!,
-  password:       process.env.DB_PASSWORD!,
-  connectString:  process.env.CONNECT_STRING!,
-  walletLocation,
-  walletPassword: process.env.WALLET_PASSWORD!,
+  user:          process.env.DB_USER!,
+  password:      process.env.DB_PASSWORD!,
+  connectString: process.env.CONNECT_STRING!,
 };
 
 export async function getConnection(): Promise<oracledb.Connection> {

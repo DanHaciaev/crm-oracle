@@ -1,77 +1,124 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { query, execute } from "@/lib/oracle";
-import { hashPassword } from "@/lib/auth";
+import { hashPassword, verifyToken } from "@/lib/auth";
 
-interface UserRow extends Record<string, unknown> {
+interface UserRow {
+  [key: string]: unknown; 
   ID: number;
-  EMAIL: string;
+  USERNAME: string;
   FIRST_NAME: string | null;
   LAST_NAME: string | null;
-  ROLE: string;
-  CREATED_AT: string;
+  ROLE: "admin" | "manager";
+  ACTIVE: string;
+  CREATED_AT: string | Date;
+}
+
+async function requireAdmin() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+  const payload = token ? verifyToken(token) : null;
+  if (!payload) return { ok: false as const, status: 401, error: "Не авторизован" };
+  if (payload.role !== "admin") return { ok: false as const, status: 403, error: "Доступ только для администраторов" };
+  return { ok: true as const, payload };
 }
 
 export async function GET() {
-  const conn = await (await import("@/lib/oracle")).getConnection();
-  try {
-    const result = await conn.execute(
-      `SELECT id, email, first_name, last_name, role, created_at
-       FROM crm_user.users ORDER BY created_at DESC`,
-      [],
-      { outFormat: 4002 }
-    );
-    const rows = (result.rows ?? []) as Record<string, unknown>[];
-    return NextResponse.json(rows.map((r) => ({
-      id:         Number(r["ID"]),
-      email:      r["EMAIL"],
-      first_name: r["FIRST_NAME"] ?? null,
-      last_name:  r["LAST_NAME"] ?? null,
-      role:       r["ROLE"],
-      created_at: r["CREATED_AT"] instanceof Date
-        ? (r["CREATED_AT"] as Date).toISOString()
-        : String(r["CREATED_AT"] ?? ""),
-    })));
-  } finally {
-    await conn.close();
-  }
+  const auth = await requireAdmin();
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+  const rows = await query<UserRow>(
+    `SELECT id, username, first_name, last_name, role, active, created_at
+       FROM AGRO_USERS
+      ORDER BY created_at DESC`
+  );
+
+  return NextResponse.json(rows.map((u) => ({
+    id: u.ID,
+    username: u.USERNAME,
+    first_name: u.FIRST_NAME,
+    last_name: u.LAST_NAME,
+    role: u.ROLE,
+    active: u.ACTIVE === "Y",
+    created_at: u.CREATED_AT instanceof Date ? u.CREATED_AT.toISOString() : String(u.CREATED_AT ?? ""),
+  })));
 }
 
 export async function POST(request: Request) {
-  const { email, password, first_name, last_name, role } = await request.json();
+  const auth = await requireAdmin();
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-  if (!email || !password) {
-    return NextResponse.json({ error: "Email и пароль обязательны" }, { status: 400 });
+  const { username, password, first_name, last_name, role } = await request.json();
+
+  if (!username || !password) {
+    return NextResponse.json({ error: "Логин и пароль обязательны" }, { status: 400 });
+  }
+  if (role && role !== "admin" && role !== "manager") {
+    return NextResponse.json({ error: "Роль должна быть admin или manager" }, { status: 400 });
   }
 
-  // Проверяем существует ли пользователь
-  const existing = await query<UserRow>(
-    `SELECT id FROM crm_user.users WHERE email = :1`, [email]
+  const existing = await query<{ ID: number }>(
+    `SELECT id FROM AGRO_USERS WHERE username = :1`, [username]
   );
   if (existing.length > 0) {
-    return NextResponse.json({ error: "Пользователь уже существует" }, { status: 400 });
+    return NextResponse.json({ error: "Пользователь с таким логином уже существует" }, { status: 400 });
   }
 
-  const passwordHash = hashPassword(password);
   await execute(
-    `INSERT INTO crm_user.users (email, password_hash, first_name, last_name, role)
+    `INSERT INTO AGRO_USERS (username, password_hash, first_name, last_name, role)
      VALUES (:1, :2, :3, :4, :5)`,
-    [email, passwordHash, first_name || null, last_name || null, role ?? "user"]
+    [username, hashPassword(password), first_name || null, last_name || null, role ?? "manager"]
   );
 
-  return NextResponse.json({ success: true });
-}
-
-export async function PUT(request: Request) {
-  const { id, first_name, last_name, role } = await request.json();
-  await execute(
-    `UPDATE crm_user.users SET first_name = :1, last_name = :2, role = :3 WHERE id = :4`,
-    [first_name || null, last_name || null, role, id]
-  );
   return NextResponse.json({ success: true });
 }
 
 export async function DELETE(request: Request) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
   const { id } = await request.json();
-  await execute(`DELETE FROM crm_user.users WHERE id = :1`, [id]);
+  if (!id) return NextResponse.json({ error: "id обязателен" }, { status: 400 });
+  if (Number(id) === auth.payload.id) {
+    return NextResponse.json({ error: "Нельзя удалить самого себя" }, { status: 400 });
+  }
+
+  await execute(`DELETE FROM AGRO_USERS WHERE id = :1`, [id]);
+  return NextResponse.json({ success: true });
+}
+
+
+export async function PATCH(request: Request) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+  const { id, first_name, last_name, role, password } = await request.json();
+
+  if (!id) return NextResponse.json({ error: "id обязателен" }, { status: 400 });
+  if (role && role !== "admin" && role !== "manager") {
+    return NextResponse.json({ error: "Роль должна быть admin или manager" }, { status: 400 });
+  }
+
+  if (password) {
+    await execute(
+      `UPDATE AGRO_USERS
+          SET first_name     = :1,
+              last_name      = :2,
+              role           = :3,
+              password_hash  = :4
+        WHERE id = :5`,
+      [first_name || null, last_name || null, role, hashPassword(password), id]
+    );
+  } else {
+    await execute(
+      `UPDATE AGRO_USERS
+          SET first_name = :1,
+              last_name  = :2,
+              role       = :3
+        WHERE id = :4`,
+      [first_name || null, last_name || null, role, id]
+    );
+  }
+
   return NextResponse.json({ success: true });
 }

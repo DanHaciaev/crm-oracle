@@ -2,41 +2,43 @@ import { NextResponse } from "next/server";
 import { query } from "@/lib/oracle";
 import { comparePassword, signToken } from "@/lib/auth";
 
-interface UserRow extends Record<string, unknown> {
-  ID: number;
-  EMAIL: string;
+interface UserRow {
+  ID:            number;
+  USERNAME:      string;
   PASSWORD_HASH: string;
-  ROLE: string;
+  ROLE:          "admin" | "manager";
+  ACTIVE:        string;
 }
 
 export async function POST(request: Request) {
-  const { email, password } = await request.json();
+  const { username, password } = await request.json();
 
-  if (!email || !password) {
-    return NextResponse.json({ error: "Введите email и пароль" }, { status: 400 });
+  if (!username || !password) {
+    return NextResponse.json({ error: "Введите логин и пароль" }, { status: 400 });
   }
 
   const users = await query<UserRow>(
-    `SELECT id, email, password_hash, role FROM crm_user.users WHERE email = :1`,
-    [email]
+    `SELECT id, username, password_hash, role, active
+       FROM AGRO_USERS
+      WHERE username = :1`,
+    [username]
   );
 
   if (users.length === 0) {
-    return NextResponse.json({ error: "Неверный email или пароль" }, { status: 401 });
+    return NextResponse.json({ error: "Неверный логин или пароль" }, { status: 401 });
   }
 
   const user = users[0];
-  const valid = comparePassword(password, user.PASSWORD_HASH);
 
-  if (!valid) {
-    return NextResponse.json({ error: "Неверный email или пароль" }, { status: 401 });
+  if (user.ACTIVE !== "Y") {
+    return NextResponse.json({ error: "Пользователь отключён" }, { status: 403 });
   }
 
-  const token = signToken({
-    id:    String(user.ID),
-    email: user.EMAIL,
-    role:  user.ROLE,
-  });
+  if (!comparePassword(password, user.PASSWORD_HASH)) {
+    return NextResponse.json({ error: "Неверный логин или пароль" }, { status: 401 });
+  }
+
+  const token = signToken({ id: user.ID, username: user.USERNAME, role: user.ROLE });
 
   const response = NextResponse.json({ success: true, role: user.ROLE });
   response.cookies.set("token", token, {
@@ -45,6 +47,5 @@ export async function POST(request: Request) {
     sameSite: "lax",
     maxAge:   60 * 60 * 24 * 7,
   });
-
   return response;
 }

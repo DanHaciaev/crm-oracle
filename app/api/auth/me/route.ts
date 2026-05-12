@@ -3,19 +3,18 @@ import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { query } from "@/lib/oracle";
 
-interface UserRow extends Record<string, unknown> {
-  ID: number;
-  EMAIL: string;
+interface UserRow {
+  ID:         number;
+  USERNAME:   string;
   FIRST_NAME: string | null;
-  LAST_NAME: string | null;
-  ROLE: string;
-  AVATAR_URL: string | null;
-  CREATED_AT: string;
+  LAST_NAME:  string | null;
+  ROLE:       "admin" | "manager";
+  CREATED_AT: string | Date;
 }
 
 export async function GET() {
   const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
+  const token       = cookieStore.get("token")?.value;
 
   if (!token) {
     return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
@@ -27,8 +26,9 @@ export async function GET() {
   }
 
   const users = await query<UserRow>(
-    `SELECT id, email, first_name, last_name, role, avatar_url, created_at
-     FROM crm_user.users WHERE id = :1`,
+    `SELECT id, username, first_name, last_name, role, created_at
+       FROM AGRO_USERS
+      WHERE id = :1 AND active = 'Y'`,
     [payload.id]
   );
 
@@ -36,14 +36,13 @@ export async function GET() {
     return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
   }
 
-  const user = users[0];
+  const u = users[0];
   return NextResponse.json({
-    id:         String(user.ID),
-    email:      user.EMAIL,
-    first_name: user.FIRST_NAME,
-    last_name:  user.LAST_NAME,
-    role:       user.ROLE,
-    avatar_url: user.AVATAR_URL,
-    created_at: user.CREATED_AT,
+    id:         u.ID,
+    username:   u.USERNAME,
+    first_name: u.FIRST_NAME,
+    last_name:  u.LAST_NAME,
+    role:       u.ROLE,
+    created_at: u.CREATED_AT instanceof Date ? u.CREATED_AT.toISOString() : String(u.CREATED_AT ?? ""),
   });
 }

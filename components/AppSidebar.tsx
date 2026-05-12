@@ -9,23 +9,21 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from "@/components/ui/sidebar"
-import { User } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { format } from "date-fns"
 import Link from "next/link"
+import { useAuth } from "@/hooks/useAuth"
 
 export function AppSidebar() {
-  const pathname = usePathname()
-  const today = format(new Date(), "dd MMM yyyy")
+  const pathname    = usePathname()
+  const today       = format(new Date(), "dd MMM yyyy")
+  const { user, logout } = useAuth()
 
   const links = [
-    { name: "Dashboard",  href: "/dashboard" },
-    { name: "Clients",    href: "/clients" },
-    { name: "Tasks",     href: "/tasks" },
-    { name: "Users", href: "/users" },
-    { name: "Report", href: "/reports" },
-    { name: "Documents",  href: "/documents" },
-  ]
+    { name: "Dashboard", href: "/dashboard", adminOnly: false },
+    { name: "Акты", href: "/acts", adminOnly: false },
+    { name: "Пользователи", href: "/users", adminOnly: true },
+  ].filter((l) => !l.adminOnly || user?.role === "admin")
 
   return (
     <Sidebar className="bg-zinc-900 text-white border-r border-zinc-800">
@@ -55,11 +53,19 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarContent>
 
-      <SidebarFooter className="flex flex-row items-center justify-between mt-auto border-t border-zinc-800 p-4 text-xs text-zinc-400">
-        <span>Сегодня: {today}</span>
-        <Link href="/profile">
-          <User className="w-4 h-4 text-zinc-400 hover:text-white transition-colors" />
-        </Link>
+      <SidebarFooter className="mt-auto border-t border-zinc-800 p-4 text-xs text-zinc-400 space-y-2">
+        <div className="flex items-center justify-between">
+          <span>{user ? `${user.username}` : "—"}</span>
+          {user && (
+            <button
+              onClick={logout}
+              className="border border-zinc-400 rounded-4xl px-2 py-1 text-zinc-400 hover:text-white transition-colors"
+            >
+              Выйти
+            </button>
+          )}
+        </div>
+        <div>Сегодня: {today}</div>
       </SidebarFooter>
     </Sidebar>
   )
