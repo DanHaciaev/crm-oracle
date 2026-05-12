@@ -21,6 +21,8 @@ export function AppSidebar() {
 
   const links = [
     { name: "Dashboard", href: "/dashboard", adminOnly: false },
+    { name: "Inbox", href: "/inbox", adminOnly: false },
+    { name: "Клиенты", href: "/customers", adminOnly: false },
     { name: "Акты", href: "/acts", adminOnly: false },
     { name: "Пользователи", href: "/users", adminOnly: true },
   ].filter((l) => !l.adminOnly || user?.role === "admin")

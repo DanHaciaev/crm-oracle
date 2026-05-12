@@ -4,6 +4,7 @@ import { query } from "@/lib/oracle";
 import { verifyToken } from "@/lib/auth";
 
 interface HeaderRow {
+  [key: string]: unknown;
   ID:               number;
   TICKET_NUMBER:    string;
   TICKET_DATE:      Date | string | null;
@@ -17,6 +18,7 @@ interface HeaderRow {
 }
 
 interface LineRow {
+  [key: string]: unknown;
   ID:           number;
   LINE_NO:      number | null;
   CRATE_CODE:   string | null;

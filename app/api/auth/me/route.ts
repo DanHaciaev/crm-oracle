@@ -4,6 +4,7 @@ import { verifyToken } from "@/lib/auth";
 import { query } from "@/lib/oracle";
 
 interface UserRow {
+  [key: string]: unknown;
   ID:         number;
   USERNAME:   string;
   FIRST_NAME: string | null;

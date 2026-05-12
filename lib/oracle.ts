@@ -9,6 +9,8 @@ declare global {
 if (!globalThis._oracledbInited) {
   const libDir = process.env.ORACLE_CLIENT_DIR;
   oracledb.initOracleClient(libDir ? { libDir } : undefined);
+  // CLOB columns come back as plain strings (no streaming needed for short chat bodies).
+  oracledb.fetchAsString = [oracledb.CLOB];
   globalThis._oracledbInited = true;
 }
 

@@ -3,6 +3,7 @@ import { query } from "@/lib/oracle";
 import { comparePassword, signToken } from "@/lib/auth";
 
 interface UserRow {
+  [key: string]: unknown;
   ID:            number;
   USERNAME:      string;
   PASSWORD_HASH: string;
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
   const response = NextResponse.json({ success: true, role: user.ROLE });
   response.cookies.set("token", token, {
     httpOnly: true,
-    secure:   process.env.NODE_ENV === "production",
+    secure: process.env.SECURE_COOKIE === "true",
     sameSite: "lax",
     maxAge:   60 * 60 * 24 * 7,
   });
