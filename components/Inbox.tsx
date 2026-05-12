@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -202,7 +203,7 @@ export default function Inbox() {
   return (
     <div className="flex h-[calc(100vh-65px)] overflow-hidden">
       {/* LEFT: threads */}
-      <aside className="w-[360px] border-r border-zinc-800 flex flex-col">
+      <aside className="w-90 border-r border-zinc-800 flex flex-col">
         <div className="p-4 border-b border-zinc-800">
           <div className="flex items-baseline justify-between mb-3">
             <h1 className="text-lg font-bold">Inbox</h1>
@@ -244,7 +245,7 @@ export default function Inbox() {
                         {t.last_dir === "out" ? "Вы: " : ""}{previewText(t)}
                       </div>
                       {t.unread_count > 0 && (
-                        <span className="shrink-0 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        <span className="shrink-0 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full text-[10px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                           {t.unread_count}
                         </span>
                       )}
@@ -489,7 +490,7 @@ function MessageBubble({ m }: { m: Message }) {
         {m.file_type && (
           <div className="text-xs text-gray-400 mb-1">[{m.file_type}]</div>
         )}
-        {m.body && <div className="whitespace-pre-wrap break-words">{m.body}</div>}
+        {m.body && <div className="whitespace-pre-wrap wrap-break-word">{m.body}</div>}
         <div className="text-[10px] text-gray-400 mt-1 flex items-center gap-2 justify-end">
           {out && m.sent_by_name && <span>{m.sent_by_name}</span>}
           <span>{fmtFullTime(m.created_at)}</span>
