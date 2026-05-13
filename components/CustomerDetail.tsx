@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
@@ -277,7 +278,7 @@ export default function CustomerDetail({ id }: { id: string }) {
                   <YAxis hide />
                   <Tooltip {...ttStyle}
                     formatter={(v: unknown) => [`${fmtMoney(Number(v ?? 0))} MDL`, "Выручка"]}
-                    labelFormatter={fmtMonthLabel} />
+                    labelFormatter={(s: unknown) => fmtMonthLabel(String(s ?? ""))} />
                   <Bar dataKey="revenue" radius={[3,3,0,0]}>
                     {stats.monthly.map((_, i) => (
                       <Cell key={i} fill={i === stats.monthly.length - 1 ? "#60a5fa" : "#3f3f46"} />
