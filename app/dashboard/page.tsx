@@ -1,13 +1,12 @@
 "use client";
 
 import Layout from "@/components/Layout";
-import MainPage from "@/components/mainPage";
+import Dashboard from "@/components/Dashboard";
 
-export default function Dashboard() {
-
+export default function DashboardPage() {
   return (
     <Layout>
-      <MainPage/>
+      <Dashboard />
     </Layout>
   );
 }

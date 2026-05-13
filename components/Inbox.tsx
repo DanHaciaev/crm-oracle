@@ -203,8 +203,12 @@ export default function Inbox() {
   return (
     <div className="flex h-[calc(100vh-65px)] overflow-hidden">
       {/* LEFT: threads */}
-      <aside className="w-90 border-r border-zinc-800 flex flex-col">
-        <div className="p-4 border-b border-zinc-800">
+      <aside
+        className={`${
+          activeId !== null ? "hidden inbox:flex" : "flex"
+        } w-full inbox:w-90 inbox:border-r border-zinc-800 flex-col`}
+      >
+        <div className="p-3 sm:p-4 border-b border-zinc-800">
           <div className="flex items-baseline justify-between mb-3">
             <h1 className="text-lg font-bold">Inbox</h1>
             <span className="text-xs text-gray-500">{totalUnread > 0 ? `${totalUnread} непрочитанных` : "всё прочитано"}</span>
@@ -265,7 +269,11 @@ export default function Inbox() {
       </aside>
 
       {/* RIGHT: chat */}
-      <main className="flex-1 flex flex-col">
+      <main
+        className={`${
+          activeId !== null ? "flex" : "hidden inbox:flex"
+        } flex-1 flex-col min-w-0`}
+      >
         {!active ? (
           <div className="flex-1 flex items-center justify-center text-sm text-gray-500">
             Выберите собеседника слева
@@ -273,19 +281,28 @@ export default function Inbox() {
         ) : (
           <>
             {/* header */}
-            <div className="p-4 border-b border-zinc-800 flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3 min-w-0">
+            <div className="p-3 sm:p-4 border-b border-zinc-800 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+              <div className="flex items-start gap-2 sm:gap-3 min-w-0">
+                <button
+                  onClick={() => { setActiveId(null); setMessages([]); }}
+                  aria-label="Назад"
+                  className="inbox:hidden shrink-0 -ml-1 mt-1 w-8 h-8 rounded-md flex items-center justify-center text-gray-300 hover:bg-zinc-800 transition"
+                >
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                    <path fillRule="evenodd" d="M12.78 15.78a.75.75 0 01-1.06 0l-5.25-5.25a.75.75 0 010-1.06l5.25-5.25a.75.75 0 111.06 1.06L8.06 10l4.72 4.72a.75.75 0 010 1.06z" clipRule="evenodd" />
+                  </svg>
+                </button>
                 <Avatar t={active} big />
                 <div className="min-w-0">
-                  <div className="font-semibold">{threadTitle(active)}</div>
+                  <div className="font-semibold truncate">{threadTitle(active)}</div>
                   <div className="text-xs text-gray-400 mt-0.5 flex items-center gap-2 flex-wrap">
                     <StatusBadge s={active.status} />
-                    {active.telegram_username && <span>@{active.telegram_username}</span>}
-                    <span className="font-mono">chat {active.telegram_chat_id}</span>
+                    {active.telegram_username && <span className="truncate">@{active.telegram_username}</span>}
+                    <span className="font-mono hidden sm:inline">chat {active.telegram_chat_id}</span>
                   </div>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2 justify-end">
+              <div className="flex flex-wrap gap-2 sm:justify-end">
                 <button
                   onClick={() => setEventsModal(true)}
                   className="px-3 py-1 text-xs rounded-md border border-zinc-700 hover:bg-zinc-800 transition"
@@ -361,7 +378,7 @@ export default function Inbox() {
             </div>
 
             {/* messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2">
               {loadingMessages && messages.length === 0 ? (
                 <div className="text-sm text-gray-500 text-center py-6">Загрузка...</div>
               ) : messages.length === 0 ? (
@@ -375,7 +392,7 @@ export default function Inbox() {
             </div>
 
             {/* reply */}
-            <div className="p-3 border-t border-zinc-800">
+            <div className="p-2 sm:p-3 border-t border-zinc-800">
               <div className="flex items-end gap-2">
                 <textarea
                   value={reply}
@@ -389,16 +406,16 @@ export default function Inbox() {
                   placeholder={
                     inArchive                  ? "Архивный тред — сначала «Восстановить»"
                   : active.status === "blocked" ? "Заблокирован — отправка недоступна"
-                  : "Ваш ответ... (Enter — отправить, Shift+Enter — перенос)"
+                  : "Ваш ответ..."
                   }
                   disabled={sending || active.status === "blocked" || inArchive}
                   rows={2}
-                  className="flex-1 resize-none rounded-lg border border-zinc-700 bg-transparent px-3 py-2 text-sm outline-none focus:border-zinc-400 transition disabled:opacity-50"
+                  className="flex-1 min-w-0 resize-none rounded-lg border border-zinc-700 bg-transparent px-3 py-2 text-sm outline-none focus:border-zinc-400 transition disabled:opacity-50"
                 />
                 <button
                   onClick={send}
                   disabled={sending || !reply.trim() || active.status === "blocked" || inArchive}
-                  className="px-4 py-2 text-sm rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 transition text-white"
+                  className="shrink-0 px-3 sm:px-4 py-2 text-sm rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 transition text-white"
                 >
                   {sending ? "..." : "Отправить"}
                 </button>

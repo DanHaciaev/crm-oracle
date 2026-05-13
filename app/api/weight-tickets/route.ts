@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { query } from "@/lib/oracle";
 import { verifyToken } from "@/lib/auth";
@@ -22,10 +22,19 @@ async function requireAuth() {
   return token ? verifyToken(token) : null;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   if (!(await requireAuth())) {
     return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
   }
+
+  const sp   = req.nextUrl.searchParams;
+  const from = sp.get("from"); // YYYY-MM-DD, optional
+  const to   = sp.get("to");   // YYYY-MM-DD, optional
+
+  let dateClause = "";
+  const binds: string[] = [];
+  if (from) { binds.push(from); dateClause += ` AND t.TICKET_DATE >= TO_DATE(:${binds.length},'YYYY-MM-DD')`; }
+  if (to)   { binds.push(to);   dateClause += ` AND t.TICKET_DATE <  TO_DATE(:${binds.length},'YYYY-MM-DD')`; }
 
   const rows = await query<TicketRow>(`
     SELECT
@@ -42,8 +51,9 @@ export async function GET() {
     LEFT JOIN AGRO_CUSTOMERS  c  ON c.ID  = t.CUSTOMER_ID
     LEFT JOIN AGRO_WAREHOUSES w  ON w.ID  = t.WAREHOUSE_ID
     LEFT JOIN AGRO_SALES_DOCS sd ON sd.ID = t.SALES_DOC_ID
+    WHERE 1=1${dateClause}
     ORDER BY t.TICKET_DATE DESC, t.ID DESC
-  `);
+  `, binds);
 
   return NextResponse.json(rows.map((r) => ({
     id:               r.ID,

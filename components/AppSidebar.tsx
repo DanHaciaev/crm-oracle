@@ -20,11 +20,14 @@ export function AppSidebar() {
   const { user, logout } = useAuth()
 
   const links = [
-    { name: "Dashboard", href: "/dashboard", adminOnly: false },
-    { name: "Inbox", href: "/inbox", adminOnly: false },
-    { name: "Клиенты", href: "/customers", adminOnly: false },
-    { name: "Акты", href: "/acts", adminOnly: false },
-    { name: "Пользователи", href: "/users", adminOnly: true },
+    { name: "Dashboard",         href: "/dashboard",       adminOnly: false },
+    { name: "Inbox",             href: "/inbox",           adminOnly: false },
+    { name: "Клиенты",           href: "/customers",       adminOnly: false },
+    { name: "Продажи",           href: "/sales",           adminOnly: false },
+    { name: "Риск оттока",       href: "/churn",           adminOnly: false },
+    { name: "Товары",            href: "/items",           adminOnly: false },
+    { name: "Акты взвешивания",  href: "/weight-tickets",  adminOnly: false },
+    { name: "Пользователи",      href: "/users",           adminOnly: true },
   ].filter((l) => !l.adminOnly || user?.role === "admin")
 
   return (

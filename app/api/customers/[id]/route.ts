@@ -124,17 +124,8 @@ export async function GET(
   });
 }
 
-/**
- * DELETE /api/customers/[id]
- *   - Чистит CRM-связи: AGRO_CRM_APP_USERS.CUSTOMER_ID → NULL (status='pending'),
- *     AGRO_CRM_TG_BINDINGS — удаляются.
- *   - DELETE из AGRO_CUSTOMERS.
- *   - Если есть документы в AGRO (закупки/продажи/акты) с FK на этого клиента —
- *     Oracle вернёт ORA-02292; в этом случае возвращаем 409 с понятным сообщением.
- *
- * ?soft=1 — мягкое удаление: только ACTIVE='N', записи не трогаем. Безопасный
- * вариант для клиентов, у которых уже есть документы в AGRO.
- */
+interface CountRow { [key: string]: unknown; CNT: number }
+
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -155,38 +146,69 @@ export async function DELETE(
     return NextResponse.json({ error: "Клиент не найден" }, { status: 404 });
   }
 
-  const url  = new URL(request.url);
-  const soft = url.searchParams.get("soft") === "1";
+  const sp       = new URL(request.url).searchParams;
+  const soft     = sp.get("soft")    === "1";
+  const cascade  = sp.get("cascade") === "1";
 
+  // ── Мягкое удаление ──────────────────────────────────────────────────────
   if (soft) {
     await execute(`UPDATE AGRO_CUSTOMERS SET ACTIVE = 'N' WHERE ID = :1`, [customerId]);
-    return NextResponse.json({ success: true, deactivated: true });
+    return NextResponse.json({ success: true, mode: "deactivated" });
   }
 
-  // Hard delete: сначала вычищаем CRM-внутренние ссылки.
+  // ── Считаем зависимости ──────────────────────────────────────────────────
+  const [salesRow, wtRow] = await Promise.all([
+    query<CountRow>(`SELECT COUNT(*) CNT FROM AGRO_SALES_DOCS    WHERE CUSTOMER_ID = :1`, [customerId]),
+    query<CountRow>(`SELECT COUNT(*) CNT FROM AGRO_WEIGHT_TICKETS WHERE CUSTOMER_ID = :1`, [customerId]),
+  ]);
+  const salesCount = Number(salesRow[0]?.CNT ?? 0);
+  const wtCount    = Number(wtRow[0]?.CNT   ?? 0);
+  const hasDeps    = salesCount > 0 || wtCount > 0;
+
+  if (hasDeps && !cascade) {
+    return NextResponse.json({
+      error: "У клиента есть связанные документы.",
+      code:  "HAS_DEPENDENCIES",
+      counts: { sales: salesCount, weight_tickets: wtCount },
+    }, { status: 409 });
+  }
+
+  // ── Каскадное удаление всего ─────────────────────────────────────────────
+  if (hasDeps) {
+    // 1. Акты взвешивания
+    await execute(
+      `DELETE FROM AGRO_WEIGHT_TICKET_LINES
+         WHERE TICKET_ID IN (SELECT ID FROM AGRO_WEIGHT_TICKETS WHERE CUSTOMER_ID = :1)`,
+      [customerId]
+    );
+    await execute(`DELETE FROM AGRO_WEIGHT_TICKETS WHERE CUSTOMER_ID = :1`, [customerId]);
+
+    // 2. Экспортные декларации (нет ON DELETE CASCADE)
+    await execute(
+      `DELETE FROM AGRO_EXPORT_DECLS
+         WHERE SALES_DOC_ID IN (SELECT ID FROM AGRO_SALES_DOCS WHERE CUSTOMER_ID = :1)`,
+      [customerId]
+    );
+    // 3. Продажи (AGRO_SALES_LINES + AGRO_BATCH_ALLOCATIONS каскадятся автоматически)
+    await execute(`DELETE FROM AGRO_SALES_DOCS WHERE CUSTOMER_ID = :1`, [customerId]);
+  }
+
+  // 4. CRM-связи — всегда чистим
   await execute(
-    `UPDATE AGRO_CRM_APP_USERS
-        SET CUSTOMER_ID = NULL, STATUS = 'pending'
-      WHERE CUSTOMER_ID = :1`,
+    `DELETE FROM AGRO_CRM_CHAT_MESSAGES
+       WHERE APP_USER_ID IN (SELECT ID FROM AGRO_CRM_APP_USERS WHERE CUSTOMER_ID = :1)`,
     [customerId]
   );
   await execute(
-    `DELETE FROM AGRO_CRM_TG_BINDINGS WHERE CUSTOMER_ID = :1`,
+    `DELETE FROM AGRO_CRM_APP_USER_EVENTS
+       WHERE APP_USER_ID IN (SELECT ID FROM AGRO_CRM_APP_USERS WHERE CUSTOMER_ID = :1)`,
     [customerId]
   );
+  await execute(`DELETE FROM AGRO_CRM_TG_BINDINGS WHERE CUSTOMER_ID = :1`, [customerId]);
+  await execute(`DELETE FROM AGRO_CRM_APP_USERS  WHERE CUSTOMER_ID = :1`, [customerId]);
 
-  try {
-    await execute(`DELETE FROM AGRO_CUSTOMERS WHERE ID = :1`, [customerId]);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes("ORA-02292")) {
-      return NextResponse.json({
-        error: "Нельзя удалить — у клиента есть документы в AGRO (закупки, продажи, акты, партии). Используйте деактивацию.",
-        code:  "HAS_DEPENDENCIES",
-      }, { status: 409 });
-    }
-    throw err;
-  }
+  // 5. Сам клиент
+  await execute(`DELETE FROM AGRO_CUSTOMERS WHERE ID = :1`, [customerId]);
 
-  return NextResponse.json({ success: true, deactivated: false });
+  return NextResponse.json({ success: true, mode: "deleted" });
 }

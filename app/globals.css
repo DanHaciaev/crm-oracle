@@ -3,10 +3,8 @@
 @import "shadcn/tailwind.css";
 
 @theme {
-  --breakpoint-tabs: 360px;
-  --breakpoint-board: 800px;
-
-  --breakpoint-boards: 500px;
+  --breakpoint-acts: 850px;
+  --breakpoint-inbox: 1000px;
 }
 
 [data-dnd-draggable] {
