@@ -4,6 +4,7 @@ import { query } from "@/lib/oracle";
 import { verifyToken } from "@/lib/auth";
 
 interface TicketRow {
+  [key: string]: unknown;
   ID:               number;
   TICKET_NUMBER:    string;
   TICKET_DATE:      Date | string | null;

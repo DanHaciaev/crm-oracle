@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface AppUser {
   id:                number;
@@ -54,6 +55,8 @@ export default function CustomerDetail({ id }: { id: string }) {
   const [error, setError]         = useState<string | null>(null);
   const [newLink, setNewLink]     = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [deleting, setDeleting]   = useState(false);
+  const router                    = useRouter();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -97,6 +100,34 @@ export default function CustomerDetail({ id }: { id: string }) {
       () => { /* ok */ },
       () => alert("Не удалось скопировать")
     );
+  }
+
+  async function deleteCustomer(soft: boolean) {
+    if (!data) return;
+    const label = soft ? "деактивировать" : "удалить НАВСЕГДА";
+    if (!confirm(`${soft ? "Деактивировать" : "Удалить"} клиента «${data.name}»? Это действие ${soft ? "обратимо (можно вернуть через БД)" : "необратимо"}.`)) return;
+
+    setDeleting(true);
+    const url  = `/api/customers/${id}${soft ? "?soft=1" : ""}`;
+    const res  = await fetch(url, { method: "DELETE" });
+    const json = await res.json().catch(() => ({} as { error?: string; code?: string }));
+    setDeleting(false);
+
+    if (res.ok) {
+      router.push("/customers");
+      return;
+    }
+
+    // Hard-delete упал на FK — предложим soft
+    if (!soft && (json as { code?: string }).code === "HAS_DEPENDENCIES") {
+      const msg = (json as { error?: string }).error ?? "Удалить не получилось";
+      if (confirm(`${msg}\n\nДеактивировать вместо удаления?`)) {
+        deleteCustomer(true);
+      }
+      return;
+    }
+
+    alert((json as { error?: string }).error ?? `Не удалось ${label}`);
   }
 
   if (loading) return <div className="p-8 text-sm text-gray-400">Загрузка...</div>;
@@ -219,6 +250,33 @@ export default function CustomerDetail({ id }: { id: string }) {
             </div>
           </div>
         )}
+      </section>
+
+      {/* Danger zone */}
+      <section className="border border-red-500/30 rounded-xl p-5">
+        <h2 className="text-base font-semibold text-red-300 mb-1">Опасная зона</h2>
+        <p className="text-xs text-gray-400 mb-4">
+          Удаление сносит клиента из AGRO и чистит CRM-привязки. Если у клиента есть документы в AGRO
+          (закупки, продажи, акты, партии), удалить нельзя — будет предложено деактивировать (ACTIVE = N).
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => deleteCustomer(false)}
+            disabled={deleting}
+            className="px-4 py-2 text-sm rounded-lg border border-red-500/40 text-red-300 hover:bg-red-500/10 disabled:opacity-50 transition"
+          >
+            {deleting ? "Удаляем..." : "Удалить клиента"}
+          </button>
+          {data.active && (
+            <button
+              onClick={() => deleteCustomer(true)}
+              disabled={deleting}
+              className="px-4 py-2 text-sm rounded-lg border border-zinc-700 hover:bg-zinc-800 disabled:opacity-50 transition"
+            >
+              Деактивировать
+            </button>
+          )}
+        </div>
       </section>
     </div>
   );

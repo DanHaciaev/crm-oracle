@@ -2,11 +2,11 @@
 // Run with: npm run poller
 //
 // Commands:
-//   /start           — registers/touches AGRO_CRM_APP_USERS; if user already linked, greets.
-//   /start <token>   — links AGRO_CRM_APP_USERS to AGRO_CUSTOMERS via CRM_TG_BINDINGS.
-//   /help            — explain what bot does, how to get linked.
-//   /status          — show current link state.
-// Other messages    — touch LAST_SEEN; ignore (no reply) until Phase 3 chat.
+//   /start           — registers/touches AGRO_CRM_APP_USERS; greets in user's lang.
+//   /start <token>   — links AGRO_CRM_APP_USERS to AGRO_CUSTOMERS via AGRO_CRM_TG_BINDINGS.
+//   /help            — help (translated).
+//   /status          — current link state (translated).
+//   /language        — choose interface language (inline keyboard ru/ro/en).
 
 import fs   from "node:fs";
 import path from "node:path";
@@ -23,7 +23,8 @@ if (fs.existsSync(envPath)) {
 }
 
 import oracledb from "oracledb";
-import { Bot, type Context } from "grammy";
+import { Bot, InlineKeyboard, type Context } from "grammy";
+import { t, normalizeLang, type Lang } from "../lib/i18n";
 
 // --- oracledb (Thick mode) --------------------------------------------------
 const libDir = process.env.ORACLE_CLIENT_DIR;
@@ -61,15 +62,26 @@ async function logEvent(appUserId: number, eventType: string, payload?: string) 
   }
 }
 
-async function touchAppUser(ctx: Context): Promise<{
-  id: number;
-  status: string;
-  customerId: number | null;
-  customerName: string | null;
-} | null> {
+interface AppUserInfo {
+  id:            number;
+  status:        string;
+  customerId:    number | null;
+  customerName:  string | null;
+  lang:          Lang;
+}
+
+/**
+ * MERGE по chat_id + SELECT текущего состояния.
+ *
+ * Важный нюанс: LANGUAGE_CODE — ставится только при ПЕРВОМ insert (из
+ * Telegram language_code). На повторных встречах не перезаписываем, чтобы
+ * сохранить явный выбор пользователя через /language.
+ */
+async function touchAppUser(ctx: Context): Promise<AppUserInfo | null> {
   if (!ctx.chat || !ctx.from) return null;
-  const chatId = ctx.chat.id;
-  const u      = ctx.from;
+  const chatId      = ctx.chat.id;
+  const u           = ctx.from;
+  const initialLang = normalizeLang(u.language_code);
 
   await execute(
     `MERGE INTO AGRO_CRM_APP_USERS au
@@ -79,18 +91,18 @@ async function touchAppUser(ctx: Context): Promise<{
        UPDATE SET TELEGRAM_USERNAME   = src.UNAME,
                   TELEGRAM_FIRST_NAME = src.FNAME,
                   TELEGRAM_LAST_NAME  = src.LNAME,
-                  LANGUAGE_CODE       = src.LANG,
                   LAST_SEEN           = SYSTIMESTAMP
      WHEN NOT MATCHED THEN
        INSERT (TELEGRAM_CHAT_ID, TELEGRAM_USERNAME, TELEGRAM_FIRST_NAME, TELEGRAM_LAST_NAME, LANGUAGE_CODE)
        VALUES (src.CHAT_ID, src.UNAME, src.FNAME, src.LNAME, src.LANG)`,
-    [chatId, u.username ?? null, u.first_name ?? null, u.last_name ?? null, u.language_code ?? null]
+    [chatId, u.username ?? null, u.first_name ?? null, u.last_name ?? null, initialLang]
   );
 
   const rows = await query<{
-    ID: number; STATUS: string; CUSTOMER_ID: number | null; CUSTOMER_NAME: string | null;
+    ID: number; STATUS: string; CUSTOMER_ID: number | null;
+    CUSTOMER_NAME: string | null; LANGUAGE_CODE: string | null;
   }>(
-    `SELECT au.ID, au.STATUS, au.CUSTOMER_ID, c.NAME AS CUSTOMER_NAME
+    `SELECT au.ID, au.STATUS, au.CUSTOMER_ID, c.NAME AS CUSTOMER_NAME, au.LANGUAGE_CODE
        FROM AGRO_CRM_APP_USERS au
        LEFT JOIN AGRO_CUSTOMERS c ON c.ID = au.CUSTOMER_ID
       WHERE au.TELEGRAM_CHAT_ID = :1`,
@@ -102,7 +114,21 @@ async function touchAppUser(ctx: Context): Promise<{
     status:       rows[0].STATUS,
     customerId:   rows[0].CUSTOMER_ID,
     customerName: rows[0].CUSTOMER_NAME,
+    lang:         normalizeLang(rows[0].LANGUAGE_CODE),
   };
+}
+
+function languageKeyboard() {
+  return new InlineKeyboard()
+    .text("🇷🇺 Русский",  "lang:ru")
+    .text("🇷🇴 Română",   "lang:ro")
+    .text("🇬🇧 English",  "lang:en");
+}
+
+function escapeHtml(s: string) {
+  return s.replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c] ?? c));
 }
 
 // --- bot --------------------------------------------------------------------
@@ -118,45 +144,30 @@ bot.command("start", async (ctx) => {
   try {
     const inviteToken = (ctx.match ?? "").trim();
     const user        = await touchAppUser(ctx);
-    if (!user) { await ctx.reply("Что-то пошло не так."); return; }
+    if (!user) { await ctx.reply("Internal error."); return; }
+    const lang = user.lang;
 
-    // 1) Заблокирован — ничего не делаем кроме фиксации
     if (user.status === "blocked") {
-      await ctx.reply("Доступ заблокирован администратором.");
+      await ctx.reply(t(lang, "blocked"));
       return;
     }
 
-    // 2) /start без токена
+    // /start без токена — приветствие
     if (!inviteToken) {
       await logEvent(user.id, "start");
 
       if (user.status === "linked" && user.customerName) {
         await ctx.reply(
-          `👋 С возвращением!\nВы подключены как клиент: <b>${escapeHtml(user.customerName)}</b>.\n\nКоманды:\n/status — текущий статус\n/help — справка`,
+          t(lang, "welcome_linked", { name: escapeHtml(user.customerName) }),
           { parse_mode: "HTML" }
         );
       } else {
-        await ctx.reply(
-          [
-            "👋 Здравствуйте!",
-            "",
-            "Это бот компании <b>AGRO</b>.",
-            "Через меня вы будете получать акты взвешивания и общаться с менеджером.",
-            "",
-            "Чтобы подключиться:",
-            "1. Напишите своему менеджеру",
-            "2. Попросите invite-ссылку",
-            "3. Откройте её — и вы будете привязаны автоматически",
-            "",
-            "/help — подробнее",
-          ].join("\n"),
-          { parse_mode: "HTML" }
-        );
+        await ctx.reply(t(lang, "welcome_pending"), { parse_mode: "HTML" });
       }
       return;
     }
 
-    // 3) /start <token>
+    // /start <token>
     await logEvent(user.id, "start_with_token", inviteToken);
 
     const bindings = await query<{
@@ -167,17 +178,17 @@ bot.command("start", async (ctx) => {
       [inviteToken]
     );
     if (bindings.length === 0) {
-      await ctx.reply("⚠️ Ссылка недействительна.");
+      await ctx.reply(t(lang, "invite_invalid"));
       return;
     }
     const b = bindings[0];
 
-    if (b.STATUS === "bound")   { await ctx.reply("⚠️ Эта ссылка уже использована.");  return; }
-    if (b.STATUS === "revoked") { await ctx.reply("⚠️ Эта ссылка была отозвана.");     return; }
-    if (b.STATUS === "expired") { await ctx.reply("⚠️ Срок действия ссылки истёк.");   return; }
+    if (b.STATUS === "bound")   { await ctx.reply(t(lang, "invite_used"));    return; }
+    if (b.STATUS === "revoked") { await ctx.reply(t(lang, "invite_revoked")); return; }
+    if (b.STATUS === "expired") { await ctx.reply(t(lang, "invite_expired")); return; }
     if (b.EXPIRES_AT && new Date(b.EXPIRES_AT).getTime() < Date.now()) {
       await execute(`UPDATE AGRO_CRM_TG_BINDINGS SET STATUS = 'expired' WHERE ID = :1`, [b.ID]);
-      await ctx.reply("⚠️ Срок действия ссылки истёк. Попросите менеджера новую.");
+      await ctx.reply(t(lang, "invite_expired"));
       return;
     }
 
@@ -202,58 +213,77 @@ bot.command("start", async (ctx) => {
     await logEvent(user.id, "linked", `customer_id=${b.CUSTOMER_ID}`);
 
     await ctx.reply(
-      `✅ Привязка успешна!\nВы подключены как клиент: <b>${escapeHtml(custName)}</b>.\n\nТеперь вы будете получать уведомления.`,
+      t(lang, "link_success", { name: escapeHtml(custName) }),
       { parse_mode: "HTML" }
     );
   } catch (err) {
     console.error("[tg-poller] /start error:", err);
-    await ctx.reply("Внутренняя ошибка. Попробуйте позже.");
+    await ctx.reply("Internal error / Внутренняя ошибка. Try /start later.");
   }
 });
 
 bot.command("help", async (ctx) => {
-  await touchAppUser(ctx);
-  await ctx.reply(
-    [
-      "ℹ️ <b>Справка</b>",
-      "",
-      "Этот бот — канал связи с компанией AGRO для её клиентов.",
-      "Через бота вы получаете акты взвешивания, отслеживаете отгрузки и общаетесь с менеджером.",
-      "",
-      "<b>Чтобы подключиться:</b>",
-      "1. Свяжитесь со своим менеджером",
-      "2. Попросите invite-ссылку",
-      "3. Откройте её — бот привяжет вас автоматически",
-      "",
-      "<b>Команды:</b>",
-      "/start — начать / приветствие",
-      "/status — мой текущий статус",
-      "/help — эта справка",
-    ].join("\n"),
-    { parse_mode: "HTML" }
-  );
+  const user = await touchAppUser(ctx);
+  const lang = user?.lang ?? normalizeLang(ctx.from?.language_code);
+  await ctx.reply(t(lang, "help"), { parse_mode: "HTML" });
 });
 
 bot.command("status", async (ctx) => {
   try {
     const user = await touchAppUser(ctx);
-    if (!user) { await ctx.reply("Что-то пошло не так."); return; }
+    if (!user) { await ctx.reply("Internal error."); return; }
+    const lang = user.lang;
 
     if (user.status === "blocked") {
-      await ctx.reply("🚫 Ваш доступ заблокирован администратором.");
+      await ctx.reply(t(lang, "status_blocked"));
       return;
     }
     if (user.status === "linked" && user.customerName) {
       await ctx.reply(
-        `✅ Вы привязаны.\nКлиент: <b>${escapeHtml(user.customerName)}</b>.`,
+        t(lang, "status_linked", { name: escapeHtml(user.customerName) }),
         { parse_mode: "HTML" }
       );
       return;
     }
-    await ctx.reply("⏳ Вы пока не привязаны к клиенту. Попросите менеджера invite-ссылку.");
+    await ctx.reply(t(lang, "status_pending"));
   } catch (err) {
     console.error("[tg-poller] /status error:", err);
-    await ctx.reply("Внутренняя ошибка.");
+    await ctx.reply(t("ru", "internal_error"));
+  }
+});
+
+bot.command("language", async (ctx) => {
+  const user = await touchAppUser(ctx);
+  const lang = user?.lang ?? normalizeLang(ctx.from?.language_code);
+  await ctx.reply(t(lang, "choose_language"), { reply_markup: languageKeyboard() });
+});
+
+bot.on("callback_query:data", async (ctx) => {
+  const data = ctx.callbackQuery.data ?? "";
+  if (!data.startsWith("lang:")) {
+    await ctx.answerCallbackQuery();
+    return;
+  }
+  const newLang = normalizeLang(data.slice(5));
+
+  if (!ctx.chat) {
+    await ctx.answerCallbackQuery();
+    return;
+  }
+
+  try {
+    await execute(
+      `UPDATE AGRO_CRM_APP_USERS SET LANGUAGE_CODE = :1 WHERE TELEGRAM_CHAT_ID = :2`,
+      [newLang, ctx.chat.id]
+    );
+    await ctx.answerCallbackQuery({ text: t(newLang, "language_set") });
+    // Заменяем текст исходного сообщения на подтверждение, чтоб не дублить.
+    try {
+      await ctx.editMessageText(t(newLang, "language_set"));
+    } catch { /* сообщение могло уже устареть — игнорируем */ }
+  } catch (err) {
+    console.error("[tg-poller] language change failed:", err);
+    await ctx.answerCallbackQuery({ text: "Error", show_alert: true });
   }
 });
 
@@ -262,11 +292,10 @@ bot.on("message", async (ctx) => {
     const user = await touchAppUser(ctx);
     if (!user) return;
 
-    // Команды /start /help /status уже обработаны выше.
+    // Команды /start /help /status /language уже обработаны выше.
     const text = ctx.message?.text;
     if (text && text.startsWith("/")) return;
 
-    // Заблокированных не сохраняем — просто молчим.
     if (user.status === "blocked") return;
 
     let body: string | null = text ?? ctx.message?.caption ?? null;
@@ -293,7 +322,7 @@ bot.on("message", async (ctx) => {
       fileType = "sticker";
     }
 
-    if (!body && !fileId) return; // нечего сохранять
+    if (!body && !fileId) return;
 
     await execute(
       `INSERT INTO AGRO_CRM_CHAT_MESSAGES
@@ -318,12 +347,6 @@ bot.on("message", async (ctx) => {
 bot.catch((err) => {
   console.error("[tg-poller] bot error:", err);
 });
-
-function escapeHtml(s: string) {
-  return s.replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  }[c] ?? c));
-}
 
 console.log("[tg-poller] starting long polling...");
 bot.start({

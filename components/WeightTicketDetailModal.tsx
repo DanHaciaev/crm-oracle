@@ -67,10 +67,31 @@ export default function WeightTicketDetailModal({ id, onClose }: { id: number; o
   }, [onClose]);
 
   const totalNet = data?.lines.reduce((s, l) => s + l.net_kg, 0) ?? 0;
+  const [sending, setSending] = useState(false);
+  const [sendResult, setSendResult] = useState<string | null>(null);
 
   function handlePrint() {
     if (!data) return;
     window.open(`/acts/${data.id}/print`, "_blank", "noopener,noreferrer");
+  }
+
+  async function handleSendTelegram() {
+    if (!data) return;
+    setSending(true);
+    setSendResult(null);
+    try {
+      const res = await fetch(`/api/weight-tickets/${data.id}/send-telegram`, { method: "POST" });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSendResult(json.error ?? "Ошибка отправки");
+      } else {
+        setSendResult("✅ Отправлено в Telegram");
+      }
+    } catch {
+      setSendResult("❌ Ошибка сети");
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -152,12 +173,22 @@ export default function WeightTicketDetailModal({ id, onClose }: { id: number; o
                   Закрыть / Închide
                 </button>
                 <button
+                  onClick={handleSendTelegram}
+                  disabled={sending}
+                  className="px-4 py-2 text-sm rounded-lg border border-sky-600 text-sky-400 hover:bg-sky-950/50 transition disabled:opacity-50"
+                >
+                  {sending ? "Отправка..." : "Отправить в Telegram"}
+                </button>
+                <button
                   onClick={handlePrint}
                   className="px-4 py-2 text-sm rounded-lg border border-zinc-300 bg-zinc-100 text-black hover:bg-white transition"
                 >
                   Печать
                 </button>
               </div>
+              {sendResult && (
+                <div className="text-xs text-center mt-2 text-zinc-400">{sendResult}</div>
+              )}
             </>
           )}
         </div>

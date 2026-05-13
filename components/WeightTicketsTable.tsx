@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -78,6 +77,25 @@ export default function WeightTicketsTable() {
     return tickets.filter((t) => t.status === filter);
   }, [tickets, filter]);
 
+  const [sendingId, setSendingId] = useState<number | null>(null);
+
+  async function sendToTelegram(ticketId: number) {
+    setSendingId(ticketId);
+    try {
+      const res = await fetch(`/api/weight-tickets/${ticketId}/send-telegram`, { method: "POST" });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(json.error ?? "Ошибка отправки");
+      } else {
+        alert("✅ Акт отправлен клиенту в Telegram");
+      }
+    } catch {
+      alert("❌ Ошибка сети");
+    } finally {
+      setSendingId(null);
+    }
+  }
+
   return (
     <div className="p-8">
       {/* Header + filter buttons */}
@@ -134,12 +152,22 @@ export default function WeightTicketsTable() {
                   <TableCell><StatusBadge status={t.status} /></TableCell>
                   <TableCell className="text-center font-mono">{fmtNumber(t.net_kg)}</TableCell>
                   <TableCell className="text-center">
-                    <button
-                      onClick={() => setOpenId(t.id)}
-                      className="px-3 py-1 text-xs rounded-md border border-zinc-700 hover:bg-zinc-300 transition"
-                    >
-                      Открыть
-                    </button>
+                    <div className="flex items-center justify-center gap-1">
+                      <button
+                        onClick={() => setOpenId(t.id)}
+                        className="px-3 py-1 text-xs rounded-md border border-zinc-700 hover:bg-zinc-300 transition"
+                      >
+                        Открыть
+                      </button>
+                      <button
+                        onClick={() => sendToTelegram(t.id)}
+                        disabled={sendingId === t.id}
+                        className="px-3 py-1 text-xs rounded-md border border-sky-700 text-sky-600 hover:bg-sky-100 transition disabled:opacity-40"
+                        title="Отправить акт в Telegram клиенту"
+                      >
+                        {sendingId === t.id ? "..." : "TG"}
+                      </button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

@@ -48,8 +48,16 @@ function splitStatements(sql) {
     const line = rawLine.trim();
     const upper = line.toUpperCase();
 
-    // skip empty comment-only lines
+    // skip empty / comment-only lines
     if (!line || line.startsWith("--")) {
+      continue;
+    }
+
+    // Вне PL/SQL одиночный `/` — игнорируем целиком (SQL*Plus repl-семантика
+    // нам не нужна). ВАЖНО: проверка ДО buffer.push — иначе `/` влипнет в
+    // буфер и приедет в Oracle как мусорный префикс следующего стейтмента
+    // (получим ORA-00900).
+    if (!inPlsql && line === "/") {
       continue;
     }
 
