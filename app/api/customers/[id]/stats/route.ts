@@ -33,11 +33,11 @@ export async function GET(
   // ── 1. Общие KPI ──────────────────────────────────────────────────────────
   const totalRows = await query<TotalRow>(`
     SELECT
-      NVL(SUM(TOTAL_AMOUNT), 0)  AS TOTAL_REV,
-      NVL(SUM(TOTAL_NET_KG), 0)  AS TOTAL_KG,
-      COUNT(*)                   AS ORDER_COUNT,
-      MAX(DOC_DATE)              AS LAST_DATE,
-      MIN(DOC_DATE)              AS FIRST_DATE
+      NVL(SUM(NVL(TOTAL_AMOUNT_MDL, TOTAL_AMOUNT)), 0)  AS TOTAL_REV,
+      NVL(SUM(TOTAL_NET_KG), 0)                         AS TOTAL_KG,
+      COUNT(*)                                           AS ORDER_COUNT,
+      MAX(DOC_DATE)                                      AS LAST_DATE,
+      MIN(DOC_DATE)                                      AS FIRST_DATE
     FROM AGRO_SALES_DOCS
     WHERE CUSTOMER_ID = :1
       AND STATUS NOT IN ('draft','cancelled')
@@ -64,7 +64,7 @@ export async function GET(
   // ── 3. Помесячная выручка (последние 18 месяцев) ──────────────────────────
   const monthRows = await query<MonthRow>(`
     SELECT TO_CHAR(TRUNC(DOC_DATE,'MM'),'YYYY-MM') MON,
-           NVL(SUM(TOTAL_AMOUNT),0) REV,
+           NVL(SUM(NVL(TOTAL_AMOUNT_MDL, TOTAL_AMOUNT)), 0) REV,
            COUNT(*) ORD
     FROM AGRO_SALES_DOCS
     WHERE CUSTOMER_ID = :1
@@ -77,10 +77,10 @@ export async function GET(
   // ── 4. Риск оттока (сравниваем текущие 30 дней vs предыдущие 30 дней) ─────
   const churnRows = await query<{ [key: string]: unknown; CUR: number; PRV: number }>(`
     SELECT
-      NVL((SELECT SUM(TOTAL_AMOUNT) FROM AGRO_SALES_DOCS
+      NVL((SELECT SUM(NVL(TOTAL_AMOUNT_MDL, TOTAL_AMOUNT)) FROM AGRO_SALES_DOCS
            WHERE CUSTOMER_ID = :1 AND STATUS NOT IN ('draft','cancelled')
              AND DOC_DATE >= SYSDATE - 30), 0) AS CUR,
-      NVL((SELECT SUM(TOTAL_AMOUNT) FROM AGRO_SALES_DOCS
+      NVL((SELECT SUM(NVL(TOTAL_AMOUNT_MDL, TOTAL_AMOUNT)) FROM AGRO_SALES_DOCS
            WHERE CUSTOMER_ID = :1 AND STATUS NOT IN ('draft','cancelled')
              AND DOC_DATE >= SYSDATE - 60 AND DOC_DATE < SYSDATE - 30), 0) AS PRV
     FROM DUAL

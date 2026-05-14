@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
     FROM AGRO_CUSTOMERS c
     JOIN (
       SELECT CUSTOMER_ID,
-             SUM(TOTAL_AMOUNT) A,
+             SUM(NVL(TOTAL_AMOUNT_MDL, TOTAL_AMOUNT)) A,
              MAX(DOC_DATE) LAST_DATE
       FROM AGRO_SALES_DOCS
       WHERE DOC_DATE >= TO_DATE(:1,'YYYY-MM-DD')
@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
       GROUP BY CUSTOMER_ID
     ) prv ON c.ID = prv.CUSTOMER_ID
     LEFT JOIN (
-      SELECT CUSTOMER_ID, SUM(TOTAL_AMOUNT) A
+      SELECT CUSTOMER_ID, SUM(NVL(TOTAL_AMOUNT_MDL, TOTAL_AMOUNT)) A
       FROM AGRO_SALES_DOCS
       WHERE DOC_DATE >= TO_DATE(:3,'YYYY-MM-DD')
         AND DOC_DATE <  TO_DATE(:4,'YYYY-MM-DD')
