@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
   try {
     // ── 1. KPI current ──────────────────────────────────────────────────────
     const kpiR = await conn.execute<Row>(`
-      SELECT NVL(SUM(TOTAL_AMOUNT),0) R, COUNT(*) O, COUNT(DISTINCT CUSTOMER_ID) C
+      SELECT NVL(SUM(NVL(TOTAL_AMOUNT_MDL,TOTAL_AMOUNT)),0) R, COUNT(*) O, COUNT(DISTINCT CUSTOMER_ID) C
       FROM AGRO_SALES_DOCS
       WHERE DOC_DATE >= TO_DATE(:1,'YYYY-MM-DD')
         AND DOC_DATE <  TO_DATE(:2,'YYYY-MM-DD')
@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
 
     // ── 2. KPI previous period ───────────────────────────────────────────────
     const kpiPR = await conn.execute<Row>(`
-      SELECT NVL(SUM(TOTAL_AMOUNT),0) R, COUNT(*) O
+      SELECT NVL(SUM(NVL(TOTAL_AMOUNT_MDL,TOTAL_AMOUNT)),0) R, COUNT(*) O
       FROM AGRO_SALES_DOCS
       WHERE DOC_DATE >= TO_DATE(:1,'YYYY-MM-DD')
         AND DOC_DATE <  TO_DATE(:2,'YYYY-MM-DD')
@@ -100,7 +100,7 @@ export async function GET(req: NextRequest) {
     // ── 4. Revenue trend ─────────────────────────────────────────────────────
     const revR = await conn.execute<Row>(`
       SELECT TO_CHAR(GD,'YYYY-MM-DD') D, REV, ORD FROM (
-        SELECT ${gb} GD, NVL(SUM(TOTAL_AMOUNT),0) REV, COUNT(*) ORD
+        SELECT ${gb} GD, NVL(SUM(NVL(TOTAL_AMOUNT_MDL,TOTAL_AMOUNT)),0) REV, COUNT(*) ORD
         FROM AGRO_SALES_DOCS
         WHERE DOC_DATE >= TO_DATE(:1,'YYYY-MM-DD')
           AND DOC_DATE <  TO_DATE(:2,'YYYY-MM-DD')
@@ -113,7 +113,12 @@ export async function GET(req: NextRequest) {
     // ── 5. Top customers ─────────────────────────────────────────────────────
     const custR = await conn.execute<Row>(`
       SELECT * FROM (
-        SELECT c.NAME NM, NVL(SUM(sd.TOTAL_AMOUNT),0) REV, COUNT(*) ORD
+        SELECT c.NAME NM,
+               NVL(SUM(NVL(sd.TOTAL_AMOUNT_MDL,sd.TOTAL_AMOUNT)),0) REV,
+               CASE WHEN COUNT(DISTINCT NVL(sd.CURRENCY_CODE,'MDL')) = 1
+                    THEN SUM(sd.TOTAL_AMOUNT) END REV_ORIG,
+               MAX(NVL(sd.CURRENCY_CODE,'MDL')) KEEP (DENSE_RANK LAST ORDER BY sd.DOC_DATE) CUR,
+               COUNT(*) ORD
         FROM AGRO_SALES_DOCS sd
         JOIN AGRO_CUSTOMERS c ON sd.CUSTOMER_ID = c.ID
         WHERE sd.DOC_DATE >= TO_DATE(:1,'YYYY-MM-DD')
@@ -128,7 +133,7 @@ export async function GET(req: NextRequest) {
     // ── 6. Top items ─────────────────────────────────────────────────────────
     const itemsR = await conn.execute<Row>(`
       SELECT * FROM (
-        SELECT i.NAME_RU NM, NVL(SUM(sl.AMOUNT),0) REV, NVL(SUM(sl.NET_WEIGHT_KG),0) WGT
+        SELECT i.NAME_RU NM, NVL(SUM(NVL(sl.AMOUNT_MDL,sl.AMOUNT)),0) REV, NVL(SUM(sl.NET_WEIGHT_KG),0) WGT
         FROM AGRO_SALES_LINES sl
         JOIN AGRO_ITEMS i ON sl.ITEM_ID = i.ID
         JOIN AGRO_SALES_DOCS sd ON sl.SALES_DOC_ID = sd.ID
@@ -160,7 +165,7 @@ export async function GET(req: NextRequest) {
           ROUND((NVL(cur.A,0)/prv.A - 1)*100, 1) AS PC
         FROM AGRO_CUSTOMERS c
         JOIN (
-          SELECT CUSTOMER_ID, SUM(TOTAL_AMOUNT) A
+          SELECT CUSTOMER_ID, SUM(NVL(TOTAL_AMOUNT_MDL,TOTAL_AMOUNT)) A
           FROM AGRO_SALES_DOCS
           WHERE DOC_DATE >= TO_DATE(:1,'YYYY-MM-DD')
             AND DOC_DATE <  TO_DATE(:2,'YYYY-MM-DD')
@@ -168,7 +173,7 @@ export async function GET(req: NextRequest) {
           GROUP BY CUSTOMER_ID
         ) prv ON c.ID = prv.CUSTOMER_ID
         LEFT JOIN (
-          SELECT CUSTOMER_ID, SUM(TOTAL_AMOUNT) A
+          SELECT CUSTOMER_ID, SUM(NVL(TOTAL_AMOUNT_MDL,TOTAL_AMOUNT)) A
           FROM AGRO_SALES_DOCS
           WHERE DOC_DATE >= TO_DATE(:3,'YYYY-MM-DD')
             AND DOC_DATE <  TO_DATE(:4,'YYYY-MM-DD')
@@ -184,7 +189,11 @@ export async function GET(req: NextRequest) {
     const recentR = await conn.execute<Row>(`
       SELECT * FROM (
         SELECT sd.DOC_NUMBER DN, TO_CHAR(sd.DOC_DATE,'DD.MM.YYYY') DD,
-          c.NAME CN, NVL(sd.TOTAL_AMOUNT,0) AMT, NVL(sd.TOTAL_NET_KG,0) WGT, sd.STATUS ST
+          c.NAME CN,
+          NVL(NVL(sd.TOTAL_AMOUNT_MDL,sd.TOTAL_AMOUNT),0) AMT,
+          NVL(sd.TOTAL_AMOUNT,0)      AMT_ORIG,
+          NVL(sd.CURRENCY_CODE,'MDL') CUR,
+          NVL(sd.TOTAL_NET_KG,0) WGT, sd.STATUS ST
         FROM AGRO_SALES_DOCS sd
         JOIN AGRO_CUSTOMERS c ON sd.CUSTOMER_ID = c.ID
         WHERE 1=1
@@ -212,7 +221,11 @@ export async function GET(req: NextRequest) {
         orders:  n(r.ORD),
       })),
       top_customers: (custR.rows ?? []).map(r => ({
-        name: String(r.NM ?? ""), revenue: n(r.REV), orders: n(r.ORD),
+        name:         String(r.NM ?? ""),
+        revenue:      n(r.REV),
+        revenue_orig: r.REV_ORIG != null ? n(r.REV_ORIG) : null,
+        currency:     String(r.CUR ?? "MDL"),
+        orders:       n(r.ORD),
       })),
       top_items: (itemsR.rows ?? []).map(r => ({
         name: String(r.NM ?? ""), revenue: n(r.REV), weight_kg: n(r.WGT),
@@ -228,6 +241,8 @@ export async function GET(req: NextRequest) {
         doc_date:      String(r.DD ?? ""),
         customer_name: String(r.CN ?? ""),
         amount:        n(r.AMT),
+        amount_orig:   n(r.AMT_ORIG),
+        currency:      String(r.CUR ?? "MDL"),
         weight_kg:     n(r.WGT),
         status:        String(r.ST ?? ""),
       })),

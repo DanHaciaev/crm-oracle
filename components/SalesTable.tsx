@@ -235,13 +235,13 @@ export default function SalesTable({ customerId, compact = false }: Props) {
             ) : filtered.length === 0 ? (
               <TableRow><TableCell colSpan={customerId ? 7 : 8} className="text-center text-gray-400 py-8">Документов не найдено</TableCell></TableRow>
             ) : filtered.map((d) => (
-              <TableRow key={d.id} className="hover:bg-zinc-900/40 transition-colors">
+              <TableRow key={d.id} className="hover:bg-zinc-200 transition-colors">
                 <TableCell className="font-mono text-sm">{d.doc_number}</TableCell>
                 <TableCell className="tabular-nums">{fmtDate(d.doc_date)}</TableCell>
                 {!customerId && (
                   <TableCell>
                     {d.customer_id
-                      ? <Link href={`/customers/${d.customer_id}`} className="hover:text-white transition underline underline-offset-2 decoration-zinc-700">{d.customer_name}</Link>
+                      ? <Link href={`/customers/${d.customer_id}`} className="transition underline underline-offset-2 decoration-zinc-700">{d.customer_name}</Link>
                       : d.customer_name || "—"}
                   </TableCell>
                 )}

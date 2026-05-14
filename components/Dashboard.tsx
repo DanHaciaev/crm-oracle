@@ -31,11 +31,11 @@ interface Kpi {
 interface Stats {
   kpi: Kpi;
   revenue_by_day: { date: string; revenue: number; orders: number }[];
-  top_customers: { name: string; revenue: number; orders: number }[];
+  top_customers: { name: string; revenue: number; revenue_orig: number | null; currency: string; orders: number }[];
   top_items: { name: string; revenue: number; weight_kg: number }[];
   order_statuses: { status: string; count: number }[];
   churn_risk: { name: string; curr: number; prev: number; pct: number }[];
-  recent_orders: { doc_number: string; doc_date: string; customer_name: string; amount: number; weight_kg: number; status: string }[];
+  recent_orders: { doc_number: string; doc_date: string; customer_name: string; amount: number; amount_orig: number; currency: string; weight_kg: number; status: string }[];
 }
 
 // ─────────────────────────────────────────────
@@ -130,7 +130,7 @@ function RevenueTrendChart({ data }: { data: Stats["revenue_by_day"] }) {
         <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
         <XAxis dataKey="date" tick={{ fill: "#71717a", fontSize: 11 }} tickLine={false} />
         <YAxis tickFormatter={fmtNum} tick={{ fill: "#71717a", fontSize: 11 }} width={70} tickLine={false} axisLine={false} />
-        <Tooltip {...ttStyle} formatter={(v: unknown) => [fmtNum(Number(v ?? 0)), "Выручка"]} />
+        <Tooltip {...ttStyle} formatter={(v: unknown) => [`${fmtNum(Number(v ?? 0))} MDL`, "Выручка"]} />
         <Bar dataKey="revenue" fill="#10b981" radius={[3, 3, 0, 0]} maxBarSize={40} />
       </BarChart>
     </ResponsiveContainer>
@@ -150,7 +150,27 @@ function TopCustomersChart({ data }: { data: Stats["top_customers"] }) {
           tickFormatter={(v: string) => v.length > 18 ? v.slice(0, 18) + "…" : v}
           tick={{ fill: "#a1a1aa", fontSize: 11 }} tickLine={false} axisLine={false}
         />
-        <Tooltip {...ttStyle} formatter={(v: unknown) => [fmtNum(Number(v ?? 0)), "Выручка"]} />
+        <Tooltip
+          {...ttStyle}
+          content={({ active, payload }) => {
+            if (!active || !payload?.length) return null;
+            const d = payload[0].payload as Stats["top_customers"][0];
+            return (
+              <div style={ttStyle.contentStyle} className="px-3 py-2 space-y-0.5">
+                <div style={ttStyle.labelStyle} className="font-medium mb-1">{d.name}</div>
+                {d.revenue_orig != null && d.currency !== "MDL" ? (
+                  <>
+                    <div style={ttStyle.itemStyle}>{fmtNum(d.revenue_orig)} {d.currency}</div>
+                    <div style={{ color: "#71717a" }}>≈ {fmtNum(d.revenue)} MDL</div>
+                  </>
+                ) : (
+                  <div style={ttStyle.itemStyle}>{fmtNum(d.revenue)} MDL</div>
+                )}
+                <div style={{ color: "#71717a" }}>{d.orders} заказов</div>
+              </div>
+            );
+          }}
+        />
         <Bar dataKey="revenue" radius={[0, 3, 3, 0]} maxBarSize={20}>
           {items.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
         </Bar>
@@ -227,8 +247,8 @@ function ChurnRiskTable({ data }: { data: Stats["churn_risk"] }) {
         <thead>
           <tr className="text-left text-zinc-100 text-xs border-b border-zinc-800">
             <th className="pb-2 font-medium">Клиент</th>
-            <th className="pb-2 font-medium text-right">Пред. период</th>
-            <th className="pb-2 font-medium text-right">Текущий период</th>
+            <th className="pb-2 font-medium text-right">Пред. период, MDL</th>
+            <th className="pb-2 font-medium text-right">Тек. период, MDL</th>
             <th className="pb-2 font-medium text-right">Изменение</th>
           </tr>
         </thead>
@@ -270,7 +290,16 @@ function RecentOrdersTable({ data }: { data: Stats["recent_orders"] }) {
               <td className="py-2.5 pr-4 font-mono text-zinc-300 text-xs">{r.doc_number}</td>
               <td className="py-2.5 pr-4 text-zinc-400 text-xs whitespace-nowrap">{r.doc_date}</td>
               <td className="py-2.5 pr-4 text-zinc-200">{r.customer_name}</td>
-              <td className="py-2.5 pr-4 font-mono text-zinc-300">{fmtNum(r.amount)}</td>
+              <td className="py-2.5 pr-4 font-mono text-zinc-300 text-right">
+                {r.currency !== "MDL" ? (
+                  <>
+                    <div>{fmtNum(r.amount_orig)} {r.currency}</div>
+                    <div className="text-xs text-zinc-500">≈ {fmtNum(r.amount)} MDL</div>
+                  </>
+                ) : (
+                  <div>{fmtNum(r.amount)} MDL</div>
+                )}
+              </td>
               <td className="py-2.5 pr-4 font-mono text-zinc-400">{fmtKg(r.weight_kg)}</td>
               <td className="py-2.5">
                 <span
@@ -463,6 +492,7 @@ export default function Dashboard() {
         <KpiCard
           label="Выручка"
           value={kpi ? fmtNum(kpi.revenue) : "—"}
+          sub="MDL"
           curr={kpi?.revenue}
           prev={kpi?.revenue_prev}
           accent="text-emerald-400"
