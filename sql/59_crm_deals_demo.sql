@@ -1,0 +1,26 @@
+-- 59_crm_deals_demo.sql
+-- Demo deals for pipeline testing
+
+DECLARE
+  v_cid NUMBER;
+BEGIN
+  SELECT ID INTO v_cid FROM AGRO_CUSTOMERS WHERE CODE = 'CUST-20260514105157';
+
+  INSERT INTO AGRO_CRM_DEALS (TITLE, CUSTOMER_ID, STAGE, AMOUNT, PROBABILITY, ASSIGNED_TO)
+  VALUES ('Поставка яблок — июнь', v_cid, 'lead', 15000, 10, 'Данила');
+
+  INSERT INTO AGRO_CRM_DEALS (TITLE, CUSTOMER_ID, STAGE, AMOUNT, PROBABILITY, ASSIGNED_TO)
+  VALUES ('Контракт на сезон 2026', v_cid, 'qualified', 85000, 25, 'Данила');
+
+  INSERT INTO AGRO_CRM_DEALS (TITLE, CUSTOMER_ID, STAGE, AMOUNT, PROBABILITY, EXPECTED_DATE, ASSIGNED_TO)
+  VALUES ('Экспорт — Румыния Q3', v_cid, 'proposal', 120000, 50, SYSDATE + 30, 'Данила');
+
+  INSERT INTO AGRO_CRM_DEALS (TITLE, CUSTOMER_ID, STAGE, AMOUNT, PROBABILITY, EXPECTED_DATE, ASSIGNED_TO)
+  VALUES ('Оптовая партия клубники', v_cid, 'negotiation', 45000, 75, SYSDATE + 14, 'Данила');
+
+  INSERT INTO AGRO_CRM_DEALS (TITLE, CUSTOMER_ID, STAGE, AMOUNT, PROBABILITY, ASSIGNED_TO)
+  VALUES ('Прямой контракт — томаты', v_cid, 'won', 62000, 100, 'Данила');
+
+  COMMIT;
+END;
+/

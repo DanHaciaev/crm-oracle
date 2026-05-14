@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -167,7 +168,7 @@ export default function SalesTable({ customerId, compact = false }: Props) {
 
         {/* Type filter */}
         <select value={saleType} onChange={(e) => setType(e.target.value)}
-          className="border border-zinc-700 bg-zinc-900 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-zinc-400 transition">
+          className="border border-zinc-700 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-zinc-400 transition">
           <option value="all">Все типы</option>
           <option value="domestic">Внутренние</option>
           <option value="export">Экспорт</option>

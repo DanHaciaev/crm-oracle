@@ -219,7 +219,7 @@ export default function CustomersTable() {
                     <div className="flex items-center justify-end gap-1">
                       <Link
                         href={`/customers/${c.id}`}
-                        className="inline-block px-3 py-1 text-xs rounded-md border border-zinc-700 hover:bg-zinc-800 transition"
+                        className="inline-block px-3 py-1 text-xs rounded-md border border-zinc-700 hover:bg-zinc-300 transition"
                       >
                         Открыть
                       </Link>
