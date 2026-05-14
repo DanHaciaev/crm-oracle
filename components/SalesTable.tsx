@@ -9,16 +9,18 @@ import {
 } from "@/components/ui/table";
 
 export interface SaleDoc {
-  id:             number;
-  doc_number:     string;
-  doc_date:       string | null;
-  customer_name:  string;
-  customer_id:    number | null;
-  sale_type:      string;
-  status:         string;
-  total_amount:   number;
-  total_net_kg:   number;
-  invoice_number: string;
+  id:               number;
+  doc_number:       string;
+  doc_date:         string | null;
+  customer_name:    string;
+  customer_id:      number | null;
+  sale_type:        string;
+  status:           string;
+  total_amount:     number;
+  total_amount_mdl: number;
+  currency_code:    string;
+  total_net_kg:     number;
+  invoice_number:   string;
 }
 
 const STATUS_CFG: Record<string, { label: string; cls: string }> = {
@@ -43,6 +45,10 @@ function TypeBadge({ type }: { type: string }) {
   return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cfg.cls}`}>{cfg.label}</span>;
 }
 
+const CURRENCY_LABELS: Record<string, string> = {
+  USD: "USD", EUR: "EUR", RON: "RON", MDL: "MDL",
+};
+
 function fmtDate(s: string | null) {
   if (!s) return "—";
   const d = new Date(s);
@@ -54,14 +60,19 @@ function fmtMoney(n: number) {
 function fmtKg(n: number) {
   return n.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+function currencyLabel(code: string) {
+  return CURRENCY_LABELS[code] ?? code;
+}
 
 function exportCsv(rows: SaleDoc[]) {
-  const headers = ["№ документа","Дата","Клиент","Тип","Статус","Сумма","Нетто кг","Накладная"];
+  const headers = ["№ документа","Дата","Клиент","Тип","Статус","Валюта","Сумма","Сумма MDL","Нетто кг","Накладная"];
   const data = rows.map((r) => [
     r.doc_number, fmtDate(r.doc_date), r.customer_name,
     TYPE_CFG[r.sale_type]?.label ?? r.sale_type,
     STATUS_CFG[r.status]?.label ?? r.status,
+    r.currency_code || "MDL",
     r.total_amount.toFixed(2).replace(".", ","),
+    r.total_amount_mdl.toFixed(2).replace(".", ","),
     r.total_net_kg.toFixed(2).replace(".", ","),
     r.invoice_number,
   ]);
@@ -115,9 +126,9 @@ export default function SalesTable({ customerId, compact = false }: Props) {
   }, [docs, search]);
 
   const stats = useMemo(() => ({
-    count:  filtered.length,
-    amount: filtered.reduce((s, d) => s + d.total_amount, 0),
-    kg:     filtered.reduce((s, d) => s + d.total_net_kg, 0),
+    count:      filtered.length,
+    amount_mdl: filtered.reduce((s, d) => s + d.total_amount_mdl, 0),
+    kg:         filtered.reduce((s, d) => s + d.total_net_kg, 0),
   }), [filtered]);
 
   const statusCounts = useMemo(() => {
@@ -195,9 +206,9 @@ export default function SalesTable({ customerId, compact = false }: Props) {
       {/* Stats */}
       {!compact && (
         <div className="grid grid-cols-3 gap-4 mb-6">
-          <StatCard label="Документов" value={String(stats.count)} />
-          <StatCard label="Сумма"      value={fmtMoney(stats.amount)} suffix="MDL" />
-          <StatCard label="Нетто кг"   value={fmtKg(stats.kg)} />
+          <StatCard label="Документов"  value={String(stats.count)} />
+          <StatCard label="Сумма (MDL)" value={fmtMoney(stats.amount_mdl)} suffix="MDL" />
+          <StatCard label="Нетто кг"    value={fmtKg(stats.kg)} />
         </div>
       )}
 
@@ -236,7 +247,12 @@ export default function SalesTable({ customerId, compact = false }: Props) {
                 )}
                 <TableCell><TypeBadge type={d.sale_type} /></TableCell>
                 <TableCell><StatusBadge status={d.status} /></TableCell>
-                <TableCell className="text-right font-mono tabular-nums">{fmtMoney(d.total_amount)}</TableCell>
+                <TableCell className="text-right font-mono tabular-nums">
+                  <div>{fmtMoney(d.total_amount)} {currencyLabel(d.currency_code)}</div>
+                  {d.currency_code && d.currency_code !== "MDL" && (
+                    <div className="text-xs text-zinc-500">≈ {fmtMoney(d.total_amount_mdl)} MDL</div>
+                  )}
+                </TableCell>
                 <TableCell className="text-right font-mono tabular-nums">{fmtKg(d.total_net_kg)}</TableCell>
                 <TableCell className="font-mono text-xs text-zinc-400">{d.invoice_number || "—"}</TableCell>
               </TableRow>
@@ -247,7 +263,7 @@ export default function SalesTable({ customerId, compact = false }: Props) {
 
       {filtered.length > 0 && !loading && (
         <div className="mt-3 text-right text-xs text-zinc-500">
-          Показано: {filtered.length} — Сумма: {fmtMoney(stats.amount)} MDL — {fmtKg(stats.kg)} кг
+          Показано: {filtered.length} — Сумма: {fmtMoney(stats.amount_mdl)} MDL — {fmtKg(stats.kg)} кг
         </div>
       )}
     </div>

@@ -46,7 +46,7 @@ export async function GET() {
     FROM AGRO_CUSTOMERS c
     LEFT JOIN (
       SELECT CUSTOMER_ID,
-             SUM(TOTAL_AMOUNT) TOTAL_REV,
+             SUM(NVL(TOTAL_AMOUNT_MDL, TOTAL_AMOUNT)) TOTAL_REV,
              COUNT(*)          ORD_CNT,
              MAX(DOC_DATE)     LAST_DATE,
              MIN(DOC_DATE)     FIRST_DATE
@@ -55,7 +55,7 @@ export async function GET() {
       GROUP BY CUSTOMER_ID
     ) s ON c.ID = s.CUSTOMER_ID
     LEFT JOIN (
-      SELECT CUSTOMER_ID, SUM(TOTAL_AMOUNT) REV90
+      SELECT CUSTOMER_ID, SUM(NVL(TOTAL_AMOUNT_MDL, TOTAL_AMOUNT)) REV90
       FROM AGRO_SALES_DOCS
       WHERE STATUS NOT IN ('draft','cancelled')
         AND DOC_DATE >= SYSDATE - 90

@@ -5,16 +5,18 @@ import { verifyToken } from "@/lib/auth";
 
 interface SalesRow {
   [key: string]: unknown;
-  ID:             number;
-  DOC_NUMBER:     string;
-  DOC_DATE:       Date | string | null;
-  CUSTOMER_NAME:  string | null;
-  CUSTOMER_ID:    number | null;
-  SALE_TYPE:      string | null;
-  STATUS:         string;
-  TOTAL_AMOUNT:   number | null;
-  TOTAL_NET_KG:   number | null;
-  INVOICE_NUMBER: string | null;
+  ID:               number;
+  DOC_NUMBER:       string;
+  DOC_DATE:         Date | string | null;
+  CUSTOMER_NAME:    string | null;
+  CUSTOMER_ID:      number | null;
+  SALE_TYPE:        string | null;
+  STATUS:           string;
+  TOTAL_AMOUNT:     number | null;
+  TOTAL_AMOUNT_MDL: number | null;
+  CURRENCY_CODE:    string | null;
+  TOTAL_NET_KG:     number | null;
+  INVOICE_NUMBER:   string | null;
 }
 
 async function requireAuth() {
@@ -56,12 +58,14 @@ export async function GET(req: NextRequest) {
       sd.ID,
       sd.DOC_NUMBER,
       sd.DOC_DATE,
-      c.NAME          AS CUSTOMER_NAME,
+      c.NAME                                                   AS CUSTOMER_NAME,
       sd.CUSTOMER_ID,
       sd.SALE_TYPE,
       sd.STATUS,
-      NVL(sd.TOTAL_AMOUNT, 0)  AS TOTAL_AMOUNT,
-      NVL(sd.TOTAL_NET_KG, 0)  AS TOTAL_NET_KG,
+      NVL(sd.TOTAL_AMOUNT, 0)                                 AS TOTAL_AMOUNT,
+      NVL(sd.TOTAL_AMOUNT_MDL, NVL(sd.TOTAL_AMOUNT, 0))      AS TOTAL_AMOUNT_MDL,
+      NVL(sd.CURRENCY_CODE, 'MDL')                            AS CURRENCY_CODE,
+      NVL(sd.TOTAL_NET_KG, 0)                                 AS TOTAL_NET_KG,
       sd.INVOICE_NUMBER
     FROM AGRO_SALES_DOCS sd
     LEFT JOIN AGRO_CUSTOMERS c ON c.ID = sd.CUSTOMER_ID
@@ -72,15 +76,17 @@ export async function GET(req: NextRequest) {
   `, binds);
 
   return NextResponse.json(rows.map((r) => ({
-    id:             r.ID,
-    doc_number:     r.DOC_NUMBER,
-    doc_date:       r.DOC_DATE instanceof Date ? r.DOC_DATE.toISOString() : (r.DOC_DATE ?? null),
-    customer_name:  r.CUSTOMER_NAME ?? "",
-    customer_id:    r.CUSTOMER_ID,
-    sale_type:      r.SALE_TYPE ?? "",
-    status:         r.STATUS,
-    total_amount:   Number(r.TOTAL_AMOUNT ?? 0),
-    total_net_kg:   Number(r.TOTAL_NET_KG ?? 0),
-    invoice_number: r.INVOICE_NUMBER ?? "",
+    id:               r.ID,
+    doc_number:       r.DOC_NUMBER,
+    doc_date:         r.DOC_DATE instanceof Date ? r.DOC_DATE.toISOString() : (r.DOC_DATE ?? null),
+    customer_name:    r.CUSTOMER_NAME ?? "",
+    customer_id:      r.CUSTOMER_ID,
+    sale_type:        r.SALE_TYPE ?? "",
+    status:           r.STATUS,
+    total_amount:     Number(r.TOTAL_AMOUNT ?? 0),
+    total_amount_mdl: Number(r.TOTAL_AMOUNT_MDL ?? 0),
+    currency_code:    String(r.CURRENCY_CODE ?? "MDL"),
+    total_net_kg:     Number(r.TOTAL_NET_KG ?? 0),
+    invoice_number:   r.INVOICE_NUMBER ?? "",
   })));
 }
