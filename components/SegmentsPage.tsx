@@ -11,7 +11,8 @@ import {
 interface SegCustomer {
   id: number; code: string; name: string; country: string | null;
   customer_type: string | null; contact_phone: string | null;
-  segment: string; total_revenue: number; last_order_date: string | null;
+  segment: string; total_revenue: number; total_revenue_orig: number | null;
+  currency_code: string; last_order_date: string | null;
   order_count: number; tg_linked: boolean;
 }
 
@@ -154,7 +155,7 @@ export default function SegmentsPage() {
               <TableRow key={c.id} className="hover:bg-zinc-100 transition-colors">
                 <TableCell className="font-medium">
                   <Link href={`/customers/${c.id}`}
-                    className="hover:text-white transition underline underline-offset-2 decoration-zinc-700">
+                    className="transition underline underline-offset-2 decoration-zinc-700">
                     {c.name}
                   </Link>
                   <div className="text-xs text-zinc-600 font-mono">{c.code}</div>
@@ -165,7 +166,18 @@ export default function SegmentsPage() {
                   {c.customer_type && <div>{c.customer_type}</div>}
                 </TableCell>
                 <TableCell className="text-right font-mono tabular-nums">
-                  {c.total_revenue > 0 ? `${fmtMoney(c.total_revenue)} MDL` : <span className="text-zinc-600">—</span>}
+                  {c.total_revenue > 0 ? (
+                    <>
+                      {c.total_revenue_orig != null && c.currency_code !== "MDL" ? (
+                        <>
+                          <div>{fmtMoney(c.total_revenue_orig)} {c.currency_code}</div>
+                          <div className="text-xs text-zinc-500">≈ {fmtMoney(c.total_revenue)} MDL</div>
+                        </>
+                      ) : (
+                        <div>{fmtMoney(c.total_revenue)} MDL</div>
+                      )}
+                    </>
+                  ) : <span className="text-zinc-600">—</span>}
                 </TableCell>
                 <TableCell className="text-center tabular-nums">
                   {c.order_count > 0 ? c.order_count : <span className="text-zinc-600">0</span>}

@@ -8,7 +8,9 @@ interface SegRow {
   ID: number; CODE: string; NAME: string; COUNTRY: string | null;
   CUSTOMER_TYPE: string | null; CONTACT_PHONE: string | null;
   ACTIVE: string; SEGMENT: string;
-  TOTAL_REVENUE: number | null; LAST_ORDER_DATE: Date | string | null;
+  TOTAL_REVENUE: number | null; TOTAL_REVENUE_ORIG: number | null;
+  CURRENCY_CODE: string | null;
+  LAST_ORDER_DATE: Date | string | null;
   ORDER_COUNT: number | null; TG_LINKED: number;
 }
 
@@ -25,8 +27,10 @@ export async function GET() {
   const rows = await query<SegRow>(`
     SELECT
       c.ID, c.CODE, c.NAME, c.COUNTRY, c.CUSTOMER_TYPE, c.CONTACT_PHONE, c.ACTIVE,
-      NVL(s.TOTAL_REV, 0)    AS TOTAL_REVENUE,
-      s.LAST_DATE            AS LAST_ORDER_DATE,
+      NVL(s.TOTAL_REV, 0)      AS TOTAL_REVENUE,
+      s.TOTAL_REV_ORIG         AS TOTAL_REVENUE_ORIG,
+      s.DOMINANT_CURRENCY      AS CURRENCY_CODE,
+      s.LAST_DATE              AS LAST_ORDER_DATE,
       NVL(s.ORD_CNT, 0)      AS ORDER_COUNT,
       CASE WHEN au.ID IS NOT NULL THEN 1 ELSE 0 END AS TG_LINKED,
       CASE
@@ -46,7 +50,10 @@ export async function GET() {
     FROM AGRO_CUSTOMERS c
     LEFT JOIN (
       SELECT CUSTOMER_ID,
-             SUM(NVL(TOTAL_AMOUNT_MDL, TOTAL_AMOUNT)) TOTAL_REV,
+             SUM(NVL(TOTAL_AMOUNT_MDL, TOTAL_AMOUNT))                        TOTAL_REV,
+             CASE WHEN COUNT(DISTINCT NVL(CURRENCY_CODE,'MDL')) = 1
+                  THEN SUM(TOTAL_AMOUNT) END                                  TOTAL_REV_ORIG,
+             MAX(NVL(CURRENCY_CODE,'MDL')) KEEP (DENSE_RANK LAST ORDER BY DOC_DATE) DOMINANT_CURRENCY,
              COUNT(*)          ORD_CNT,
              MAX(DOC_DATE)     LAST_DATE,
              MIN(DOC_DATE)     FIRST_DATE
@@ -74,7 +81,9 @@ export async function GET() {
     customer_type:  r.CUSTOMER_TYPE ?? null,
     contact_phone:  r.CONTACT_PHONE ?? null,
     segment:        r.SEGMENT,
-    total_revenue:  Number(r.TOTAL_REVENUE ?? 0),
+    total_revenue:      Number(r.TOTAL_REVENUE ?? 0),
+    total_revenue_orig: r.TOTAL_REVENUE_ORIG != null ? Number(r.TOTAL_REVENUE_ORIG) : null,
+    currency_code:      String(r.CURRENCY_CODE ?? "MDL"),
     last_order_date: r.LAST_ORDER_DATE instanceof Date
       ? r.LAST_ORDER_DATE.toISOString()
       : (r.LAST_ORDER_DATE ?? null),
