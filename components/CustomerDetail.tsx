@@ -9,6 +9,7 @@ import {
 } from "recharts";
 import SalesTable from "@/components/SalesTable";
 import ActivityTimeline from "@/components/ActivityTimeline";
+import AttachmentsPanel from "@/components/AttachmentsPanel";
 
 interface AppUser {
   id:                number;
@@ -63,7 +64,7 @@ interface CustomerStats {
   monthly: { month: string; revenue: number; orders: number }[];
 }
 
-type Tab = "info" | "sales" | "activities" | "telegram";
+type Tab = "info" | "sales" | "activities" | "files" | "telegram";
 
 function fmtDate(s: string | null) {
   if (!s) return "—";
@@ -224,6 +225,7 @@ export default function CustomerDetail({ id }: { id: string }) {
           { key: "info",       label: "Информация" },
           { key: "sales",      label: `Продажи${stats ? ` (${stats.order_count})` : ""}` },
           { key: "activities", label: "Активности" },
+          { key: "files",      label: "Файлы" },
           { key: "telegram",   label: "Telegram" },
         ] as { key: Tab; label: string }[]).map((t) => (
           <button key={t.key} onClick={() => setTab(t.key)}
@@ -321,6 +323,16 @@ export default function CustomerDetail({ id }: { id: string }) {
       {tab === "activities" && (
         <ActivityTimeline
           customerId={data.id}
+          currentUser={currentUser ?? undefined}
+          isAdmin={isAdmin}
+        />
+      )}
+
+      {/* ── TAB: FILES ── */}
+      {tab === "files" && (
+        <AttachmentsPanel
+          entityType="customer"
+          entityId={data.id}
           currentUser={currentUser ?? undefined}
           isAdmin={isAdmin}
         />

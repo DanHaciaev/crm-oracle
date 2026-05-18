@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
@@ -161,7 +162,7 @@ export default function ActivityTimeline({ customerId, currentUser, isAdmin }: P
       ) : (
         <div className="relative space-y-0">
           {/* vertical line */}
-          <div className="absolute left-[19px] top-2 bottom-2 w-px bg-zinc-800" />
+          <div className="absolute left-4.75 top-2 bottom-2 w-px bg-zinc-800" />
 
           {items.map((a) => {
             const cfg     = TYPE_CFG[a.act_type] ?? TYPE_CFG.other;
@@ -170,7 +171,7 @@ export default function ActivityTimeline({ customerId, currentUser, isAdmin }: P
             return (
               <div key={a.id} className="flex gap-3 group pb-4 last:pb-0">
                 {/* dot */}
-                <div className="flex-shrink-0 w-10 h-10 rounded-full border border-zinc-700 bg-zinc-900 flex items-center justify-center text-base z-10">
+                <div className="shrink-0 w-10 h-10 rounded-full border border-zinc-700 bg-zinc-900 flex items-center justify-center text-base z-10">
                   {cfg.icon}
                 </div>
 

@@ -14,6 +14,25 @@ interface SegCustomer {
   segment: string; total_revenue: number; total_revenue_orig: number | null;
   currency_code: string; last_order_date: string | null;
   order_count: number; tg_linked: boolean;
+  rfm_r: number | null; rfm_f: number; rfm_m: number;
+}
+
+function RfmCell({ r, f, m }: { r: number | null; f: number; m: number }) {
+  if (r === null && f === 0 && m === 0)
+    return <span className="text-zinc-700 text-xs">—</span>;
+  const rCls = r === null ? "text-zinc-600"
+    : r <= 30  ? "text-emerald-400"
+    : r <= 90  ? "text-amber-400"
+    : "text-red-400";
+  return (
+    <div className="text-xs tabular-nums space-y-0.5">
+      <div className={rCls} title="R — дней с последнего заказа">R: {r ?? "—"}</div>
+      <div className="text-zinc-400" title="F — заказов за 90 дней">F: {f}</div>
+      <div className="text-zinc-400" title="M — выручка за 90 дней (MDL)">
+        M: {m > 0 ? `${(m / 1000).toFixed(0)}k` : "0"}
+      </div>
+    </div>
+  );
 }
 
 const SEGMENT_CFG: Record<string, { label: string; cls: string; desc: string }> = {
@@ -141,16 +160,17 @@ export default function SegmentsPage() {
               <TableHead className="text-right">ВЫРУЧКА ВСЕГО</TableHead>
               <TableHead className="text-center">ЗАКАЗОВ</TableHead>
               <TableHead>ПОСЛЕДНИЙ ЗАКАЗ</TableHead>
+              <TableHead className="text-center">RFM</TableHead>
               <TableHead className="text-center">TG</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={7} className="text-center text-zinc-500 py-8">Загрузка...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center text-zinc-500 py-8">Загрузка...</TableCell></TableRow>
             ) : error ? (
-              <TableRow><TableCell colSpan={7} className="text-center text-red-400 py-8">{error}</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center text-red-400 py-8">{error}</TableCell></TableRow>
             ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={7} className="text-center text-zinc-600 py-8">Клиентов не найдено</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center text-zinc-600 py-8">Клиентов не найдено</TableCell></TableRow>
             ) : filtered.map(c => (
               <TableRow key={c.id} className="hover:bg-zinc-100 transition-colors">
                 <TableCell className="font-medium">
@@ -183,6 +203,9 @@ export default function SegmentsPage() {
                   {c.order_count > 0 ? c.order_count : <span className="text-zinc-600">0</span>}
                 </TableCell>
                 <TableCell className="text-sm tabular-nums">{fmtDate(c.last_order_date)}</TableCell>
+                <TableCell className="text-center">
+                  <RfmCell r={c.rfm_r} f={c.rfm_f} m={c.rfm_m} />
+                </TableCell>
                 <TableCell className="text-center">
                   {c.tg_linked
                     ? <span className="text-emerald-400 text-sm">✓</span>

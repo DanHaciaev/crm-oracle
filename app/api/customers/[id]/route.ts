@@ -124,6 +124,66 @@ export async function GET(
   });
 }
 
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const user = await requireAuth();
+  if (!user) return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
+
+  const { id } = await params;
+  const customerId = Number(id);
+  if (!Number.isFinite(customerId))
+    return NextResponse.json({ error: "Bad id" }, { status: 400 });
+
+  const existing = await query<CustomerRow>(
+    `SELECT ID, NAME, COUNTRY, TAX_ID, CONTACT_PHONE, CONTACT_EMAIL,
+            ADDRESS, CUSTOMER_TYPE FROM AGRO_CUSTOMERS WHERE ID = :1`,
+    [customerId]
+  );
+  if (!existing.length)
+    return NextResponse.json({ error: "Клиент не найден" }, { status: 404 });
+  const old = existing[0];
+
+  const body = await req.json().catch(() => ({})) as Record<string, unknown>;
+  const { name, country, tax_id, contact_phone, contact_email, address, customer_type } = body;
+
+  await execute(`
+    UPDATE AGRO_CUSTOMERS SET
+      NAME          = :1,
+      COUNTRY       = :2,
+      TAX_ID        = :3,
+      CONTACT_PHONE = :4,
+      CONTACT_EMAIL = :5,
+      ADDRESS       = :6,
+      CUSTOMER_TYPE = :7
+    WHERE ID = :8
+  `, [
+    name          !== undefined ? String(name)                         : old.NAME,
+    country       !== undefined ? (country       ? String(country)       : null) : old.COUNTRY,
+    tax_id        !== undefined ? (tax_id        ? String(tax_id)        : null) : old.TAX_ID,
+    contact_phone !== undefined ? (contact_phone ? String(contact_phone) : null) : old.CONTACT_PHONE,
+    contact_email !== undefined ? (contact_email ? String(contact_email) : null) : old.CONTACT_EMAIL,
+    address       !== undefined ? (address       ? String(address)       : null) : old.ADDRESS,
+    customer_type !== undefined ? (customer_type ? String(customer_type) : null) : old.CUSTOMER_TYPE,
+    customerId,
+  ]);
+
+  await execute(`
+    INSERT INTO AGRO_CRM_AUDIT_LOG
+      (ENTITY_TYPE, ENTITY_ID, ENTITY_NAME, ACTION, CHANGED_BY, OLD_VALUES, NEW_VALUES)
+    VALUES ('customer', :1, :2, 'update', :3, :4, :5)
+  `, [
+    customerId,
+    String(old.NAME),
+    user.username,
+    JSON.stringify({ name: old.NAME, country: old.COUNTRY, contact_phone: old.CONTACT_PHONE, contact_email: old.CONTACT_EMAIL }),
+    JSON.stringify(body),
+  ]);
+
+  return NextResponse.json({ success: true });
+}
+
 interface CountRow { [key: string]: unknown; CNT: number }
 
 export async function DELETE(
