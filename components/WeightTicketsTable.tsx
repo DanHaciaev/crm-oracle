@@ -6,6 +6,7 @@ import {
   TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import WeightTicketDetailModal from "@/components/WeightTicketDetailModal";
+import type { PdfLang } from "@/lib/pdf-act";
 
 export interface WeightTicket {
   id:               number;
@@ -77,8 +78,9 @@ export default function WeightTicketsTable() {
   const [search, setSearch]       = useState("");
   const [dateFrom, setDateFrom]   = useState("");
   const [dateTo, setDateTo]       = useState("");
-  const [openId, setOpenId]       = useState<number | null>(null);
-  const [sendingId, setSendingId] = useState<number | null>(null);
+  const [openId, setOpenId]         = useState<number | null>(null);
+  const [sendingId, setSendingId]   = useState<number | null>(null);
+  const [langPickId, setLangPickId] = useState<number | null>(null);
 
   const fetchTickets = useCallback(async () => {
     setLoading(true);
@@ -116,10 +118,15 @@ export default function WeightTicketsTable() {
     });
   }, [tickets, statusFilter, search]);
 
-  async function sendToTelegram(ticketId: number) {
+  async function sendToTelegram(ticketId: number, lang: PdfLang) {
+    setLangPickId(null);
     setSendingId(ticketId);
     try {
-      const res = await fetch(`/api/weight-tickets/${ticketId}/send-telegram`, { method: "POST" });
+      const res = await fetch(`/api/weight-tickets/${ticketId}/send-telegram`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lang }),
+      });
       const json = await res.json().catch(() => ({}));
       alert(res.ok ? "✅ Акт отправлен клиенту в Telegram" : (json as { error?: string }).error ?? "Ошибка отправки");
     } catch {
@@ -234,21 +241,42 @@ export default function WeightTicketsTable() {
                   <TableCell><StatusBadge status={t.status} /></TableCell>
                   <TableCell className="text-right font-mono tabular-nums">{fmtKg(t.net_kg)}</TableCell>
                   <TableCell className="text-center">
-                    <div className="flex items-center justify-center gap-1">
+                    <div className="flex items-center justify-center gap-1 flex-wrap">
                       <button
                         onClick={() => setOpenId(t.id)}
                         className="px-3 py-1 text-xs rounded-md border border-zinc-700 hover:bg-zinc-800 transition"
                       >
                         Открыть
                       </button>
-                      <button
-                        onClick={() => sendToTelegram(t.id)}
-                        disabled={sendingId === t.id}
-                        className="px-3 py-1 text-xs rounded-md border border-sky-700 text-sky-400 hover:bg-sky-950/50 transition disabled:opacity-40"
-                        title="Отправить акт в Telegram клиенту"
-                      >
-                        {sendingId === t.id ? "..." : "TG"}
-                      </button>
+                      {langPickId === t.id ? (
+                        <>
+                          {(["ru", "ro", "en"] as const).map((lng) => (
+                            <button
+                              key={lng}
+                              onClick={() => sendToTelegram(t.id, lng)}
+                              className="px-2 py-1 text-xs rounded-md border border-sky-700 text-sky-300 hover:bg-sky-900/60 transition"
+                              title={{ ru: "Русский", ro: "Română", en: "English" }[lng]}
+                            >
+                              {lng.toUpperCase()}
+                            </button>
+                          ))}
+                          <button
+                            onClick={() => setLangPickId(null)}
+                            className="px-1.5 py-1 text-xs rounded-md border border-zinc-700 text-zinc-400 hover:bg-zinc-800 transition"
+                          >
+                            ✕
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={() => setLangPickId(t.id)}
+                          disabled={sendingId === t.id}
+                          className="px-3 py-1 text-xs rounded-md border border-sky-700 text-sky-400 hover:bg-sky-950/50 transition disabled:opacity-40"
+                          title="Отправить акт в Telegram клиенту"
+                        >
+                          {sendingId === t.id ? "..." : "TG"}
+                        </button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

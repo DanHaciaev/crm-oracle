@@ -1,0 +1,448 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+
+interface Rule {
+  id: number; name: string; trigger_type: string;
+  condition_days: number; action_type: string;
+  message_template: string | null; task_title: string | null;
+  cooldown_days: number; segment: string; active: boolean;
+  created_at: string | null; last_fired: string | null; fired_30d: number;
+}
+
+interface LogEntry {
+  id: number; rule_id: number; rule_name: string;
+  customer_id: number; customer_name: string | null;
+  action_type: string | null; result: string;
+  details: string | null; fired_at: string | null;
+}
+
+interface AutoData { rules: Rule[]; log: LogEntry[] }
+
+const ACTION_LABELS: Record<string, string> = {
+  tg_message:   "TG клиенту",
+  manager_task: "Задача менеджеру",
+};
+const SEGMENT_LABELS: Record<string, string> = {
+  all: "Все", vip: "VIP", active: "Активные",
+  sleeping: "Спящие", churned: "Ушедшие",
+};
+const RESULT_CFG: Record<string, { label: string; cls: string }> = {
+  success: { label: "OK",       cls: "border-emerald-500/40 text-emerald-400" },
+  error:   { label: "Ошибка",   cls: "border-red-500/40 text-red-400"         },
+  skipped: { label: "Пропущен", cls: "border-zinc-600 text-zinc-500"          },
+};
+
+const EMPTY_FORM = {
+  name: "", condition_days: 30, action_type: "tg_message",
+  message_template: "Привет, {{customer_name}}! Вы не делали заказ {{days_since}} дней. Готовы возобновить сотрудничество?",
+  task_title: "", cooldown_days: 14, segment: "all", active: true,
+};
+
+function fmtDate(s: string | null) {
+  if (!s) return "—";
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return s;
+  return d.toLocaleString("ru-RU", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  });
+}
+
+export default function AutomationsPage() {
+  const [data, setData]         = useState<AutoData | null>(null);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState<string | null>(null);
+  const [running, setRunning]   = useState(false);
+  const [runResult, setRunResult] = useState<string | null>(null);
+  const [toggling, setToggling] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState<number | null>(null);
+
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm]         = useState({ ...EMPTY_FORM });
+  const [saving, setSaving]     = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true); setError(null);
+    const res  = await fetch("/api/automations");
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) setError((json as { error?: string }).error ?? "Ошибка");
+    else setData(json as AutoData);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function runNow() {
+    setRunning(true); setRunResult(null);
+    const res  = await fetch("/api/cron/automations", { method: "POST" });
+    const json = await res.json().catch(() => ({})) as {
+      total_fired?: number; total_skipped?: number;
+      total_errors?: number; rules_checked?: number;
+      summary?: { rule: string; fired: number; skipped: number; errors: number }[];
+      error?: string;
+    };
+    setRunning(false);
+    if (!res.ok) { setRunResult(`Ошибка: ${json.error ?? "неизвестно"}`); return; }
+    const parts = (json.summary ?? []).map(
+      (s) => `${s.rule}: отправлено ${s.fired}, пропущено ${s.skipped}${s.errors ? `, ошибок ${s.errors}` : ""}`
+    );
+    setRunResult(
+      `Проверено правил: ${json.rules_checked}. Всего отправлено: ${json.total_fired}. ` +
+      (parts.length ? `\n${parts.join("\n")}` : "")
+    );
+    load();
+  }
+
+  async function toggleRule(id: number, active: boolean) {
+    setToggling(id);
+    await fetch(`/api/automations/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ active }),
+    });
+    setToggling(null);
+    setData((prev) =>
+      prev ? { ...prev, rules: prev.rules.map((r) => r.id === id ? { ...r, active } : r) } : prev
+    );
+  }
+
+  async function deleteRule(id: number, name: string) {
+    if (!confirm(`Удалить правило "${name}"? Лог срабатываний тоже будет удалён.`)) return;
+    setDeleting(id);
+    await fetch(`/api/automations/${id}`, { method: "DELETE" });
+    setDeleting(null);
+    setData((prev) =>
+      prev ? { ...prev, rules: prev.rules.filter((r) => r.id !== id) } : prev
+    );
+  }
+
+  async function createRule() {
+    setSaving(true); setFormError(null);
+    const res  = await fetch("/api/automations", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name:             form.name,
+        condition_days:   form.condition_days,
+        action_type:      form.action_type,
+        message_template: form.action_type === "tg_message" ? form.message_template : null,
+        task_title:       form.action_type === "manager_task" ? form.task_title : null,
+        cooldown_days:    form.cooldown_days,
+        segment:          form.segment,
+        active:           form.active,
+      }),
+    });
+    const json = await res.json().catch(() => ({})) as { error?: string };
+    setSaving(false);
+    if (!res.ok) { setFormError(json.error ?? "Ошибка"); return; }
+    setShowForm(false);
+    setForm({ ...EMPTY_FORM });
+    load();
+  }
+
+  if (loading) return <div className="p-8 text-sm text-zinc-500">Загрузка...</div>;
+  if (error)   return <div className="p-8 text-sm text-red-400">{error}</div>;
+  if (!data)   return null;
+
+  return (
+    <div className="p-6 space-y-6">
+
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold">Автоматизация</h1>
+          <p className="text-sm text-zinc-500 mt-1">Правила, которые система выполняет автоматически по расписанию</p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => { setShowForm(true); setFormError(null); }}
+            className="px-4 py-2 text-sm rounded-lg border border-zinc-700 hover:bg-zinc-800 transition"
+          >
+            + Новое правило
+          </button>
+          <button
+            onClick={runNow} disabled={running}
+            className="px-4 py-2 text-sm rounded-lg bg-white text-black hover:bg-zinc-200 disabled:opacity-50 transition"
+          >
+            {running ? "Запускаем..." : "▶ Запустить сейчас"}
+          </button>
+        </div>
+      </div>
+
+      {/* Run result */}
+      {runResult && (
+        <div className="border border-emerald-500/30 bg-emerald-500/8 rounded-xl px-4 py-3 text-sm text-emerald-300 whitespace-pre-wrap">
+          {runResult}
+        </div>
+      )}
+
+      {/* Cron hint */}
+      <div className="border border-zinc-800 rounded-xl px-4 py-3 text-xs text-zinc-500 space-y-1">
+        <div className="text-zinc-400 font-medium mb-1">Запуск по расписанию</div>
+        <div>Вызывай этот эндпоинт раз в день (cron, OCI Scheduler, systemd timer):</div>
+        <code className="text-zinc-300 block mt-1">
+          curl -X POST https://&lt;your-domain&gt;/api/cron/automations \<br/>
+          &nbsp;&nbsp;-H &quot;Authorization: Bearer $CRON_SECRET&quot;
+        </code>
+        <div className="mt-1">Если переменная <code>CRON_SECRET</code> не задана в .env — секрет не нужен.</div>
+      </div>
+
+      {/* Rules table */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold text-zinc-300">Правила</h2>
+        <div className="border border-zinc-800 rounded-xl overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-zinc-900/60 text-xs text-zinc-500 border-b border-zinc-800">
+              <tr>
+                <th className="text-left px-4 py-3">Название</th>
+                <th className="text-center px-3 py-3">Условие</th>
+                <th className="text-center px-3 py-3">Сегмент</th>
+                <th className="text-center px-3 py-3">Действие</th>
+                <th className="text-center px-3 py-3">Кулдаун</th>
+                <th className="text-center px-3 py-3">За 30 дн.</th>
+                <th className="text-center px-3 py-3">Последний запуск</th>
+                <th className="text-center px-3 py-3">Статус</th>
+                <th className="text-center px-3 py-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.rules.map((r) => (
+                <tr key={r.id} className="border-b border-zinc-800/50 last:border-0 hover:bg-zinc-800/20 transition">
+                  <td className="px-4 py-3">
+                    <div className="font-medium text-zinc-200">{r.name}</div>
+                    <div className="text-xs text-zinc-600 mt-0.5 truncate max-w-xs">
+                      {r.message_template ?? r.task_title ?? "—"}
+                    </div>
+                  </td>
+                  <td className="px-3 py-3 text-center text-zinc-400">нет заказов {r.condition_days} дн.</td>
+                  <td className="px-3 py-3 text-center">
+                    <span className="inline-flex px-2 py-0.5 rounded-full text-xs border border-zinc-700 text-zinc-400">
+                      {SEGMENT_LABELS[r.segment] ?? r.segment}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3 text-center text-zinc-400 text-xs">{ACTION_LABELS[r.action_type] ?? r.action_type}</td>
+                  <td className="px-3 py-3 text-center text-zinc-500 text-xs">{r.cooldown_days} дн.</td>
+                  <td className="px-3 py-3 text-center font-mono text-zinc-300">{r.fired_30d}</td>
+                  <td className="px-3 py-3 text-center text-xs text-zinc-500">{fmtDate(r.last_fired)}</td>
+                  <td className="px-3 py-3 text-center">
+                    <button
+                      onClick={() => toggleRule(r.id, !r.active)}
+                      disabled={toggling === r.id}
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors disabled:opacity-50
+                        ${r.active ? "bg-emerald-500" : "bg-zinc-700"}`}
+                    >
+                      <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform
+                        ${r.active ? "translate-x-4" : "translate-x-1"}`} />
+                    </button>
+                  </td>
+                  <td className="px-3 py-3 text-center">
+                    <button
+                      onClick={() => deleteRule(r.id, r.name)}
+                      disabled={deleting === r.id}
+                      className="text-zinc-600 hover:text-red-400 transition text-xs disabled:opacity-40"
+                      title="Удалить правило"
+                    >
+                      ✕
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {data.rules.length === 0 && (
+                <tr>
+                  <td colSpan={9} className="text-center text-zinc-600 py-6 text-sm">
+                    Правил пока нет — создайте первое
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* Log */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold text-zinc-300">Последние срабатывания</h2>
+        {data.log.length === 0 ? (
+          <p className="text-sm text-zinc-600 py-4 text-center border border-zinc-800 rounded-xl">
+            Ещё не было ни одного запуска
+          </p>
+        ) : (
+          <div className="border border-zinc-800 rounded-xl overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-zinc-900/60 text-xs text-zinc-500 border-b border-zinc-800">
+                <tr>
+                  <th className="text-left px-4 py-3">Правило</th>
+                  <th className="text-left px-3 py-3">Клиент</th>
+                  <th className="text-center px-3 py-3">Действие</th>
+                  <th className="text-center px-3 py-3">Результат</th>
+                  <th className="text-right px-4 py-3">Время</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.log.map((l) => {
+                  const res = RESULT_CFG[l.result] ?? RESULT_CFG.error;
+                  return (
+                    <tr key={l.id} className="border-b border-zinc-800/50 last:border-0 hover:bg-zinc-800/20 transition">
+                      <td className="px-4 py-2.5 text-zinc-300">{l.rule_name}</td>
+                      <td className="px-3 py-2.5 text-zinc-400">{l.customer_name ?? `#${l.customer_id}`}</td>
+                      <td className="px-3 py-2.5 text-center text-xs text-zinc-500">
+                        {ACTION_LABELS[l.action_type ?? ""] ?? l.action_type ?? "—"}
+                      </td>
+                      <td className="px-3 py-2.5 text-center">
+                        <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] border ${res.cls}`}>
+                          {res.label}
+                        </span>
+                        {l.details && (
+                          <div className="text-[10px] text-red-400 mt-0.5 max-w-xs truncate">{l.details}</div>
+                        )}
+                      </td>
+                      <td className="px-4 py-2.5 text-right text-xs text-zinc-600 whitespace-nowrap">
+                        {fmtDate(l.fired_at)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {/* Create rule modal */}
+      {showForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-lg font-semibold">Новое правило автоматизации</h2>
+
+            {/* Name */}
+            <div className="space-y-1">
+              <label className="text-xs text-zinc-400">Название *</label>
+              <input
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="Например: Нет заказов 30 дней → TG"
+                className="w-full border border-zinc-700 bg-zinc-900 rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-400"
+              />
+            </div>
+
+            {/* Trigger */}
+            <div className="space-y-1">
+              <label className="text-xs text-zinc-400">Условие — нет заказов (дней)</label>
+              <input
+                type="number" min={1} max={365}
+                value={form.condition_days}
+                onChange={(e) => setForm((f) => ({ ...f, condition_days: Number(e.target.value) }))}
+                className="w-full border border-zinc-700 bg-zinc-900 rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-400"
+              />
+            </div>
+
+            {/* Segment */}
+            <div className="space-y-1">
+              <label className="text-xs text-zinc-400">Сегмент клиентов</label>
+              <select
+                value={form.segment}
+                onChange={(e) => setForm((f) => ({ ...f, segment: e.target.value }))}
+                className="w-full border border-zinc-700 bg-zinc-900 rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-400"
+              >
+                {Object.entries(SEGMENT_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Action type */}
+            <div className="space-y-1">
+              <label className="text-xs text-zinc-400">Действие</label>
+              <div className="flex gap-2">
+                {Object.entries(ACTION_LABELS).map(([k, v]) => (
+                  <button
+                    key={k}
+                    onClick={() => setForm((f) => ({ ...f, action_type: k }))}
+                    className={`flex-1 py-2 text-sm rounded-lg border transition
+                      ${form.action_type === k
+                        ? "border-zinc-400 text-white bg-zinc-800"
+                        : "border-zinc-700 text-zinc-400 hover:bg-zinc-800/50"}`}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Message template */}
+            {form.action_type === "tg_message" && (
+              <div className="space-y-1">
+                <label className="text-xs text-zinc-400">
+                  Текст сообщения — доступны: <code className="text-zinc-300">{"{{customer_name}}"}</code> <code className="text-zinc-300">{"{{days_since}}"}</code>
+                </label>
+                <textarea
+                  rows={4}
+                  value={form.message_template}
+                  onChange={(e) => setForm((f) => ({ ...f, message_template: e.target.value }))}
+                  className="w-full border border-zinc-700 bg-zinc-900 rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-400 resize-none"
+                />
+              </div>
+            )}
+
+            {/* Task title */}
+            {form.action_type === "manager_task" && (
+              <div className="space-y-1">
+                <label className="text-xs text-zinc-400">Заголовок задачи</label>
+                <input
+                  value={form.task_title}
+                  onChange={(e) => setForm((f) => ({ ...f, task_title: e.target.value }))}
+                  placeholder="Позвонить клиенту — нет заказов"
+                  className="w-full border border-zinc-700 bg-zinc-900 rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                />
+              </div>
+            )}
+
+            {/* Cooldown */}
+            <div className="space-y-1">
+              <label className="text-xs text-zinc-400">Кулдаун (дней между повторными срабатываниями)</label>
+              <input
+                type="number" min={1} max={365}
+                value={form.cooldown_days}
+                onChange={(e) => setForm((f) => ({ ...f, cooldown_days: Number(e.target.value) }))}
+                className="w-full border border-zinc-700 bg-zinc-900 rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-400"
+              />
+            </div>
+
+            {/* Active */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setForm((f) => ({ ...f, active: !f.active }))}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors
+                  ${form.active ? "bg-emerald-500" : "bg-zinc-700"}`}
+              >
+                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform
+                  ${form.active ? "translate-x-4" : "translate-x-1"}`} />
+              </button>
+              <span className="text-sm text-zinc-400">Активно сразу после создания</span>
+            </div>
+
+            {formError && <p className="text-sm text-red-400">{formError}</p>}
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => { setShowForm(false); setFormError(null); }}
+                disabled={saving}
+                className="px-4 py-2 text-sm rounded-lg border border-zinc-700 text-zinc-300 hover:bg-zinc-800 transition disabled:opacity-50"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={createRule}
+                disabled={saving || !form.name}
+                className="px-4 py-2 text-sm rounded-lg bg-white text-black hover:bg-zinc-200 transition disabled:opacity-50"
+              >
+                {saving ? "Создаём..." : "Создать"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}

@@ -90,19 +90,36 @@ export async function GET(
   const prv = Number(churnRows[0]?.PRV ?? 0);
   const churnPct = prv > 0 ? Math.round((cur / prv - 1) * 100) : null;
 
+  // ── 5. Derived retention signals ─────────────────────────────────────────
+  const daysSinceLast = lastDate
+    ? Math.floor((Date.now() - new Date(lastDate).getTime()) / 86_400_000)
+    : null;
+
+  const nextOrderExpected = lastDate && avgDaysBetween
+    ? new Date(new Date(lastDate).getTime() + avgDaysBetween * 86_400_000).toISOString()
+    : null;
+
+  // days past the expected next order (null = no baseline yet)
+  const overdueDays = daysSinceLast !== null && avgDaysBetween !== null
+    ? Math.max(0, daysSinceLast - avgDaysBetween)
+    : null;
+
   return NextResponse.json({
-    total_revenue:     totalRev,
-    total_net_kg:      totalKg,
-    order_count:       orderCount,
-    avg_check:         Math.round(avgCheck),
-    last_order_date:   lastDate,
-    first_order_date:  firstDate,
-    avg_days_between:  avgDaysBetween,
-    churn_pct:         churnPct,
-    churn_cur:         cur,
-    churn_prv:         prv,
+    total_revenue:       totalRev,
+    total_net_kg:        totalKg,
+    order_count:         orderCount,
+    avg_check:           Math.round(avgCheck),
+    last_order_date:     lastDate,
+    first_order_date:    firstDate,
+    avg_days_between:    avgDaysBetween,
+    days_since_last:     daysSinceLast,
+    next_order_expected: nextOrderExpected,
+    overdue_days:        overdueDays,
+    churn_pct:           churnPct,
+    churn_cur:           cur,
+    churn_prv:           prv,
     monthly: monthRows.map((r) => ({
-      month:  String(r.MON ?? ""),
+      month:   String(r.MON ?? ""),
       revenue: Number(r.REV ?? 0),
       orders:  Number(r.ORD ?? 0),
     })),

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { query, execute } from "@/lib/oracle";
 import { verifyToken } from "@/lib/auth";
-import { generateActPdf } from "@/lib/pdf-act";
+import { generateActPdf, PdfLang } from "@/lib/pdf-act";
 import { sendDocument } from "@/lib/tg";
 
 interface HeaderRow {
@@ -65,6 +65,11 @@ export async function POST(
   if (!Number.isFinite(ticketId)) {
     return NextResponse.json({ error: "Bad id" }, { status: 400 });
   }
+
+  const body = await _request.json().catch(() => ({})) as { lang?: string };
+  const lang: PdfLang = (["ru", "ro", "en"] as PdfLang[]).includes(body.lang as PdfLang)
+    ? (body.lang as PdfLang)
+    : "ru";
 
   // ---- 1. Загружаем шапку акта + клиента ----
   const headers = await query<HeaderRow>(`
@@ -142,14 +147,19 @@ export async function POST(
   // ---- 4. Генерим PDF ----
   let pdfBuffer: Buffer;
   try {
-    pdfBuffer = await generateActPdf(actData);
+    pdfBuffer = await generateActPdf(actData, lang);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: `Не удалось сгенерировать PDF: ${msg}` }, { status: 500 });
   }
 
   const filename = `act_${h.TICKET_NUMBER.replace(/[^a-zA-Z0-9_-]/g, "_")}.pdf`;
-  const caption  = `📄 <b>Весовой акт / Tichet de cântărire</b>\n№ ${h.TICKET_NUMBER}\nКлиент: ${h.CUSTOMER_NAME ?? "—"}`;
+  const captionByLang: Record<PdfLang, string> = {
+    ru: `📄 <b>Весовой акт</b>\n№ ${h.TICKET_NUMBER}\nКлиент: ${h.CUSTOMER_NAME ?? "—"}`,
+    ro: `📄 <b>Tichet de cântărire</b>\n№ ${h.TICKET_NUMBER}\nClient: ${h.CUSTOMER_NAME ?? "—"}`,
+    en: `📄 <b>Weight Ticket</b>\n№ ${h.TICKET_NUMBER}\nClient: ${h.CUSTOMER_NAME ?? "—"}`,
+  };
+  const caption = captionByLang[lang];
 
   // ---- 5. Отправляем в Telegram ----
   let tgMessageId: number;
