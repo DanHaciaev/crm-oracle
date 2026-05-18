@@ -12,6 +12,9 @@ interface SegRow {
   CURRENCY_CODE: string | null;
   LAST_ORDER_DATE: Date | string | null;
   ORDER_COUNT: number | null; TG_LINKED: number;
+  RFM_R: number | null;
+  RFM_F: number | null;
+  RFM_M: number | null;
 }
 
 async function requireAuth() {
@@ -31,22 +34,20 @@ export async function GET() {
       s.TOTAL_REV_ORIG         AS TOTAL_REVENUE_ORIG,
       s.DOMINANT_CURRENCY      AS CURRENCY_CODE,
       s.LAST_DATE              AS LAST_ORDER_DATE,
-      NVL(s.ORD_CNT, 0)      AS ORDER_COUNT,
+      NVL(s.ORD_CNT, 0)       AS ORDER_COUNT,
       CASE WHEN au.ID IS NOT NULL THEN 1 ELSE 0 END AS TG_LINKED,
       CASE
-        -- New: first order in last 30 days OR created in last 30 days and <3 orders
         WHEN s.FIRST_DATE >= SYSDATE - 30 AND NVL(s.ORD_CNT, 0) <= 3 THEN 'new'
-        -- VIP: revenue in last 90 days in top tier (>= 50 000 MDL threshold)
-        WHEN NVL(s90.REV90, 0) >= 50000 THEN 'vip'
-        -- Active: order in last 60 days
-        WHEN s.LAST_DATE >= SYSDATE - 60 THEN 'active'
-        -- Sleeping: last order 60-180 days ago
-        WHEN s.LAST_DATE >= SYSDATE - 180 THEN 'sleeping'
-        -- Churned: no orders in 180 days (but had orders)
-        WHEN s.ORD_CNT > 0 THEN 'churned'
-        -- No orders at all
+        WHEN NVL(s90.REV90, 0) >= 50000                              THEN 'vip'
+        WHEN s.LAST_DATE >= SYSDATE - 60                             THEN 'active'
+        WHEN s.LAST_DATE >= SYSDATE - 180                            THEN 'sleeping'
+        WHEN s.ORD_CNT > 0                                           THEN 'churned'
         ELSE 'no_orders'
-      END AS SEGMENT
+      END AS SEGMENT,
+      CASE WHEN s.LAST_DATE IS NOT NULL
+           THEN ROUND(SYSDATE - s.LAST_DATE) END     AS RFM_R,
+      NVL(s90.CNT90, 0)                              AS RFM_F,
+      NVL(s90.REV90, 0)                              AS RFM_M
     FROM AGRO_CUSTOMERS c
     LEFT JOIN (
       SELECT CUSTOMER_ID,
@@ -62,7 +63,9 @@ export async function GET() {
       GROUP BY CUSTOMER_ID
     ) s ON c.ID = s.CUSTOMER_ID
     LEFT JOIN (
-      SELECT CUSTOMER_ID, SUM(NVL(TOTAL_AMOUNT_MDL, TOTAL_AMOUNT)) REV90
+      SELECT CUSTOMER_ID,
+             SUM(NVL(TOTAL_AMOUNT_MDL, TOTAL_AMOUNT)) REV90,
+             COUNT(*)                                  CNT90
       FROM AGRO_SALES_DOCS
       WHERE STATUS NOT IN ('draft','cancelled')
         AND DOC_DATE >= SYSDATE - 90
@@ -89,5 +92,8 @@ export async function GET() {
       : (r.LAST_ORDER_DATE ?? null),
     order_count:    Number(r.ORDER_COUNT ?? 0),
     tg_linked:      Number(r.TG_LINKED) === 1,
+    rfm_r:          r.RFM_R != null ? Number(r.RFM_R) : null,
+    rfm_f:          Number(r.RFM_F ?? 0),
+    rfm_m:          Number(r.RFM_M ?? 0),
   })));
 }

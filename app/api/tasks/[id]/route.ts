@@ -3,6 +3,12 @@ import { cookies } from "next/headers";
 import { query, execute } from "@/lib/oracle";
 import { verifyToken } from "@/lib/auth";
 
+interface TaskRow {
+  [key: string]: unknown;
+  ID: number; TITLE: string; STATUS: string; PRIORITY: string;
+  ASSIGNED_TO: string | null; DUE_DATE: Date | string | null; NOTES: string | null;
+}
+
 async function requireAuth() {
   const store = await cookies();
   const token = store.get("token")?.value;
@@ -22,6 +28,13 @@ export async function PUT(
   const { id } = await params;
   const taskId = Number(id);
   if (!Number.isFinite(taskId)) return NextResponse.json({ error: "Bad id" }, { status: 400 });
+
+  const existing = await query<TaskRow>(
+    `SELECT ID, TITLE, STATUS, PRIORITY, ASSIGNED_TO, DUE_DATE, NOTES FROM AGRO_CRM_TASKS WHERE ID = :1`,
+    [taskId]
+  );
+  if (!existing.length) return NextResponse.json({ error: "Задача не найдена" }, { status: 404 });
+  const old = existing[0];
 
   const body = await req.json().catch(() => ({})) as Record<string, unknown>;
   const { status, title, priority, due_date, assigned_to, notes } = body;
@@ -49,6 +62,18 @@ export async function PUT(
     `UPDATE AGRO_CRM_TASKS SET ${sets.join(", ")} WHERE ID = :${binds.length}`,
     binds as (string | number | null)[]
   );
+
+  await execute(`
+    INSERT INTO AGRO_CRM_AUDIT_LOG
+      (ENTITY_TYPE, ENTITY_ID, ENTITY_NAME, ACTION, CHANGED_BY, OLD_VALUES, NEW_VALUES)
+    VALUES ('task', :1, :2, 'update', :3, :4, :5)
+  `, [
+    taskId,
+    String(old.TITLE),
+    user.username,
+    JSON.stringify({ status: old.STATUS, priority: old.PRIORITY, assigned_to: old.ASSIGNED_TO }),
+    JSON.stringify(body),
+  ]);
 
   return NextResponse.json({ success: true });
 }

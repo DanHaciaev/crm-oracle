@@ -1,0 +1,145 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+
+interface ManagerStat {
+  id: number; username: string;
+  first_name: string | null; last_name: string | null; role: string;
+  total_tasks: number; open_tasks: number; done_tasks: number; overdue_tasks: number;
+  total_acts: number; acts_7d: number; acts_30d: number;
+  calls: number; meetings: number; notes: number;
+}
+
+function displayName(m: ManagerStat) {
+  if (m.first_name || m.last_name)
+    return [m.first_name, m.last_name].filter(Boolean).join(" ");
+  return m.username;
+}
+
+function Bar({ value, max, cls }: { value: number; max: number; cls: string }) {
+  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex-1 bg-zinc-800 rounded-full h-1.5">
+        <div className={`h-1.5 rounded-full ${cls}`} style={{ width: `${pct}%` }} />
+      </div>
+      <span className="text-xs tabular-nums w-6 text-right">{value}</span>
+    </div>
+  );
+}
+
+export default function ManagerStatsPage() {
+  const [stats, setStats]   = useState<ManagerStat[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState<string | null>(null);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true); setError(null);
+    const res  = await fetch("/api/manager-stats");
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) setError((data as { error?: string }).error ?? "Ошибка");
+    else setStats(data as ManagerStat[]);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const maxActs  = Math.max(...stats.map(s => s.total_acts),  1);
+  const maxTasks = Math.max(...stats.map(s => s.total_tasks), 1);
+  const maxActs7 = Math.max(...stats.map(s => s.acts_7d),     1);
+
+  if (loading) return <div className="p-8 text-zinc-500">Загрузка...</div>;
+  if (error)   return <div className="p-8 text-red-400">{error}</div>;
+
+  return (
+    <div className="p-8">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">Аналитика по менеджерам</h1>
+        <p className="text-sm text-zinc-500 mt-1">Активности и задачи по каждому сотруднику</p>
+      </div>
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <div className="border border-zinc-800 rounded-xl p-4">
+          <div className="text-2xl font-bold text-zinc-200">{stats.length}</div>
+          <div className="text-xs text-zinc-500 mt-1">Сотрудников</div>
+        </div>
+        <div className="border border-zinc-800 rounded-xl p-4">
+          <div className="text-2xl font-bold text-emerald-400">
+            {stats.reduce((s, m) => s + m.total_acts, 0)}
+          </div>
+          <div className="text-xs text-zinc-500 mt-1">Активностей всего</div>
+        </div>
+        <div className="border border-zinc-800 rounded-xl p-4">
+          <div className="text-2xl font-bold text-sky-400">
+            {stats.reduce((s, m) => s + m.acts_7d, 0)}
+          </div>
+          <div className="text-xs text-zinc-500 mt-1">За последние 7 дней</div>
+        </div>
+        <div className="border border-zinc-800 rounded-xl p-4">
+          <div className="text-2xl font-bold text-amber-400">
+            {stats.reduce((s, m) => s + m.open_tasks, 0)}
+          </div>
+          <div className="text-xs text-zinc-500 mt-1">Открытых задач</div>
+        </div>
+      </div>
+
+      {/* Per-manager cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {stats.map((m) => (
+          <div key={m.id} className="border border-zinc-800 rounded-xl p-5 space-y-4">
+            {/* Header */}
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="font-semibold text-zinc-100">{displayName(m)}</div>
+                <div className="text-xs text-zinc-500 font-mono">{m.username}</div>
+              </div>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full border ${
+                m.role === "admin"
+                  ? "border-amber-500/50 text-amber-400 bg-amber-500/10"
+                  : "border-zinc-700 text-zinc-400"
+              }`}>
+                {m.role === "admin" ? "Администратор" : "Менеджер"}
+              </span>
+            </div>
+
+            {/* Activities */}
+            <div>
+              <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Активности</div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs text-zinc-400 mb-1">
+                  <span>Всего</span>
+                  <span className="text-zinc-200 font-mono">{m.total_acts}</span>
+                </div>
+                <Bar value={m.acts_7d}  max={maxActs7} cls="bg-sky-500" />
+                <div className="text-[10px] text-zinc-600">7 дней: {m.acts_7d} · 30 дней: {m.acts_30d}</div>
+                <div className="flex gap-3 text-xs text-zinc-500 mt-1">
+                  <span>📞 {m.calls} звонков</span>
+                  <span>🤝 {m.meetings} встреч</span>
+                  <span>📝 {m.notes} заметок</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Tasks */}
+            <div>
+              <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Задачи</div>
+              <Bar value={m.total_tasks} max={maxTasks} cls="bg-emerald-500" />
+              <div className="flex gap-3 text-xs mt-2">
+                <span className="text-amber-400">{m.open_tasks} откр.</span>
+                <span className="text-emerald-400">{m.done_tasks} выполн.</span>
+                {m.overdue_tasks > 0 && (
+                  <span className="text-red-400">{m.overdue_tasks} просроч.</span>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {stats.length === 0 && (
+        <div className="text-center text-zinc-600 py-16">Нет данных</div>
+      )}
+    </div>
+  );
+}

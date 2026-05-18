@@ -29,9 +29,12 @@ export function AppSidebar() {
     { name: "Риск оттока",       href: "/churn",           adminOnly: false },
     { name: "Рассылки",          href: "/broadcasts",      adminOnly: false },
     { name: "Автоматизация",     href: "/automations",     adminOnly: false },
+    { name: "Лиды",              href: "/leads",           adminOnly: false },
     { name: "Товары",            href: "/items",           adminOnly: false },
     { name: "Акты взвешивания",  href: "/weight-tickets",  adminOnly: false },
-    { name: "Пользователи",      href: "/users",           adminOnly: true },
+    { name: "Менеджеры",         href: "/managers",        adminOnly: true  },
+    { name: "История изменений", href: "/audit-log",       adminOnly: true  },
+    { name: "Пользователи",      href: "/users",           adminOnly: true  },
   ].filter((l) => !l.adminOnly || user?.role === "admin")
 
   return (
