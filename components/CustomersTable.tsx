@@ -23,23 +23,12 @@ interface Customer {
   pending_invites: number;
 }
 
-function exportCustomersCsv(customers: Customer[]) {
-  const headers = ["Код", "Название", "Страна", "Тип", "Телефон", "Email", "Telegram"];
-  const rows = customers.map((c) => [
-    c.code, c.name,
-    c.country ?? "",
-    c.customer_type ?? "",
-    c.contact_phone ?? "",
-    c.contact_email ?? "",
-    c.tg_linked ? (c.tg_username ? `@${c.tg_username}` : "привязан") : "",
-  ]);
-  const csv = [headers, ...rows]
-    .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(";"))
-    .join("\n");
-  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
+async function exportCustomersCsv() {
+  const res  = await fetch("/api/customers/export");
+  const blob = await res.blob();
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
   a.download = `customers-${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   URL.revokeObjectURL(url);
@@ -170,9 +159,9 @@ export default function CustomersTable() {
             className="border border-zinc-700 bg-transparent rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-400 transition w-72"
           />
           <button
-            onClick={() => exportCustomersCsv(filtered)}
+            onClick={exportCustomersCsv}
             className="flex items-center gap-2 px-3 py-2 rounded-md border border-zinc-700 text-sm hover:bg-zinc-800/40 transition shrink-0"
-            title="Экспорт в CSV"
+            title="Экспорт в CSV (с сегментом и LTV)"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}

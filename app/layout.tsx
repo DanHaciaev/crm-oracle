@@ -12,7 +12,10 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "CRM Oracle"
+  title: "CRM Oracle",
+  manifest: "/manifest.json",
+  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "CRM Oracle" },
+  other: { "mobile-web-app-capable": "yes" },
 };
 
 export default function RootLayout({

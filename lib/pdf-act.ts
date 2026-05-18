@@ -2,6 +2,8 @@ import PDFDocument from "pdfkit";
 import fs from "node:fs";
 import path from "node:path";
 
+export type PdfLang = "ru" | "ro" | "en";
+
 interface Line {
   id: number;
   line_no: number | null;
@@ -27,6 +29,84 @@ interface ActData {
   lines: Line[];
 }
 
+const T = {
+  ru: {
+    title:         "ВЕСОВОЙ АКТ",
+    numLabel:      "Номер:",
+    dateLabel:     "Дата:",
+    clientLabel:   "Клиент:",
+    whLabel:       "Склад:",
+    docLabel:      "Dok. продажи:",
+    statusLabel:   "Статус:",
+    productLabel:  "Продукция:",
+    timeLabel:     "Время взвеш.:",
+    cratesLabel:   "Кол-во ящиков:",
+    colBarcode:    "Штрихкод",
+    colProduct:    "Продукция",
+    colBatch:      "Партия",
+    colGross:      "Брутто, кг",
+    colTare:       "Тара, кг",
+    colNet:        "Нетто, кг",
+    total:         "Итого:",
+    cardGross:     "Брутто",
+    cardTare:      "Тара",
+    cardNet:       "Нетто",
+    signWeigher:   "Весовщик",
+    signRecipient: "Получатель",
+    itemName: (l: Line) => l.item_name ?? "—",
+  },
+  ro: {
+    title:         "TICHET DE CANTARIRE",
+    numLabel:      "Nr.:",
+    dateLabel:     "Data:",
+    clientLabel:   "Client:",
+    whLabel:       "Depozit:",
+    docLabel:      "Doc. vânzare:",
+    statusLabel:   "Status:",
+    productLabel:  "Produs:",
+    timeLabel:     "Ora cântăririi:",
+    cratesLabel:   "Nr. lăzi:",
+    colBarcode:    "Cod",
+    colProduct:    "Produs",
+    colBatch:      "Lot",
+    colGross:      "Brut, kg",
+    colTare:       "Tara, kg",
+    colNet:        "Net, kg",
+    total:         "Total:",
+    cardGross:     "Brut",
+    cardTare:      "Tara",
+    cardNet:       "Net",
+    signWeigher:   "Cantaragiu",
+    signRecipient: "Primitor",
+    itemName: (l: Line) => l.item_name_ro ?? l.item_name ?? "—",
+  },
+  en: {
+    title:         "WEIGHT TICKET",
+    numLabel:      "Number:",
+    dateLabel:     "Date:",
+    clientLabel:   "Client:",
+    whLabel:       "Warehouse:",
+    docLabel:      "Sales doc.:",
+    statusLabel:   "Status:",
+    productLabel:  "Product:",
+    timeLabel:     "Weighed at:",
+    cratesLabel:   "Crates count:",
+    colBarcode:    "Barcode",
+    colProduct:    "Product",
+    colBatch:      "Batch",
+    colGross:      "Gross, kg",
+    colTare:       "Tare, kg",
+    colNet:        "Net, kg",
+    total:         "Total:",
+    cardGross:     "Gross",
+    cardTare:      "Tare",
+    cardNet:       "Net",
+    signWeigher:   "Weigher",
+    signRecipient: "Recipient",
+    itemName: (l: Line) => l.item_name ?? "—",
+  },
+} satisfies Record<PdfLang, unknown>;
+
 function fmt(n: number): string {
   return n.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -49,13 +129,6 @@ const PAGE_WIDTH = 595.28; // A4
 const MARGIN = 50;
 const CONTENT_WIDTH = PAGE_WIDTH - 2 * MARGIN;
 
-/**
- * Ищет TTF с кириллицей. Приоритет:
- *   1) Локальный override:   public/fonts/DejaVuSans.ttf|DejaVuSans-Bold.ttf
- *   2) Windows:              C:\Windows\Fonts\arial.ttf | arialbd.ttf
- *   3) Linux (Debian/Ubuntu) /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
- *   4) macOS:                /Library/Fonts/Arial.ttf | Arial Bold.ttf
- */
 function findCyrillicFont(): { regular: string; bold: string } {
   const candidates = [
     {
@@ -83,13 +156,13 @@ function findCyrillicFont(): { regular: string; bold: string } {
     if (fs.existsSync(c.regular) && fs.existsSync(c.bold)) return c;
   }
   throw new Error(
-    "Не найден шрифт с поддержкой кириллицы. Положи DejaVuSans.ttf и DejaVuSans-Bold.ttf в public/fonts/ " +
-    "(скачать: https://dejavu-fonts.github.io/Download.html) — или установи fonts-dejavu в системе."
+    "Не найден шрифт с поддержкой кириллицы. Положи DejaVuSans.ttf и DejaVuSans-Bold.ttf в public/fonts/"
   );
 }
 
-export async function generateActPdf(data: ActData): Promise<Buffer> {
+export async function generateActPdf(data: ActData, lang: PdfLang = "ru"): Promise<Buffer> {
   const fonts = findCyrillicFont();
+  const t = T[lang];
 
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
@@ -98,8 +171,6 @@ export async function generateActPdf(data: ActData): Promise<Buffer> {
       layout: "portrait",
     });
 
-    // Регистрируем шрифты с поддержкой кириллицы. Все text() ниже используют
-    // эти имена вместо встроенных Helvetica/Helvetica-Bold.
     doc.registerFont("Body",     fonts.regular);
     doc.registerFont("BodyBold", fonts.bold);
 
@@ -112,14 +183,14 @@ export async function generateActPdf(data: ActData): Promise<Buffer> {
     const totalTare   = data.lines.reduce((s, l) => s + l.tare_kg,  0);
     const totalNet    = data.lines.reduce((s, l) => s + l.net_kg,   0);
     const cratesCount = data.lines.length;
-    const firstItem   = data.lines[0]?.item_name ?? "—";
+    const firstItem   = t.itemName(data.lines[0] ?? { item_name: null, item_name_ro: null } as unknown as Line);
 
     // --- Header ---------------------------------------------------------
     doc.font("Body").fontSize(8).fillColor("#888888")
        .text("AGRO Company SRL", MARGIN, MARGIN, { width: CONTENT_WIDTH, align: "center" });
 
     doc.font("BodyBold").fontSize(16).fillColor("#000000")
-       .text("ВЕСОВОЙ АКТ / TICHET DE CANTARIRE", MARGIN, MARGIN + 14, { width: CONTENT_WIDTH, align: "center" });
+       .text(t.title, MARGIN, MARGIN + 14, { width: CONTENT_WIDTH, align: "center" });
 
     // --- Info fields ----------------------------------------------------
     const infoY = MARGIN + 50;
@@ -130,23 +201,23 @@ export async function generateActPdf(data: ActData): Promise<Buffer> {
     let y = infoY;
     doc.fontSize(10);
 
-    drawInfoPair(doc, col1X, y, "Номер / Nr.:",        data.ticket_number);
-    drawInfoPair(doc, col2X, y, "Дата / Data:",        fmtDateRu(data.ticket_date));
+    drawInfoPair(doc, col1X, y, t.numLabel,    data.ticket_number);
+    drawInfoPair(doc, col2X, y, t.dateLabel,   fmtDateRu(data.ticket_date));
     y += lineH;
 
-    drawInfoPair(doc, col1X, y, "Клиент / Client:",    data.customer_name ?? "—");
-    drawInfoPair(doc, col2X, y, "Склад / Depozit:",    data.warehouse_name ?? "—");
+    drawInfoPair(doc, col1X, y, t.clientLabel, data.customer_name ?? "—");
+    drawInfoPair(doc, col2X, y, t.whLabel,     data.warehouse_name ?? "—");
     y += lineH;
 
-    drawInfoPair(doc, col1X, y, "Док. продажи / Doc. vânzare:", data.sales_doc_number ?? "—");
-    drawInfoPair(doc, col2X, y, "Статус / Status:",    data.status);
+    drawInfoPair(doc, col1X, y, t.docLabel,    data.sales_doc_number ?? "—");
+    drawInfoPair(doc, col2X, y, t.statusLabel, data.status);
     y += lineH;
 
-    drawInfoPair(doc, col1X, y, "Продукция / Produs:", firstItem);
-    drawInfoPair(doc, col2X, y, "Время взвеш. / Ora cantaririi:", fmtDateTimeRu(data.created_at));
+    drawInfoPair(doc, col1X, y, t.productLabel, firstItem);
+    drawInfoPair(doc, col2X, y, t.timeLabel,    fmtDateTimeRu(data.created_at));
     y += lineH;
 
-    drawInfoPair(doc, col1X, y, "Кол-во ящиков / Nr. lazi:", String(cratesCount));
+    drawInfoPair(doc, col1X, y, t.cratesLabel, String(cratesCount));
 
     // --- Table ----------------------------------------------------------
     y += lineH + 12;
@@ -160,13 +231,13 @@ export async function generateActPdf(data: ActData): Promise<Buffer> {
       doc.rect(MARGIN, yy, CONTENT_WIDTH, 20).fill("#f5f5f5");
       doc.fillColor("#000000").font("BodyBold").fontSize(8);
       let cx = MARGIN + 2;
-      doc.text("№",                  cx, yy + 6, { width: colWidths[0], align: "center" }); cx += colWidths[0];
-      doc.text("Штрихкод / Cod",     cx, yy + 6, { width: colWidths[1] });                  cx += colWidths[1];
-      doc.text("Продукция / Produs", cx, yy + 6, { width: colWidths[2] });                  cx += colWidths[2];
-      doc.text("Партия / Lot",       cx, yy + 6, { width: colWidths[3] });                  cx += colWidths[3];
-      doc.text("Брутто, кг",         cx, yy + 6, { width: colWidths[4], align: "right" });  cx += colWidths[4];
-      doc.text("Тара, кг",           cx, yy + 6, { width: colWidths[5], align: "right" });  cx += colWidths[5];
-      doc.text("Нетто, кг",          cx, yy + 6, { width: colWidths[6], align: "right" });
+      doc.text("№",             cx, yy + 6, { width: colWidths[0], align: "center" }); cx += colWidths[0];
+      doc.text(t.colBarcode,    cx, yy + 6, { width: colWidths[1] });                  cx += colWidths[1];
+      doc.text(t.colProduct,    cx, yy + 6, { width: colWidths[2] });                  cx += colWidths[2];
+      doc.text(t.colBatch,      cx, yy + 6, { width: colWidths[3] });                  cx += colWidths[3];
+      doc.text(t.colGross,      cx, yy + 6, { width: colWidths[4], align: "right" });  cx += colWidths[4];
+      doc.text(t.colTare,       cx, yy + 6, { width: colWidths[5], align: "right" });  cx += colWidths[5];
+      doc.text(t.colNet,        cx, yy + 6, { width: colWidths[6], align: "right" });
     };
 
     drawHeader(y);
@@ -178,7 +249,7 @@ export async function generateActPdf(data: ActData): Promise<Buffer> {
       let cx = MARGIN + 2;
       doc.text(String(l.line_no ?? i + 1), cx, y + 2, { width: colWidths[0], align: "center" }); cx += colWidths[0];
       doc.text(l.crate_code   ?? "—",      cx, y + 2, { width: colWidths[1] });                  cx += colWidths[1];
-      doc.text(l.item_name    ?? "—",      cx, y + 2, { width: colWidths[2] });                  cx += colWidths[2];
+      doc.text(t.itemName(l),              cx, y + 2, { width: colWidths[2] });                  cx += colWidths[2];
       doc.text(l.batch_number ?? "—",      cx, y + 2, { width: colWidths[3] });                  cx += colWidths[3];
       doc.text(fmt(l.gross_kg),            cx, y + 2, { width: colWidths[4], align: "right" });  cx += colWidths[4];
       doc.text(fmt(l.tare_kg),             cx, y + 2, { width: colWidths[5], align: "right" });  cx += colWidths[5];
@@ -189,7 +260,7 @@ export async function generateActPdf(data: ActData): Promise<Buffer> {
     // Totals
     doc.font("BodyBold");
     let cx = MARGIN + 2;
-    doc.text("Итого / Total:", cx, y + 2, {
+    doc.text(t.total, cx, y + 2, {
       width: colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3],
       align: "right",
     });
@@ -213,9 +284,9 @@ export async function generateActPdf(data: ActData): Promise<Buffer> {
          .text("кг", x, y + cardH - 14, { width: cardW, align: "center" });
     };
 
-    drawCard(MARGIN,                       "Брутто / Brut", fmt(totalGross));
-    drawCard(MARGIN + cardW + 8,           "Тара / Tara",   fmt(totalTare));
-    drawCard(MARGIN + 2 * (cardW + 8),     "Нетто / Net",   fmt(totalNet));
+    drawCard(MARGIN,                   t.cardGross, fmt(totalGross));
+    drawCard(MARGIN + cardW + 8,       t.cardTare,  fmt(totalTare));
+    drawCard(MARGIN + 2 * (cardW + 8), t.cardNet,   fmt(totalNet));
 
     // --- Signatures -----------------------------------------------------
     y += cardH + 30;
@@ -223,10 +294,10 @@ export async function generateActPdf(data: ActData): Promise<Buffer> {
 
     doc.moveTo(MARGIN, y).lineTo(MARGIN + signW, y).stroke("#aaaaaa");
     doc.font("Body").fontSize(8).fillColor("#888888")
-       .text("Весовщик / Cantaragiu", MARGIN, y + 4, { width: signW, align: "center" });
+       .text(t.signWeigher, MARGIN, y + 4, { width: signW, align: "center" });
 
     doc.moveTo(MARGIN + signW + 24, y).lineTo(MARGIN + signW + 24 + signW, y).stroke("#aaaaaa");
-    doc.text("Получатель / Primitor", MARGIN + signW + 24, y + 4, { width: signW, align: "center" });
+    doc.text(t.signRecipient, MARGIN + signW + 24, y + 4, { width: signW, align: "center" });
 
     doc.end();
   });

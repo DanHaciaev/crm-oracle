@@ -8,6 +8,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
 } from "recharts";
 import SalesTable from "@/components/SalesTable";
+import ActivityTimeline from "@/components/ActivityTimeline";
 
 interface AppUser {
   id:                number;
@@ -46,20 +47,23 @@ interface CustomerDetail {
 }
 
 interface CustomerStats {
-  total_revenue:    number;
-  total_net_kg:     number;
-  order_count:      number;
-  avg_check:        number;
-  last_order_date:  string | null;
-  first_order_date: string | null;
-  avg_days_between: number | null;
-  churn_pct:        number | null;
-  churn_cur:        number;
-  churn_prv:        number;
+  total_revenue:       number;
+  total_net_kg:        number;
+  order_count:         number;
+  avg_check:           number;
+  last_order_date:     string | null;
+  first_order_date:    string | null;
+  avg_days_between:    number | null;
+  days_since_last:     number | null;
+  next_order_expected: string | null;
+  overdue_days:        number | null;
+  churn_pct:           number | null;
+  churn_cur:           number;
+  churn_prv:           number;
   monthly: { month: string; revenue: number; orders: number }[];
 }
 
-type Tab = "info" | "sales" | "telegram";
+type Tab = "info" | "sales" | "activities" | "telegram";
 
 function fmtDate(s: string | null) {
   if (!s) return "—";
@@ -99,6 +103,8 @@ export default function CustomerDetail({ id }: { id: string }) {
   const [newLink, setNewLink]   = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin]   = useState(false);
   const router                  = useRouter();
 
   const fetchData = useCallback(async () => {
@@ -118,6 +124,17 @@ export default function CustomerDetail({ id }: { id: string }) {
   }, [id]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then(r => r.json())
+      .then((d: unknown) => {
+        const p = d as { username?: string; role?: string };
+        if (p?.username) setCurrentUser(p.username);
+        if (p?.role === "admin") setIsAdmin(true);
+      })
+      .catch(() => {});
+  }, []);
 
   async function generateLink() {
     setGenerating(true); setNewLink(null);
@@ -204,9 +221,10 @@ export default function CustomerDetail({ id }: { id: string }) {
       {/* Tabs */}
       <div className="flex gap-1 border-b border-zinc-800 pb-0">
         {([
-          { key: "info",     label: "Информация" },
-          { key: "sales",    label: `Продажи${stats ? ` (${stats.order_count})` : ""}` },
-          { key: "telegram", label: "Telegram" },
+          { key: "info",       label: "Информация" },
+          { key: "sales",      label: `Продажи${stats ? ` (${stats.order_count})` : ""}` },
+          { key: "activities", label: "Активности" },
+          { key: "telegram",   label: "Telegram" },
         ] as { key: Tab; label: string }[]).map((t) => (
           <button key={t.key} onClick={() => setTab(t.key)}
             className={`px-4 py-2 text-sm transition border-b-2 -mb-px ${
@@ -229,6 +247,11 @@ export default function CustomerDetail({ id }: { id: string }) {
             <Field label="Активен"  value={data.active ? "Да" : "Нет"} />
             <div className="md:col-span-2"><Field label="Адрес" value={data.address} /></div>
           </section>
+
+          {/* Retention signals */}
+          {stats && stats.order_count > 0 && (
+            <RetentionBlock stats={stats} />
+          )}
 
           <section className="border border-red-500/30 rounded-xl p-5">
             <h2 className="text-base font-semibold text-red-300 mb-1">Опасная зона</h2>
@@ -292,6 +315,15 @@ export default function CustomerDetail({ id }: { id: string }) {
           {/* Sales table */}
           <SalesTable customerId={data.id} compact />
         </div>
+      )}
+
+      {/* ── TAB: ACTIVITIES ── */}
+      {tab === "activities" && (
+        <ActivityTimeline
+          customerId={data.id}
+          currentUser={currentUser ?? undefined}
+          isAdmin={isAdmin}
+        />
       )}
 
       {/* ── TAB: TELEGRAM ── */}
@@ -396,6 +428,82 @@ function KpiCard({ label, value, highlight }: { label: string; value: string; hi
       <div className={`text-xl font-bold tabular-nums ${highlight ?? ""}`}>{value}</div>
       <div className="text-xs text-zinc-500 mt-1">{label}</div>
     </div>
+  );
+}
+
+function RetentionBlock({ stats }: { stats: CustomerStats }) {
+  const { days_since_last, avg_days_between, next_order_expected, overdue_days, order_count, total_revenue, avg_check } = stats;
+
+  // colour for days-since indicator
+  let daysColor = "text-emerald-400";
+  if (days_since_last !== null && avg_days_between !== null) {
+    if (days_since_last > avg_days_between * 1.5) daysColor = "text-red-400";
+    else if (days_since_last > avg_days_between)  daysColor = "text-amber-400";
+  }
+
+  function fmtD(s: string | null) {
+    if (!s) return "—";
+    const d = new Date(s);
+    if (Number.isNaN(d.getTime())) return s;
+    return d.toLocaleDateString("ru-RU", { day: "2-digit", month: "short", year: "numeric" });
+  }
+
+  return (
+    <section className="border border-zinc-800 rounded-xl p-5 space-y-4">
+      <h2 className="text-sm font-semibold text-zinc-300">Активность закупок</h2>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+        <div className="border border-zinc-800 rounded-xl p-3">
+          <div className="text-xs text-zinc-500 mb-1">LTV</div>
+          <div className="text-lg font-bold text-zinc-100 tabular-nums">
+            {total_revenue.toLocaleString("ru-RU", { maximumFractionDigits: 0 })}
+          </div>
+          <div className="text-[10px] text-zinc-600">MDL</div>
+        </div>
+
+        <div className="border border-zinc-800 rounded-xl p-3">
+          <div className="text-xs text-zinc-500 mb-1">Средний чек</div>
+          <div className="text-lg font-bold text-zinc-100 tabular-nums">
+            {avg_check.toLocaleString("ru-RU", { maximumFractionDigits: 0 })}
+          </div>
+          <div className="text-[10px] text-zinc-600">MDL · {order_count} заказов</div>
+        </div>
+
+        <div className="border border-zinc-800 rounded-xl p-3">
+          <div className="text-xs text-zinc-500 mb-1">Дней с последнего</div>
+          <div className={`text-lg font-bold tabular-nums ${daysColor}`}>
+            {days_since_last !== null ? days_since_last : "—"}
+          </div>
+          <div className="text-[10px] text-zinc-600">
+            {avg_days_between !== null ? `цикл ~${avg_days_between} дн.` : "цикл неизвестен"}
+          </div>
+        </div>
+
+        <div className="border border-zinc-800 rounded-xl p-3">
+          <div className="text-xs text-zinc-500 mb-1">Следующий заказ</div>
+          <div className="text-sm font-semibold text-zinc-200">
+            {fmtD(next_order_expected)}
+          </div>
+          {overdue_days !== null && overdue_days > 0 ? (
+            <div className="text-[10px] text-red-400 mt-0.5">
+              просрочка {overdue_days} дн.
+            </div>
+          ) : (
+            <div className="text-[10px] text-zinc-600 mt-0.5">прогноз</div>
+          )}
+        </div>
+      </div>
+
+      {overdue_days !== null && overdue_days > 0 && (
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-red-500/30 bg-red-500/8 text-sm text-red-300">
+          <span>⚠️</span>
+          <span>
+            Клиент не покупал <strong>{days_since_last} дн.</strong> — ожидалось через{" "}
+            <strong>{avg_days_between} дн.</strong> Просрочка: <strong>{overdue_days} дн.</strong>
+          </span>
+        </div>
+      )}
+    </section>
   );
 }
 
