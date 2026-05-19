@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useT } from "@/lib/locale";
 
 interface AppUserSeed {
   id:                number;
@@ -14,6 +15,7 @@ export default function CreateCustomerModal({ appUser, onClose, onCreated }: {
   onClose: () => void;
   onCreated: () => void;
 }) {
+  const t = useT();
   const initialName = [appUser.first_name, appUser.last_name].filter(Boolean).join(" ")
                     || (appUser.telegram_username ? `@${appUser.telegram_username}` : "");
 
@@ -37,7 +39,7 @@ export default function CreateCustomerModal({ appUser, onClose, onCreated }: {
   }, [onClose]);
 
   async function submit() {
-    if (!form.name.trim()) { setError("Имя обязательно"); return; }
+    if (!form.name.trim()) { setError(t("customers.nameRequired")); return; }
     setSaving(true);
     setError(null);
     const res = await fetch("/api/customers", {
@@ -58,7 +60,7 @@ export default function CreateCustomerModal({ appUser, onClose, onCreated }: {
     setSaving(false);
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
-      setError((j as { error?: string }).error ?? "Ошибка");
+      setError((j as { error?: string }).error ?? t("common.error"));
       return;
     }
     onCreated();
@@ -73,53 +75,53 @@ export default function CreateCustomerModal({ appUser, onClose, onCreated }: {
       <div className="bg-zinc-950 border border-zinc-800 text-zinc-100 rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-auto">
         <div className="p-6 border-b border-zinc-800 flex items-start justify-between">
           <div>
-            <h2 className="text-lg font-semibold">Создать клиента</h2>
+            <h2 className="text-lg font-semibold">{t("customers.newCustomer")}</h2>
             <p className="text-sm text-gray-400 mt-0.5">
-              Привязка к собеседнику{appUser.telegram_username ? ` @${appUser.telegram_username}` : ""} произойдёт автоматически.
+              {t("customers.bindingTo")}{appUser.telegram_username ? ` @${appUser.telegram_username}` : ""} {t("customers.bindingAuto")}.
             </p>
           </div>
           <button onClick={onClose} className="text-zinc-500 hover:text-zinc-200 text-xl leading-none">×</button>
         </div>
 
         <div className="p-6 space-y-3">
-          <Field label="Имя клиента *">
+          <Field label={`${t("customers.customerName")} *`}>
             <input value={form.name} onChange={(e) => update("name", e.target.value)} className={inputCls} />
           </Field>
 
-          <Field label="Код (необязательно — сгенерируется автоматически)">
-            <input value={form.code} onChange={(e) => update("code", e.target.value)} placeholder="например CUST-001 или оставь пусто" className={inputCls} />
+          <Field label={t("customers.codeOptional")}>
+            <input value={form.code} onChange={(e) => update("code", e.target.value)} placeholder={t("customers.codePlaceholder")} className={inputCls} />
           </Field>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Тип">
+            <Field label={t("common.type")}>
               <select
                 value={form.customer_type}
                 onChange={(e) => update("customer_type", e.target.value as "domestic" | "export")}
                 className={`${inputCls} bg-transparent`}
               >
-                <option className="text-black" value="domestic">domestic</option>
-                <option className="text-black" value="export">export</option>
+                <option className="text-black" value="domestic">{t("sales.types.domestic")}</option>
+                <option className="text-black" value="export">{t("sales.types.export")}</option>
               </select>
             </Field>
-            <Field label="Страна">
+            <Field label={t("common.country")}>
               <input value={form.country} onChange={(e) => update("country", e.target.value)} className={inputCls} />
             </Field>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Телефон">
+            <Field label={t("common.phone")}>
               <input value={form.contact_phone} onChange={(e) => update("contact_phone", e.target.value)} className={inputCls} />
             </Field>
-            <Field label="Email">
+            <Field label={t("common.email")}>
               <input value={form.contact_email} onChange={(e) => update("contact_email", e.target.value)} className={inputCls} />
             </Field>
           </div>
 
-          <Field label="Tax ID">
+          <Field label={t("customers.taxId")}>
             <input value={form.tax_id} onChange={(e) => update("tax_id", e.target.value)} className={inputCls} />
           </Field>
 
-          <Field label="Адрес">
+          <Field label={t("customers.address")}>
             <input value={form.address} onChange={(e) => update("address", e.target.value)} className={inputCls} />
           </Field>
 
@@ -130,14 +132,14 @@ export default function CreateCustomerModal({ appUser, onClose, onCreated }: {
 
         <div className="flex justify-end gap-2 p-4 border-t border-zinc-800">
           <button onClick={onClose} className="px-4 py-2 text-sm rounded-lg border border-zinc-700 hover:bg-zinc-800 transition">
-            Отмена
+            {t("common.cancel")}
           </button>
           <button
             onClick={submit}
             disabled={saving || !form.name.trim()}
             className="px-4 py-2 text-sm rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white transition"
           >
-            {saving ? "Создаём..." : "Создать и привязать"}
+            {saving ? t("customers.creating") : t("customers.createAndLink")}
           </button>
         </div>
       </div>

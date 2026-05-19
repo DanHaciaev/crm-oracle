@@ -1,6 +1,8 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useT } from "@/lib/locale";
 
 interface Attachment {
   id:          number;
@@ -30,23 +32,24 @@ function fmtDate(s: string | null) {
 
 function fileIcon(type: string | null) {
   if (!type) return "📄";
-  if (type.startsWith("image/"))       return "🖼️";
-  if (type === "application/pdf")      return "📕";
-  if (type.includes("word") || type.includes("document")) return "📝";
-  if (type.includes("excel") || type.includes("sheet"))   return "📊";
+  if (type.startsWith("image/"))                              return "🖼️";
+  if (type === "application/pdf")                             return "📕";
+  if (type.includes("word") || type.includes("document"))    return "📝";
+  if (type.includes("excel") || type.includes("sheet"))      return "📊";
   return "📄";
 }
 
 interface Props {
-  entityType: "customer" | "task";
-  entityId:   number;
+  entityType:   "customer" | "task";
+  entityId:     number;
   currentUser?: string;
-  isAdmin?:    boolean;
+  isAdmin?:     boolean;
 }
 
 export default function AttachmentsPanel({ entityType, entityId, currentUser, isAdmin }: Props) {
-  const [items, setItems]     = useState<Attachment[]>([]);
-  const [loading, setLoading] = useState(true);
+  const t = useT();
+  const [items, setItems]         = useState<Attachment[]>([]);
+  const [loading, setLoading]     = useState(true);
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting]   = useState<number | null>(null);
   const [error, setError]         = useState<string | null>(null);
@@ -72,7 +75,7 @@ export default function AttachmentsPanel({ entityType, entityId, currentUser, is
       form.append("entity_id",   String(entityId));
       const res  = await fetch("/api/attachments", { method: "POST", body: form });
       const json = await res.json().catch(() => ({})) as { error?: string };
-      if (!res.ok) { setError(json.error ?? "Ошибка загрузки"); break; }
+      if (!res.ok) { setError(json.error ?? t("files.uploadError")); break; }
     }
     setUploading(false);
     load();
@@ -80,7 +83,7 @@ export default function AttachmentsPanel({ entityType, entityId, currentUser, is
   }
 
   async function remove(att: Attachment) {
-    if (!confirm(`Удалить файл "${att.file_name}"?`)) return;
+    if (!confirm(`${t("files.deleteConfirm")} "${att.file_name}"?`)) return;
     setDeleting(att.id);
     await fetch(`/api/attachments/${att.id}`, { method: "DELETE" });
     setDeleting(null);
@@ -89,7 +92,6 @@ export default function AttachmentsPanel({ entityType, entityId, currentUser, is
 
   return (
     <div className="space-y-4">
-      {/* Upload zone */}
       <div
         className="border-2 border-dashed border-zinc-700 rounded-xl p-6 text-center cursor-pointer hover:border-zinc-500 transition"
         onClick={() => inputRef.current?.click()}
@@ -104,24 +106,25 @@ export default function AttachmentsPanel({ entityType, entityId, currentUser, is
           onChange={(e) => upload(e.target.files)}
         />
         {uploading ? (
-          <p className="text-sm text-zinc-400">Загружаем...</p>
+          <p className="text-sm text-zinc-400">{t("files.uploading")}</p>
         ) : (
           <>
-            <p className="text-sm text-zinc-400">Перетащите файлы сюда или <span className="text-white underline">выберите</span></p>
-            <p className="text-xs text-zinc-600 mt-1">Максимум 20 МБ на файл</p>
+            <p className="text-sm text-zinc-400">
+              {t("files.dropzoneOrSelect")} <span className="text-white underline">{t("files.orSelect")}</span>
+            </p>
+            <p className="text-xs text-zinc-600 mt-1">{t("files.maxSizeFile")}</p>
           </>
         )}
       </div>
 
       {error && <p className="text-sm text-red-400">{error}</p>}
 
-      {/* File list */}
       {loading ? (
         <div className="space-y-2">
           {[1, 2].map((i) => <div key={i} className="h-12 animate-pulse bg-zinc-800/40 rounded-lg" />)}
         </div>
       ) : items.length === 0 ? (
-        <p className="text-sm text-zinc-600 text-center py-4">Вложений пока нет</p>
+        <p className="text-sm text-zinc-600 text-center py-4">{t("files.noFiles")}</p>
       ) : (
         <div className="space-y-2">
           {items.map((att) => {
@@ -149,14 +152,14 @@ export default function AttachmentsPanel({ entityType, entityId, currentUser, is
                     rel="noreferrer"
                     className="text-xs text-zinc-500 hover:text-white transition px-2 py-1 border border-zinc-700 rounded-lg"
                   >
-                    Скачать
+                    {t("common.download")}
                   </a>
                   {canDel && (
                     <button
                       onClick={() => remove(att)}
                       disabled={deleting === att.id}
                       className="text-zinc-700 hover:text-red-400 transition text-xs disabled:opacity-40 opacity-0 group-hover:opacity-100"
-                      title="Удалить"
+                      title={t("common.delete")}
                     >
                       ✕
                     </button>

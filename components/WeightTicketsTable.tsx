@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/table";
 import WeightTicketDetailModal from "@/components/WeightTicketDetailModal";
 import type { PdfLang } from "@/lib/pdf-act";
+import { useT, useLocale } from "@/lib/locale";
 
 export interface WeightTicket {
   id:               number;
@@ -23,9 +24,10 @@ export interface WeightTicket {
 type StatusFilter = "all" | "draft" | "finalized";
 
 function StatusBadge({ status }: { status: string }) {
+  const t = useT();
   const cfg: Record<string, { label: string; cls: string }> = {
-    draft:     { label: "Черновик",       cls: "border-amber-500/40 text-amber-400 bg-amber-500/10" },
-    finalized: { label: "Финализирован",  cls: "border-emerald-500/40 text-emerald-400 bg-emerald-500/10" },
+    draft:     { label: t("weightTickets.statusDraft"),     cls: "border-amber-500/40 text-amber-400 bg-amber-500/10" },
+    finalized: { label: t("weightTickets.statusFinalized"), cls: "border-emerald-500/40 text-emerald-400 bg-emerald-500/10" },
   };
   const { label, cls } = cfg[status] ?? { label: status, cls: "border-zinc-600 text-zinc-400 bg-zinc-800" };
   return (
@@ -35,42 +37,9 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function fmtKg(n: number) {
-  return n.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-function fmtKgShort(n: number) {
-  return n.toLocaleString("ru-RU", { maximumFractionDigits: 2 });
-}
-function fmtDate(s: string | null): string {
-  if (!s) return "—";
-  const d = new Date(s);
-  if (Number.isNaN(d.getTime())) return s;
-  return d.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
-}
-function exportCsv(tickets: WeightTicket[]) {
-  const headers = ["Номер", "Дата", "Клиент", "Склад", "Документ продажи", "Статус", "Нетто кг"];
-  const rows = tickets.map((t) => [
-    t.ticket_number,
-    fmtDate(t.ticket_date),
-    t.customer_name ?? "",
-    t.warehouse_name ?? "",
-    t.sales_doc_number ?? "",
-    t.status,
-    t.net_kg.toFixed(2).replace(".", ","),
-  ]);
-  const csv = [headers, ...rows]
-    .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(";"))
-    .join("\n");
-  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `weight-tickets-${new Date().toISOString().slice(0, 10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
 export default function WeightTicketsTable() {
+  const t = useT();
+  const { locale } = useLocale();
   const [tickets, setTickets]     = useState<WeightTicket[]>([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
@@ -82,6 +51,52 @@ export default function WeightTicketsTable() {
   const [sendingId, setSendingId]   = useState<number | null>(null);
   const [langPickId, setLangPickId] = useState<number | null>(null);
 
+  const loc = locale === "ru" ? "ru-RU" : locale === "ro" ? "ro-RO" : "en-GB";
+
+  function fmtKg(n: number) {
+    return n.toLocaleString(loc, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function fmtKgShort(n: number) {
+    return n.toLocaleString(loc, { maximumFractionDigits: 2 });
+  }
+  function fmtDate(s: string | null): string {
+    if (!s) return "—";
+    const d = new Date(s);
+    if (Number.isNaN(d.getTime())) return s;
+    return d.toLocaleDateString(loc, { day: "2-digit", month: "2-digit", year: "numeric" });
+  }
+
+  function exportCsv(items: WeightTicket[]) {
+    const headers = [
+      t("weightTickets.cols.num"),
+      t("weightTickets.cols.date"),
+      t("weightTickets.cols.customer"),
+      t("weightTickets.cols.vehicle"),
+      t("weightTickets.salesDoc"),
+      t("weightTickets.cols.status"),
+      t("weightTickets.cols.net"),
+    ];
+    const rows = items.map((ticket) => [
+      ticket.ticket_number,
+      fmtDate(ticket.ticket_date),
+      ticket.customer_name ?? "",
+      ticket.warehouse_name ?? "",
+      ticket.sales_doc_number ?? "",
+      ticket.status,
+      ticket.net_kg.toFixed(2).replace(".", ","),
+    ]);
+    const csv = [headers, ...rows]
+      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(";"))
+      .join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `weight-tickets-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   const fetchTickets = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -91,29 +106,29 @@ export default function WeightTicketsTable() {
     const url = `/api/weight-tickets${params.size ? "?" + params : ""}`;
     const res  = await fetch(url);
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) setError((data as { error?: string }).error ?? "Ошибка");
+    if (!res.ok) setError((data as { error?: string }).error ?? t("common.error"));
     else         setTickets(data as WeightTicket[]);
     setLoading(false);
-  }, [dateFrom, dateTo]);
+  }, [dateFrom, dateTo, t]);
 
   useEffect(() => { fetchTickets(); }, [fetchTickets]);
 
   const stats = useMemo(() => ({
     total:     tickets.length,
-    drafts:    tickets.filter((t) => t.status === "draft").length,
-    finalized: tickets.filter((t) => t.status === "finalized").length,
-    totalKg:   tickets.reduce((s, t) => s + (t.net_kg ?? 0), 0),
+    drafts:    tickets.filter((ticket) => ticket.status === "draft").length,
+    finalized: tickets.filter((ticket) => ticket.status === "finalized").length,
+    totalKg:   tickets.reduce((s, ticket) => s + (ticket.net_kg ?? 0), 0),
   }), [tickets]);
 
   const filtered = useMemo(() => {
-    return tickets.filter((t) => {
-      const matchStatus = statusFilter === "all" || t.status === statusFilter;
+    return tickets.filter((ticket) => {
+      const matchStatus = statusFilter === "all" || ticket.status === statusFilter;
       const q = search.toLowerCase();
       const matchSearch = !q ||
-        t.ticket_number.toLowerCase().includes(q) ||
-        (t.customer_name ?? "").toLowerCase().includes(q) ||
-        (t.warehouse_name ?? "").toLowerCase().includes(q) ||
-        (t.sales_doc_number ?? "").toLowerCase().includes(q);
+        ticket.ticket_number.toLowerCase().includes(q) ||
+        (ticket.customer_name ?? "").toLowerCase().includes(q) ||
+        (ticket.warehouse_name ?? "").toLowerCase().includes(q) ||
+        (ticket.sales_doc_number ?? "").toLowerCase().includes(q);
       return matchStatus && matchSearch;
     });
   }, [tickets, statusFilter, search]);
@@ -128,9 +143,9 @@ export default function WeightTicketsTable() {
         body: JSON.stringify({ lang }),
       });
       const json = await res.json().catch(() => ({}));
-      alert(res.ok ? "✅ Акт отправлен клиенту в Telegram" : (json as { error?: string }).error ?? "Ошибка отправки");
+      alert(res.ok ? t("weightTickets.tgSentSuccess") : (json as { error?: string }).error ?? t("common.error"));
     } catch {
-      alert("❌ Ошибка сети");
+      alert(t("weightTickets.networkError"));
     } finally {
       setSendingId(null);
     }
@@ -138,11 +153,10 @@ export default function WeightTicketsTable() {
 
   return (
     <div className="p-8">
-      {/* Header */}
       <div className="flex items-start justify-between mb-6 gap-4 flex-col acts:flex-row">
         <div>
-          <h1 className="text-2xl font-bold">Акты взвешивания</h1>
-          <p className="text-sm text-gray-500 mt-1">Журнал актов с деталями и печатью</p>
+          <h1 className="text-2xl font-bold">{t("weightTickets.title")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t("weightTickets.journalSubtitle")}</p>
         </div>
         <button
           onClick={() => exportCsv(filtered)}
@@ -152,27 +166,23 @@ export default function WeightTicketsTable() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
               d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
           </svg>
-          Экспорт CSV
+          {t("weightTickets.exportCsv")}
         </button>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-6 items-end">
-        {/* Status buttons */}
         <div className="flex gap-2">
-          <FilterBtn active={statusFilter === "all"}       onClick={() => setStatus("all")}       label="Все"            count={stats.total} />
-          <FilterBtn active={statusFilter === "draft"}     onClick={() => setStatus("draft")}     label="Черновики"      count={stats.drafts} />
-          <FilterBtn active={statusFilter === "finalized"} onClick={() => setStatus("finalized")} label="Финализованы"   count={stats.finalized} />
+          <FilterBtn active={statusFilter === "all"}       onClick={() => setStatus("all")}       label={t("common.all")}                   count={stats.total} />
+          <FilterBtn active={statusFilter === "draft"}     onClick={() => setStatus("draft")}     label={t("weightTickets.filterDraft")}    count={stats.drafts} />
+          <FilterBtn active={statusFilter === "finalized"} onClick={() => setStatus("finalized")} label={t("weightTickets.filterFinalized")} count={stats.finalized} />
         </div>
 
-        {/* Date range */}
         <div className="flex items-center gap-2">
           <input
             type="date"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
             className="border border-zinc-700 bg-transparent rounded-lg px-3 py-1.5 text-sm outline-none focus:border-zinc-400 transition"
-            placeholder="От"
           />
           <span className="text-zinc-600 text-sm">—</span>
           <input
@@ -180,7 +190,6 @@ export default function WeightTicketsTable() {
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
             className="border border-zinc-700 bg-transparent rounded-lg px-3 py-1.5 text-sm outline-none focus:border-zinc-400 transition"
-            placeholder="До"
           />
           {(dateFrom || dateTo) && (
             <button
@@ -190,72 +199,68 @@ export default function WeightTicketsTable() {
           )}
         </div>
 
-        {/* Search */}
         <input
           type="text"
-          placeholder="Поиск по клиенту, номеру..."
+          placeholder={t("weightTickets.searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="border border-zinc-700 bg-transparent rounded-lg px-3 py-1.5 text-sm outline-none focus:border-zinc-400 transition w-64"
         />
       </div>
 
-      {/* Stat cards */}
       <div className="grid grid-cols-2 acts:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Всего актов"    value={String(stats.total)} />
-        <StatCard label="Черновики"      value={String(stats.drafts)} />
-        <StatCard label="Финализованы"   value={String(stats.finalized)} />
-        <StatCard label="Всего нетто кг" value={fmtKgShort(stats.totalKg)} />
+        <StatCard label={t("weightTickets.totalTickets")}  value={String(stats.total)} />
+        <StatCard label={t("weightTickets.totalDrafts")}   value={String(stats.drafts)} />
+        <StatCard label={t("weightTickets.totalFinalized")}value={String(stats.finalized)} />
+        <StatCard label={t("weightTickets.totalNetKg")}    value={fmtKgShort(stats.totalKg)} />
       </div>
 
-      {/* Table */}
       <div className="border border-zinc-800 rounded-xl overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>НОМЕР</TableHead>
-              <TableHead>ДАТА</TableHead>
-              <TableHead>КЛИЕНТ</TableHead>
-              <TableHead>СКЛАД</TableHead>
-              <TableHead>ДОК. ПРОДАЖИ</TableHead>
-              <TableHead>СТАТУС</TableHead>
-              <TableHead className="text-right">НЕТТО КГ</TableHead>
-              <TableHead className="text-center">ДЕЙСТВИЯ</TableHead>
+              <TableHead>{t("weightTickets.cols.num").toUpperCase()}</TableHead>
+              <TableHead>{t("weightTickets.cols.date").toUpperCase()}</TableHead>
+              <TableHead>{t("weightTickets.cols.customer").toUpperCase()}</TableHead>
+              <TableHead>{t("weightTickets.warehouse").toUpperCase()}</TableHead>
+              <TableHead>{t("weightTickets.salesDoc").toUpperCase()}</TableHead>
+              <TableHead>{t("weightTickets.cols.status").toUpperCase()}</TableHead>
+              <TableHead className="text-right">{t("weightTickets.cols.net").toUpperCase()}</TableHead>
+              <TableHead className="text-center">{t("common.actions").toUpperCase()}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={8} className="text-center text-gray-400 py-8">Загрузка...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center text-gray-400 py-8">{t("common.loading")}</TableCell></TableRow>
             ) : error ? (
               <TableRow><TableCell colSpan={8} className="text-center text-red-500 py-8">{error}</TableCell></TableRow>
             ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={8} className="text-center text-gray-400 py-8">Актов не найдено</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center text-gray-400 py-8">{t("weightTickets.noTickets")}</TableCell></TableRow>
             ) : (
-              filtered.map((t) => (
-                <TableRow key={t.id} className="hover:bg-zinc-900/40 transition-colors">
-                  <TableCell className="font-mono text-sm">{t.ticket_number}</TableCell>
-                  <TableCell className="tabular-nums">{fmtDate(t.ticket_date)}</TableCell>
-                  <TableCell>{t.customer_name ?? "—"}</TableCell>
-                  <TableCell className="text-zinc-400">{t.warehouse_name ?? "—"}</TableCell>
-                  <TableCell className="font-mono text-sm">{t.sales_doc_number ?? "—"}</TableCell>
-                  <TableCell><StatusBadge status={t.status} /></TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">{fmtKg(t.net_kg)}</TableCell>
+              filtered.map((ticket) => (
+                <TableRow key={ticket.id} className="hover:bg-zinc-900/40 transition-colors">
+                  <TableCell className="font-mono text-sm">{ticket.ticket_number}</TableCell>
+                  <TableCell className="tabular-nums">{fmtDate(ticket.ticket_date)}</TableCell>
+                  <TableCell>{ticket.customer_name ?? "—"}</TableCell>
+                  <TableCell className="text-zinc-400">{ticket.warehouse_name ?? "—"}</TableCell>
+                  <TableCell className="font-mono text-sm">{ticket.sales_doc_number ?? "—"}</TableCell>
+                  <TableCell><StatusBadge status={ticket.status} /></TableCell>
+                  <TableCell className="text-right font-mono tabular-nums">{fmtKg(ticket.net_kg)}</TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-1 flex-wrap">
                       <button
-                        onClick={() => setOpenId(t.id)}
+                        onClick={() => setOpenId(ticket.id)}
                         className="px-3 py-1 text-xs rounded-md border border-zinc-700 hover:bg-zinc-800 transition"
                       >
-                        Открыть
+                        {t("weightTickets.open")}
                       </button>
-                      {langPickId === t.id ? (
+                      {langPickId === ticket.id ? (
                         <>
                           {(["ru", "ro", "en"] as const).map((lng) => (
                             <button
                               key={lng}
-                              onClick={() => sendToTelegram(t.id, lng)}
+                              onClick={() => sendToTelegram(ticket.id, lng)}
                               className="px-2 py-1 text-xs rounded-md border border-sky-700 text-sky-300 hover:bg-sky-900/60 transition"
-                              title={{ ru: "Русский", ro: "Română", en: "English" }[lng]}
                             >
                               {lng.toUpperCase()}
                             </button>
@@ -269,12 +274,12 @@ export default function WeightTicketsTable() {
                         </>
                       ) : (
                         <button
-                          onClick={() => setLangPickId(t.id)}
-                          disabled={sendingId === t.id}
+                          onClick={() => setLangPickId(ticket.id)}
+                          disabled={sendingId === ticket.id}
                           className="px-3 py-1 text-xs rounded-md border border-sky-700 text-sky-400 hover:bg-sky-950/50 transition disabled:opacity-40"
-                          title="Отправить акт в Telegram клиенту"
+                          title={t("weightTickets.sendTg")}
                         >
-                          {sendingId === t.id ? "..." : "TG"}
+                          {sendingId === ticket.id ? "..." : "TG"}
                         </button>
                       )}
                     </div>
@@ -286,10 +291,9 @@ export default function WeightTicketsTable() {
         </Table>
       </div>
 
-      {/* Footer summary */}
       {filtered.length > 0 && !loading && (
         <div className="mt-3 text-right text-xs text-zinc-500">
-          Показано: {filtered.length} — Нетто: {fmtKgShort(filtered.reduce((s, t) => s + t.net_kg, 0))} кг
+          {t("weightTickets.showing")}: {filtered.length} — {t("weightTickets.netto")}: {fmtKgShort(filtered.reduce((s, ticket) => s + ticket.net_kg, 0))} кг
         </div>
       )}
 

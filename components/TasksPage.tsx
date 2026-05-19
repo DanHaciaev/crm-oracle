@@ -1,12 +1,13 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useT } from "@/lib/locale";
 
 interface Task {
   id: number; title: string;
   customer_id: number | null; customer_name: string | null;
-  deal_id: number | null; deal_title: string | null;
   assigned_to: string | null; due_date: string | null;
   priority: string; status: string; notes: string;
   created_at: string | null; completed_at: string | null;
@@ -17,18 +18,18 @@ interface NewTaskForm {
   due_date: string; priority: string; notes: string;
 }
 
-const PRIORITY_CFG: Record<string, { label: string; cls: string }> = {
-  urgent: { label: "Срочно",  cls: "border-red-500/50 text-red-400 bg-red-500/10" },
-  high:   { label: "Высокий", cls: "border-orange-500/50 text-orange-400 bg-orange-500/10" },
-  normal: { label: "Обычный", cls: "border-zinc-600 text-zinc-400 bg-zinc-800/40" },
-  low:    { label: "Низкий",  cls: "border-zinc-700 text-zinc-600 bg-transparent" },
+const PRIORITY_CLS: Record<string, string> = {
+  urgent: "border-red-500/50 text-red-400 bg-red-500/10",
+  high:   "border-orange-500/50 text-orange-400 bg-orange-500/10",
+  normal: "border-zinc-600 text-zinc-400 bg-zinc-800/40",
+  low:    "border-zinc-700 text-zinc-600 bg-transparent",
 };
 
-const STATUS_CFG: Record<string, { label: string; cls: string }> = {
-  open:        { label: "Открыта",      cls: "border-blue-500/40 text-blue-400" },
-  in_progress: { label: "В работе",     cls: "border-violet-500/40 text-violet-400" },
-  done:        { label: "Выполнена",    cls: "border-emerald-500/40 text-emerald-400" },
-  cancelled:   { label: "Отменена",     cls: "border-zinc-700 text-zinc-500" },
+const STATUS_CLS: Record<string, string> = {
+  open:        "border-blue-500/40 text-blue-400",
+  in_progress: "border-violet-500/40 text-violet-400",
+  done:        "border-emerald-500/40 text-emerald-400",
+  cancelled:   "border-zinc-700 text-zinc-500",
 };
 
 function fmtDate(s: string | null) {
@@ -44,18 +45,18 @@ function isOverdue(s: string | null, status: string) {
 }
 
 interface Customer { id: number; name: string; }
-
 interface Props { customerId?: number; compact?: boolean; }
 
 export default function TasksPage({ customerId, compact = false }: Props) {
-  const [tasks, setTasks]       = useState<Task[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState<string | null>(null);
+  const t = useT();
+  const [tasks, setTasks]         = useState<Task[]>([]);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState<string | null>(null);
   const [statusFilter, setStatus] = useState("open,in_progress");
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm]   = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [saving, setSaving]     = useState(false);
-  const [form, setForm]         = useState<NewTaskForm>({
+  const [saving, setSaving]       = useState(false);
+  const [form, setForm]           = useState<NewTaskForm>({
     title: "", customer_id: customerId ? String(customerId) : "",
     assigned_to: "", due_date: "", priority: "normal", notes: "",
   });
@@ -66,10 +67,10 @@ export default function TasksPage({ customerId, compact = false }: Props) {
     if (customerId) p.set("customer_id", String(customerId));
     const res  = await fetch(`/api/tasks${p.size ? "?" + p : ""}`);
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) setError((data as { error?: string }).error ?? "Ошибка");
+    if (!res.ok) setError((data as { error?: string }).error ?? t("common.error"));
     else setTasks(data as Task[]);
     setLoading(false);
-  }, [customerId]);
+  }, [customerId, t]);
 
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
 
@@ -84,7 +85,7 @@ export default function TasksPage({ customerId, compact = false }: Props) {
   }, [showForm, customerId, customers.length]);
 
   async function updateStatus(taskId: number, status: string) {
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status } : t));
+    setTasks(prev => prev.map(tk => tk.id === taskId ? { ...tk, status } : tk));
     await fetch(`/api/tasks/${taskId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -93,9 +94,9 @@ export default function TasksPage({ customerId, compact = false }: Props) {
   }
 
   async function deleteTask(id: number) {
-    if (!confirm("Удалить задачу?")) return;
+    if (!confirm(t("tasks.noTasks"))) return;
     await fetch(`/api/tasks/${id}`, { method: "DELETE" });
-    setTasks(prev => prev.filter(t => t.id !== id));
+    setTasks(prev => prev.filter(tk => tk.id !== id));
   }
 
   async function createTask() {
@@ -122,47 +123,44 @@ export default function TasksPage({ customerId, compact = false }: Props) {
   }
 
   const statusFilters = statusFilter.split(",");
-  const filtered = tasks.filter(t =>
-    statusFilter === "all" ? true : statusFilters.includes(t.status)
+  const filtered = tasks.filter(tk =>
+    statusFilter === "all" ? true : statusFilters.includes(tk.status)
   );
 
   const counts = { open: 0, in_progress: 0, done: 0, cancelled: 0 };
-  tasks.forEach(t => { if (t.status in counts) counts[t.status as keyof typeof counts]++; });
+  tasks.forEach(tk => { if (tk.status in counts) counts[tk.status as keyof typeof counts]++; });
 
   return (
     <div className={compact ? "" : "p-8"}>
       {!compact && (
         <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
           <div>
-            <h1 className="text-2xl font-bold">Задачи</h1>
-            <p className="text-sm text-zinc-500 mt-1">Задачи менеджеров по клиентам</p>
+            <h1 className="text-2xl font-bold">{t("tasks.title")}</h1>
+            <p className="text-sm text-zinc-500 mt-1">{t("tasks.subtitle")}</p>
           </div>
-          <button
-            onClick={() => setShowForm(true)}
-            className="px-4 py-2 rounded-lg bg-white text-black text-sm font-medium hover:bg-zinc-200 transition"
-          >
-            + Новая задача
+          <button onClick={() => setShowForm(true)}
+            className="px-4 py-2 rounded-lg bg-white text-black text-sm font-medium hover:bg-zinc-200 transition">
+            + {t("tasks.newTask")}
           </button>
         </div>
       )}
 
       {compact && (
         <div className="flex items-center justify-between mb-3">
-          <span className="text-sm font-medium text-zinc-300">Задачи</span>
+          <span className="text-sm font-medium text-zinc-300">{t("tasks.title")}</span>
           <button onClick={() => setShowForm(true)} className="text-xs px-2.5 py-1 border border-zinc-700 rounded-md hover:bg-zinc-800 transition">
-            + Добавить
+            + {t("common.add")}
           </button>
         </div>
       )}
 
-      {/* Status filter */}
       <div className="flex gap-1 flex-wrap mb-4">
         {[
-          { v: "open,in_progress", label: "Активные", count: counts.open + counts.in_progress },
-          { v: "open",             label: "Открытые", count: counts.open },
-          { v: "in_progress",      label: "В работе",  count: counts.in_progress },
-          { v: "done",             label: "Выполнены", count: counts.done },
-          { v: "all",              label: "Все",       count: tasks.length },
+          { v: "open,in_progress", label: t("taskStatuses.open") + " + " + t("taskStatuses.in_progress"), count: counts.open + counts.in_progress },
+          { v: "open",             label: t("taskStatuses.open"),        count: counts.open },
+          { v: "in_progress",      label: t("taskStatuses.in_progress"), count: counts.in_progress },
+          { v: "done",             label: t("taskStatuses.done"),        count: counts.done },
+          { v: "all",              label: t("common.all"),               count: tasks.length },
         ].map(s => (
           <button key={s.v} onClick={() => setStatus(s.v)}
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs transition
@@ -174,26 +172,23 @@ export default function TasksPage({ customerId, compact = false }: Props) {
 
       {error && <div className="text-red-400 text-sm mb-4">{error}</div>}
 
-      {/* Task list */}
       <div className="space-y-2">
         {loading ? (
-          <div className="text-zinc-500 text-sm py-6 text-center">Загрузка...</div>
+          <div className="text-zinc-500 text-sm py-6 text-center">{t("common.loading")}</div>
         ) : filtered.length === 0 ? (
-          <div className="text-zinc-600 text-sm py-6 text-center">Нет задач</div>
+          <div className="text-zinc-600 text-sm py-6 text-center">{t("tasks.noTasks")}</div>
         ) : filtered.map((task) => {
           const overdue = isOverdue(task.due_date, task.status);
-          const pCfg = PRIORITY_CFG[task.priority] ?? PRIORITY_CFG.normal;
-          const sCfg = STATUS_CFG[task.status]     ?? STATUS_CFG.open;
+          const pCls = PRIORITY_CLS[task.priority] ?? PRIORITY_CLS.normal;
+          const sCls = STATUS_CLS[task.status]     ?? STATUS_CLS.open;
           return (
             <div key={task.id}
               className={`border rounded-xl p-4 flex items-start gap-3 group transition
                 ${task.status === "done" ? "border-zinc-800/50 opacity-60" : "border-zinc-800 hover:border-zinc-700"}`}>
-              {/* Status toggle checkbox */}
               <button
                 onClick={() => updateStatus(task.id, task.status === "done" ? "open" : "done")}
                 className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition
-                  ${task.status === "done" ? "border-emerald-500 bg-emerald-500/20" : "border-zinc-600 hover:border-emerald-500"}`}
-              >
+                  ${task.status === "done" ? "border-emerald-500 bg-emerald-500/20" : "border-zinc-600 hover:border-emerald-500"}`}>
                 {task.status === "done" && <span className="text-emerald-400 text-xs">✓</span>}
               </button>
 
@@ -202,11 +197,11 @@ export default function TasksPage({ customerId, compact = false }: Props) {
                   {task.title}
                 </div>
                 <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs border ${pCfg.cls}`}>
-                    {pCfg.label}
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs border ${pCls}`}>
+                    {t(`priorities.${task.priority}`) || task.priority}
                   </span>
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs border ${sCfg.cls}`}>
-                    {sCfg.label}
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs border ${sCls}`}>
+                    {t(`taskStatuses.${task.status}`) || task.status}
                   </span>
                   {task.due_date && (
                     <span className={`text-xs ${overdue ? "text-red-400" : "text-zinc-500"}`}>
@@ -232,7 +227,7 @@ export default function TasksPage({ customerId, compact = false }: Props) {
                 {task.status === "open" && (
                   <button onClick={() => updateStatus(task.id, "in_progress")}
                     className="text-xs px-2 py-1 border border-zinc-700 rounded-md hover:bg-zinc-800 transition">
-                    В работу
+                    {t("taskStatuses.in_progress")}
                   </button>
                 )}
                 <button onClick={() => deleteTask(task.id)}
@@ -245,51 +240,49 @@ export default function TasksPage({ customerId, compact = false }: Props) {
         })}
       </div>
 
-      {/* New task modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="bg-zinc-950 border border-zinc-800 rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
-            <h2 className="text-lg font-semibold">Новая задача</h2>
+            <h2 className="text-lg font-semibold">{t("tasks.newTask")}</h2>
             <div className="space-y-3 text-sm">
-              <TInput label="Название *" value={form.title} onChange={v => setForm(f => ({ ...f, title: v }))} />
+              <TInput label={`${t("tasks.taskTitle")} *`} value={form.title} onChange={v => setForm(f => ({ ...f, title: v }))} />
               {!customerId && (
                 <div>
-                  <label className="block text-xs text-zinc-500 mb-1">Клиент</label>
-                  <select
-                    value={form.customer_id}
-                    onChange={(e) => setForm(f => ({ ...f, customer_id: e.target.value }))}
-                    className="w-full border border-zinc-700 bg-zinc-900 rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-400"
-                  >
-                    <option value="">Без клиента</option>
+                  <label className="block text-xs text-zinc-500 mb-1">{t("tasks.customer")}</label>
+                  <select value={form.customer_id} onChange={(e) => setForm(f => ({ ...f, customer_id: e.target.value }))}
+                    className="w-full border border-zinc-700 bg-zinc-900 rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-400">
+                    <option value="">—</option>
                     {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
               )}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-zinc-500 mb-1">Приоритет</label>
+                  <label className="block text-xs text-zinc-500 mb-1">{t("tasks.priority")}</label>
                   <select value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}
                     className="w-full border border-zinc-700 bg-zinc-900 rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-400">
-                    <option value="low">Низкий</option>
-                    <option value="normal">Обычный</option>
-                    <option value="high">Высокий</option>
-                    <option value="urgent">Срочно</option>
+                    <option value="low">{t("priorities.low")}</option>
+                    <option value="normal">{t("priorities.normal")}</option>
+                    <option value="high">{t("priorities.high")}</option>
+                    <option value="urgent">{t("priorities.urgent")}</option>
                   </select>
                 </div>
-                <TInput label="Срок" value={form.due_date} onChange={v => setForm(f => ({ ...f, due_date: v }))} type="date" />
+                <TInput label={t("tasks.dueDate")} value={form.due_date} onChange={v => setForm(f => ({ ...f, due_date: v }))} type="date" />
               </div>
-              <TInput label="Ответственный" value={form.assigned_to} onChange={v => setForm(f => ({ ...f, assigned_to: v }))} />
+              <TInput label={t("tasks.assignedTo")} value={form.assigned_to} onChange={v => setForm(f => ({ ...f, assigned_to: v }))} />
               <div>
-                <label className="block text-xs text-zinc-500 mb-1">Заметки</label>
+                <label className="block text-xs text-zinc-500 mb-1">{t("common.notes")}</label>
                 <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                   rows={2} className="w-full border border-zinc-700 bg-zinc-900 rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-400 resize-none" />
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-1">
-              <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm border border-zinc-700 rounded-lg hover:bg-zinc-800 transition">Отмена</button>
+              <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm border border-zinc-700 rounded-lg hover:bg-zinc-800 transition">
+                {t("common.cancel")}
+              </button>
               <button onClick={createTask} disabled={saving || !form.title}
                 className="px-4 py-2 text-sm bg-white text-black rounded-lg hover:bg-zinc-200 disabled:opacity-40 transition">
-                {saving ? "Сохраняем..." : "Создать"}
+                {saving ? t("common.saving") : t("common.create")}
               </button>
             </div>
           </div>

@@ -7,6 +7,7 @@ import {
   Table, TableBody, TableCell,
   TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { useT } from "@/lib/locale";
 
 export interface SaleDoc {
   id:               number;
@@ -23,31 +24,34 @@ export interface SaleDoc {
   invoice_number:   string;
 }
 
-const STATUS_CFG: Record<string, { label: string; cls: string }> = {
-  draft:     { label: "Черновик",    cls: "border-zinc-600    text-zinc-400    bg-zinc-800/60" },
-  confirmed: { label: "Подтверждён", cls: "border-blue-500/40  text-blue-400   bg-blue-500/10" },
-  shipped:   { label: "Отгружен",    cls: "border-violet-500/40 text-violet-400 bg-violet-500/10" },
-  closed:    { label: "Закрыт",      cls: "border-emerald-500/40 text-emerald-400 bg-emerald-500/10" },
-  cancelled: { label: "Отменён",     cls: "border-red-500/40   text-red-400    bg-red-500/10" },
+const STATUS_CLS: Record<string, string> = {
+  draft:     "border-zinc-600    text-zinc-400    bg-zinc-800/60",
+  confirmed: "border-blue-500/40  text-blue-400   bg-blue-500/10",
+  shipped:   "border-violet-500/40 text-violet-400 bg-violet-500/10",
+  closed:    "border-emerald-500/40 text-emerald-400 bg-emerald-500/10",
+  cancelled: "border-red-500/40   text-red-400    bg-red-500/10",
 };
 
-const TYPE_CFG: Record<string, { label: string; cls: string }> = {
-  domestic: { label: "Внутренний", cls: "border-amber-500/40 text-amber-400 bg-amber-500/10" },
-  export:   { label: "Экспорт",    cls: "border-sky-500/40   text-sky-400   bg-sky-500/10" },
+const TYPE_CLS: Record<string, string> = {
+  domestic: "border-amber-500/40 text-amber-400 bg-amber-500/10",
+  export:   "border-sky-500/40   text-sky-400   bg-sky-500/10",
 };
 
 function StatusBadge({ status }: { status: string }) {
-  const cfg = STATUS_CFG[status] ?? { label: status, cls: "border-zinc-600 text-zinc-400" };
-  return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cfg.cls}`}>{cfg.label}</span>;
-}
-function TypeBadge({ type }: { type: string }) {
-  const cfg = TYPE_CFG[type] ?? { label: type, cls: "border-zinc-600 text-zinc-400" };
-  return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cfg.cls}`}>{cfg.label}</span>;
+  const t   = useT();
+  const cls = STATUS_CLS[status] ?? "border-zinc-600 text-zinc-400";
+  return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cls}`}>
+    {t(`sales.statuses.${status}`) || status}
+  </span>;
 }
 
-const CURRENCY_LABELS: Record<string, string> = {
-  USD: "USD", EUR: "EUR", RON: "RON", MDL: "MDL",
-};
+function TypeBadge({ type }: { type: string }) {
+  const t   = useT();
+  const cls = TYPE_CLS[type] ?? "border-zinc-600 text-zinc-400";
+  return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cls}`}>
+    {t(`sales.types.${type}`) || type}
+  </span>;
+}
 
 function fmtDate(s: string | null) {
   if (!s) return "—";
@@ -60,35 +64,11 @@ function fmtMoney(n: number) {
 function fmtKg(n: number) {
   return n.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
-function currencyLabel(code: string) {
-  return CURRENCY_LABELS[code] ?? code;
-}
-
-function exportCsv(rows: SaleDoc[]) {
-  const headers = ["№ документа","Дата","Клиент","Тип","Статус","Валюта","Сумма","Сумма MDL","Нетто кг","Накладная"];
-  const data = rows.map((r) => [
-    r.doc_number, fmtDate(r.doc_date), r.customer_name,
-    TYPE_CFG[r.sale_type]?.label ?? r.sale_type,
-    STATUS_CFG[r.status]?.label ?? r.status,
-    r.currency_code || "MDL",
-    r.total_amount.toFixed(2).replace(".", ","),
-    r.total_amount_mdl.toFixed(2).replace(".", ","),
-    r.total_net_kg.toFixed(2).replace(".", ","),
-    r.invoice_number,
-  ]);
-  const csv = [headers, ...data]
-    .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(";"))
-    .join("\n");
-  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = `sales-${new Date().toISOString().slice(0,10)}.csv`; a.click();
-  URL.revokeObjectURL(url);
-}
 
 interface Props { customerId?: number; compact?: boolean; }
 
 export default function SalesTable({ customerId, compact = false }: Props) {
+  const t = useT();
   const [docs, setDocs]       = useState<SaleDoc[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
@@ -108,10 +88,10 @@ export default function SalesTable({ customerId, compact = false }: Props) {
     if (saleType !== "all") p.set("sale_type", saleType);
     const res  = await fetch(`/api/sales${p.size ? "?" + p : ""}`);
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) setError((data as { error?: string }).error ?? "Ошибка");
+    if (!res.ok) setError((data as { error?: string }).error ?? t("common.error"));
     else         setDocs(data as SaleDoc[]);
     setLoading(false);
-  }, [dateFrom, dateTo, customerId, status, saleType]);
+  }, [dateFrom, dateTo, customerId, status, saleType, t]);
 
   useEffect(() => { fetchDocs(); }, [fetchDocs]);
 
@@ -137,14 +117,51 @@ export default function SalesTable({ customerId, compact = false }: Props) {
     return map;
   }, [docs]);
 
+  function exportCsv(rows: SaleDoc[]) {
+    const headers = [
+      t("sales.docNum"), t("sales.docDate"), t("sales.customer"),
+      t("common.type"), t("common.status"), t("common.currency"),
+      t("common.amount"), `${t("common.amount")} MDL`,
+      t("sales.netKg"), t("sales.invoice"),
+    ];
+    const data = rows.map((r) => [
+      r.doc_number, fmtDate(r.doc_date), r.customer_name,
+      t(`sales.types.${r.sale_type}`) || r.sale_type,
+      t(`sales.statuses.${r.status}`) || r.status,
+      r.currency_code || "MDL",
+      r.total_amount.toFixed(2).replace(".", ","),
+      r.total_amount_mdl.toFixed(2).replace(".", ","),
+      r.total_net_kg.toFixed(2).replace(".", ","),
+      r.invoice_number,
+    ]);
+    const csv = [headers, ...data]
+      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(";"))
+      .join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href = url; a.download = `sales-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  const STATUS_TABS = [
+    { v: "all",       label: t("common.all"),                      count: docs.length },
+    { v: "confirmed", label: t("sales.statuses.confirmed"),        count: statusCounts.confirmed ?? 0 },
+    { v: "shipped",   label: t("sales.statuses.shipped"),          count: statusCounts.shipped   ?? 0 },
+    { v: "closed",    label: t("sales.statuses.closed"),           count: statusCounts.closed    ?? 0 },
+    { v: "draft",     label: t("sales.statuses.draft"),            count: statusCounts.draft     ?? 0 },
+    { v: "cancelled", label: t("sales.statuses.cancelled"),        count: statusCounts.cancelled ?? 0 },
+  ];
+
+  const colSpan = customerId ? 7 : 8;
+
   return (
     <div className={compact ? "" : "p-8"}>
-      {/* Header */}
       {!compact && (
         <div className="flex items-start justify-between mb-6 gap-4 flex-col acts:flex-row">
           <div>
-            <h1 className="text-2xl font-bold">Продажи</h1>
-            <p className="text-sm text-gray-500 mt-1">Все документы продаж из AGRO_SALES_DOCS</p>
+            <h1 className="text-2xl font-bold">{t("sales.title")}</h1>
+            <p className="text-sm text-gray-500 mt-1">{t("sales.subtitle")}</p>
           </div>
           <button onClick={() => exportCsv(filtered)}
             className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-zinc-700 text-sm hover:bg-zinc-800/40 transition shrink-0">
@@ -152,23 +169,14 @@ export default function SalesTable({ customerId, compact = false }: Props) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                 d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
-            Экспорт CSV
+            {t("common.export")} CSV
           </button>
         </div>
       )}
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-4 items-end">
-        {/* Status tabs */}
         <div className="flex gap-1 flex-wrap">
-          {[
-            { v: "all",       label: "Все",          count: docs.length },
-            { v: "confirmed", label: "Подтверждены", count: statusCounts.confirmed ?? 0 },
-            { v: "shipped",   label: "Отгружены",    count: statusCounts.shipped   ?? 0 },
-            { v: "closed",    label: "Закрыты",      count: statusCounts.closed    ?? 0 },
-            { v: "draft",     label: "Черновики",    count: statusCounts.draft     ?? 0 },
-            { v: "cancelled", label: "Отменены",     count: statusCounts.cancelled ?? 0 },
-          ].map((s) => (
+          {STATUS_TABS.map((s) => (
             <button key={s.v} onClick={() => setStatus(s.v)}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs transition
                 ${status === s.v ? "border-zinc-400 bg-zinc-800/50 text-white" : "border-zinc-800 text-zinc-500 hover:bg-zinc-800/20"}`}>
@@ -177,15 +185,13 @@ export default function SalesTable({ customerId, compact = false }: Props) {
           ))}
         </div>
 
-        {/* Type filter */}
         <select value={saleType} onChange={(e) => setType(e.target.value)}
           className="border border-zinc-700 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-zinc-400 transition">
-          <option value="all">Все типы</option>
-          <option value="domestic">Внутренние</option>
-          <option value="export">Экспорт</option>
+          <option value="all">{t("sales.allTypes")}</option>
+          <option value="domestic">{t("sales.types.domestic")}</option>
+          <option value="export">{t("sales.types.export")}</option>
         </select>
 
-        {/* Date range */}
         <input type="date" value={dateFrom} onChange={(e) => setFrom(e.target.value)}
           className="border border-zinc-700 bg-transparent rounded-lg px-3 py-1.5 text-sm outline-none focus:border-zinc-400 transition" />
         <span className="text-zinc-600 text-sm self-center">—</span>
@@ -195,45 +201,42 @@ export default function SalesTable({ customerId, compact = false }: Props) {
           <button onClick={() => { setFrom(""); setTo(""); }} className="text-xs text-zinc-500 hover:text-zinc-300">✕</button>
         )}
 
-        {/* Search */}
         {!customerId && (
-          <input type="text" placeholder="Поиск по клиенту, номеру..." value={search}
+          <input type="text" placeholder={t("sales.searchPlaceholder")} value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="border border-zinc-700 bg-transparent rounded-lg px-3 py-1.5 text-sm outline-none focus:border-zinc-400 transition w-56" />
         )}
       </div>
 
-      {/* Stats */}
       {!compact && (
         <div className="grid grid-cols-3 gap-4 mb-6">
-          <StatCard label="Документов"  value={String(stats.count)} />
-          <StatCard label="Сумма (MDL)" value={fmtMoney(stats.amount_mdl)} suffix="MDL" />
-          <StatCard label="Нетто кг"    value={fmtKg(stats.kg)} />
+          <StatCard label={t("sales.docs")}        value={String(stats.count)} />
+          <StatCard label={`${t("common.amount")} (MDL)`} value={fmtMoney(stats.amount_mdl)} suffix="MDL" />
+          <StatCard label={t("sales.netKg")}        value={fmtKg(stats.kg)} />
         </div>
       )}
 
-      {/* Table */}
       <div className="border border-zinc-800 rounded-xl overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>№ ДОКУМЕНТА</TableHead>
-              <TableHead>ДАТА</TableHead>
-              {!customerId && <TableHead>КЛИЕНТ</TableHead>}
-              <TableHead>ТИП</TableHead>
-              <TableHead>СТАТУС</TableHead>
-              <TableHead className="text-right">СУММА</TableHead>
-              <TableHead className="text-right">НЕТТО КГ</TableHead>
-              <TableHead>НАКЛАДНАЯ</TableHead>
+              <TableHead>№ {t("sales.docNum").toUpperCase()}</TableHead>
+              <TableHead>{t("sales.docDate").toUpperCase()}</TableHead>
+              {!customerId && <TableHead>{t("sales.customer").toUpperCase()}</TableHead>}
+              <TableHead>{t("common.type").toUpperCase()}</TableHead>
+              <TableHead>{t("common.status").toUpperCase()}</TableHead>
+              <TableHead className="text-right">{t("common.amount").toUpperCase()}</TableHead>
+              <TableHead className="text-right">{t("sales.netKg").toUpperCase()}</TableHead>
+              <TableHead>{t("sales.invoice").toUpperCase()}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={customerId ? 7 : 8} className="text-center text-gray-400 py-8">Загрузка...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={colSpan} className="text-center text-gray-400 py-8">{t("common.loading")}</TableCell></TableRow>
             ) : error ? (
-              <TableRow><TableCell colSpan={customerId ? 7 : 8} className="text-center text-red-500 py-8">{error}</TableCell></TableRow>
+              <TableRow><TableCell colSpan={colSpan} className="text-center text-red-500 py-8">{error}</TableCell></TableRow>
             ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={customerId ? 7 : 8} className="text-center text-gray-400 py-8">Документов не найдено</TableCell></TableRow>
+              <TableRow><TableCell colSpan={colSpan} className="text-center text-gray-400 py-8">{t("sales.noSales")}</TableCell></TableRow>
             ) : filtered.map((d) => (
               <TableRow key={d.id} className="hover:bg-zinc-200 transition-colors">
                 <TableCell className="font-mono text-sm">{d.doc_number}</TableCell>
@@ -248,7 +251,7 @@ export default function SalesTable({ customerId, compact = false }: Props) {
                 <TableCell><TypeBadge type={d.sale_type} /></TableCell>
                 <TableCell><StatusBadge status={d.status} /></TableCell>
                 <TableCell className="text-right font-mono tabular-nums">
-                  <div>{fmtMoney(d.total_amount)} {currencyLabel(d.currency_code)}</div>
+                  <div>{fmtMoney(d.total_amount)} {d.currency_code || "MDL"}</div>
                   {d.currency_code && d.currency_code !== "MDL" && (
                     <div className="text-xs text-zinc-500">≈ {fmtMoney(d.total_amount_mdl)} MDL</div>
                   )}
@@ -263,7 +266,7 @@ export default function SalesTable({ customerId, compact = false }: Props) {
 
       {filtered.length > 0 && !loading && (
         <div className="mt-3 text-right text-xs text-zinc-500">
-          Показано: {filtered.length} — Сумма: {fmtMoney(stats.amount_mdl)} MDL — {fmtKg(stats.kg)} кг
+          {t("common.showing")}: {filtered.length} — {t("common.amount")}: {fmtMoney(stats.amount_mdl)} MDL — {fmtKg(stats.kg)} кг
         </div>
       )}
     </div>

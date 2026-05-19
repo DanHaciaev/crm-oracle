@@ -16,13 +16,11 @@ import {
   PieChart, Pie, Cell,
 } from "recharts";
 import { GripVertical, TrendingUp, TrendingDown, Minus, RefreshCw } from "lucide-react";
+import { useT } from "@/lib/locale";
 
-// ─────────────────────────────────────────────
-// Types
-// ─────────────────────────────────────────────
-type Period = "7d" | "30d" | "90d" | "ytd";
+type Period   = "7d" | "30d" | "90d" | "ytd";
 type SaleType = "all" | "domestic" | "export";
-type BlockId = "revenue_trend" | "top_customers" | "top_items" | "status_pie" | "churn_risk" | "recent_orders";
+type BlockId  = "revenue_trend" | "top_customers" | "top_items" | "status_pie" | "churn_risk" | "recent_orders";
 
 interface Kpi {
   revenue: number; orders: number; active_customers: number; unread: number;
@@ -30,57 +28,43 @@ interface Kpi {
 }
 interface Stats {
   kpi: Kpi;
-  revenue_by_day: { date: string; revenue: number; orders: number }[];
-  top_customers: { name: string; revenue: number; revenue_orig: number | null; currency: string; orders: number }[];
-  top_items: { name: string; revenue: number; weight_kg: number }[];
-  order_statuses: { status: string; count: number }[];
-  churn_risk: { name: string; curr: number; prev: number; pct: number }[];
-  recent_orders: { doc_number: string; doc_date: string; customer_name: string; amount: number; amount_orig: number; currency: string; weight_kg: number; status: string }[];
+  revenue_by_day:  { date: string; revenue: number; orders: number }[];
+  top_customers:   { name: string; revenue: number; revenue_orig: number | null; currency: string; orders: number }[];
+  top_items:       { name: string; revenue: number; weight_kg: number }[];
+  order_statuses:  { status: string; count: number }[];
+  churn_risk:      { name: string; curr: number; prev: number; pct: number }[];
+  recent_orders:   { doc_number: string; doc_date: string; customer_name: string; amount: number; amount_orig: number; currency: string; weight_kg: number; status: string }[];
 }
 
-// ─────────────────────────────────────────────
-// Constants
-// ─────────────────────────────────────────────
 const DEFAULT_BLOCKS: BlockId[] = [
   "revenue_trend", "top_customers", "top_items", "status_pie", "churn_risk", "recent_orders",
 ];
-
-const BLOCK_TITLES: Record<BlockId, string> = {
-  revenue_trend: "Динамика выручки",
-  top_customers: "Топ клиентов",
-  top_items: "Топ товаров",
-  status_pie: "Статусы заказов",
-  churn_risk: "Риск оттока",
-  recent_orders: "Последние заказы",
-};
 
 const CHART_COLORS = ["#10b981", "#818cf8", "#fbbf24", "#fb7185", "#38bdf8", "#a78bfa", "#34d399", "#f97316"];
 
 const STATUS_COLORS: Record<string, string> = {
   confirmed: "#60a5fa",
-  shipped: "#fbbf24",
-  closed: "#10b981",
+  shipped:   "#fbbf24",
+  closed:    "#10b981",
   cancelled: "#fb7185",
-  draft: "#9f9fa9",
-};
-const STATUS_LABELS: Record<string, string> = {
-  confirmed: "Подтверждён",
-  shipped: "Отгружен",
-  closed: "Закрыт",
-  cancelled: "Отменён",
-  draft: "Черновик",
+  draft:     "#9f9fa9",
 };
 
-// ─────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────
 const fmtNum = (n: number) => new Intl.NumberFormat("ru-RU").format(Math.round(n));
-const fmtKg = (n: number) => `${fmtNum(n)} кг`;
+const fmtKg  = (n: number) => `${fmtNum(n)} кг`;
+
+const ttStyle = {
+  contentStyle: { background: "#18181b", border: "1px solid #3f3f46", borderRadius: 8, fontSize: 12 },
+  labelStyle:   { color: "#d4d4d8" },
+  itemStyle:    { color: "#a1a1aa" },
+  cursor:       { fill: "rgba(255,255,255,0.04)" },
+};
 
 function Delta({ curr, prev }: { curr: number; prev: number }) {
   if (!prev) return null;
   const pct = ((curr - prev) / prev) * 100;
-  if (Math.abs(pct) < 0.5) return <span className="text-xs text-zinc-100 flex items-center gap-1"><Minus className="w-3 h-3" />0%</span>;
+  if (Math.abs(pct) < 0.5)
+    return <span className="text-xs text-zinc-100 flex items-center gap-1"><Minus className="w-3 h-3" />0%</span>;
   const up = pct > 0;
   return (
     <span className={`text-xs flex items-center gap-1 ${up ? "text-emerald-400" : "text-red-400"}`}>
@@ -90,9 +74,6 @@ function Delta({ curr, prev }: { curr: number; prev: number }) {
   );
 }
 
-// ─────────────────────────────────────────────
-// KPI Card
-// ─────────────────────────────────────────────
 function KpiCard({ label, value, sub, prev, curr, accent }: {
   label: string; value: string; sub?: string;
   prev?: number; curr?: number; accent?: string;
@@ -109,20 +90,13 @@ function KpiCard({ label, value, sub, prev, curr, accent }: {
   );
 }
 
-// ─────────────────────────────────────────────
-// Tooltip style for dark theme
-// ─────────────────────────────────────────────
-const ttStyle = {
-  contentStyle: { background: "#18181b", border: "1px solid #3f3f46", borderRadius: 8, fontSize: 12 },
-  labelStyle: { color: "#d4d4d8" },
-  itemStyle: { color: "#a1a1aa" },
-  cursor: { fill: "rgba(255,255,255,0.04)" },
-};
+function Empty() {
+  const t = useT();
+  return <p className="text-sm text-zinc-600 py-6 text-center">{t("dashboard.noDataPeriod")}</p>;
+}
 
-// ─────────────────────────────────────────────
-// Charts & Tables
-// ─────────────────────────────────────────────
 function RevenueTrendChart({ data }: { data: Stats["revenue_by_day"] }) {
+  const t = useT();
   if (!data.length) return <Empty />;
   return (
     <ResponsiveContainer width="100%" height={220}>
@@ -130,7 +104,7 @@ function RevenueTrendChart({ data }: { data: Stats["revenue_by_day"] }) {
         <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
         <XAxis dataKey="date" tick={{ fill: "#71717a", fontSize: 11 }} tickLine={false} />
         <YAxis tickFormatter={fmtNum} tick={{ fill: "#71717a", fontSize: 11 }} width={70} tickLine={false} axisLine={false} />
-        <Tooltip {...ttStyle} formatter={(v: unknown) => [`${fmtNum(Number(v ?? 0))} MDL`, "Выручка"]} />
+        <Tooltip {...ttStyle} formatter={(v: unknown) => [`${fmtNum(Number(v ?? 0))} MDL`, t("dashboard.revenueLabel")]} />
         <Bar dataKey="revenue" fill="#10b981" radius={[3, 3, 0, 0]} maxBarSize={40} />
       </BarChart>
     </ResponsiveContainer>
@@ -138,6 +112,7 @@ function RevenueTrendChart({ data }: { data: Stats["revenue_by_day"] }) {
 }
 
 function TopCustomersChart({ data }: { data: Stats["top_customers"] }) {
+  const t = useT();
   if (!data.length) return <Empty />;
   const items = [...data].reverse();
   return (
@@ -166,7 +141,7 @@ function TopCustomersChart({ data }: { data: Stats["top_customers"] }) {
                 ) : (
                   <div style={ttStyle.itemStyle}>{fmtNum(d.revenue)} MDL</div>
                 )}
-                <div style={{ color: "#71717a" }}>{d.orders} заказов</div>
+                <div style={{ color: "#71717a" }}>{d.orders} {t("dashboard.ordersCount")}</div>
               </div>
             );
           }}
@@ -180,6 +155,7 @@ function TopCustomersChart({ data }: { data: Stats["top_customers"] }) {
 }
 
 function TopItemsChart({ data }: { data: Stats["top_items"] }) {
+  const t = useT();
   if (!data.length) return <Empty />;
   const items = [...data].reverse();
   return (
@@ -192,7 +168,7 @@ function TopItemsChart({ data }: { data: Stats["top_items"] }) {
           tickFormatter={(v: string) => v.length > 18 ? v.slice(0, 18) + "…" : v}
           tick={{ fill: "#a1a1aa", fontSize: 11 }} tickLine={false} axisLine={false}
         />
-        <Tooltip {...ttStyle} formatter={(v: unknown) => [fmtKg(Number(v ?? 0)), "Вес (нетто)"]} />
+        <Tooltip {...ttStyle} formatter={(v: unknown) => [fmtKg(Number(v ?? 0)), t("dashboard.weightNet")]} />
         <Bar dataKey="weight_kg" radius={[0, 3, 3, 0]} maxBarSize={20}>
           {items.map((_, i) => <Cell key={i} fill={CHART_COLORS[(i + 2) % CHART_COLORS.length]} />)}
         </Bar>
@@ -202,8 +178,10 @@ function TopItemsChart({ data }: { data: Stats["top_items"] }) {
 }
 
 function StatusPieChart({ data }: { data: Stats["order_statuses"] }) {
+  const t = useT();
   if (!data.length) return <Empty />;
   const total = data.reduce((s, d) => s + d.count, 0);
+  const label = (status: string) => t(`sales.statuses.${status}`) || status;
   return (
     <div className="flex flex-col sm:flex-row items-center gap-4">
       <ResponsiveContainer width={200} height={200}>
@@ -220,7 +198,7 @@ function StatusPieChart({ data }: { data: Stats["order_statuses"] }) {
             formatter={(v: unknown, name: unknown) => {
               const num = Number(v ?? 0);
               const key = String(name ?? "");
-              return [`${num} (${((num / total) * 100).toFixed(1)}%)`, STATUS_LABELS[key] ?? key];
+              return [`${num} (${((num / total) * 100).toFixed(1)}%)`, label(key)];
             }}
           />
         </PieChart>
@@ -229,7 +207,7 @@ function StatusPieChart({ data }: { data: Stats["order_statuses"] }) {
         {data.map((d, i) => (
           <div key={i} className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full shrink-0" style={{ background: STATUS_COLORS[d.status] ?? CHART_COLORS[i % CHART_COLORS.length] }} />
-            <span className="text-zinc-300">{STATUS_LABELS[d.status] ?? d.status}</span>
+            <span className="text-zinc-300">{label(d.status)}</span>
             <span className="ml-auto font-mono text-zinc-400">{d.count}</span>
           </div>
         ))}
@@ -239,17 +217,18 @@ function StatusPieChart({ data }: { data: Stats["order_statuses"] }) {
 }
 
 function ChurnRiskTable({ data }: { data: Stats["churn_risk"] }) {
+  const t = useT();
   if (!data.length)
-    return <p className="text-sm text-zinc-100 py-4">Клиентов с риском оттока нет — всё стабильно.</p>;
+    return <p className="text-sm text-zinc-100 py-4">{t("dashboard.noChurnRisk")}</p>;
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left text-zinc-100 text-xs border-b border-zinc-800">
-            <th className="pb-2 font-medium">Клиент</th>
-            <th className="pb-2 font-medium text-right">Пред. период, MDL</th>
-            <th className="pb-2 font-medium text-right">Тек. период, MDL</th>
-            <th className="pb-2 font-medium text-right">Изменение</th>
+            <th className="pb-2 font-medium">{t("dashboard.client")}</th>
+            <th className="pb-2 font-medium text-right">{t("dashboard.prevPeriod")}</th>
+            <th className="pb-2 font-medium text-right">{t("dashboard.currPeriod")}</th>
+            <th className="pb-2 font-medium text-right">{t("dashboard.change")}</th>
           </tr>
         </thead>
         <tbody>
@@ -258,9 +237,7 @@ function ChurnRiskTable({ data }: { data: Stats["churn_risk"] }) {
               <td className="py-2.5 pr-4 font-medium text-zinc-200">{r.name}</td>
               <td className="py-2.5 pr-4 text-right text-zinc-400 font-mono">{fmtNum(r.prev)}</td>
               <td className="py-2.5 pr-4 text-right text-zinc-300 font-mono">{fmtNum(r.curr)}</td>
-              <td className="py-2.5 text-right font-mono text-red-400">
-                {r.pct.toFixed(1)}%
-              </td>
+              <td className="py-2.5 text-right font-mono text-red-400">{r.pct.toFixed(1)}%</td>
             </tr>
           ))}
         </tbody>
@@ -270,18 +247,20 @@ function ChurnRiskTable({ data }: { data: Stats["churn_risk"] }) {
 }
 
 function RecentOrdersTable({ data }: { data: Stats["recent_orders"] }) {
+  const t = useT();
   if (!data.length) return <Empty />;
+  const label = (status: string) => t(`sales.statuses.${status}`) || status;
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="text-center text-zinc-100 text-xs border-b border-zinc-800">
-            <th className="pb-2 font-medium">Номер</th>
-            <th className="pb-2 font-medium">Дата</th>
-            <th className="pb-2 font-medium">Клиент</th>
-            <th className="pb-2 font-medium">Сумма</th>
-            <th className="pb-2 font-medium">Вес (нетто)</th>
-            <th className="pb-2 font-medium">Статус</th>
+            <th className="pb-2 font-medium">{t("dashboard.number")}</th>
+            <th className="pb-2 font-medium">{t("common.date")}</th>
+            <th className="pb-2 font-medium">{t("dashboard.client")}</th>
+            <th className="pb-2 font-medium">{t("common.amount")}</th>
+            <th className="pb-2 font-medium">{t("dashboard.weightNet")}</th>
+            <th className="pb-2 font-medium">{t("common.status")}</th>
           </tr>
         </thead>
         <tbody>
@@ -305,11 +284,11 @@ function RecentOrdersTable({ data }: { data: Stats["recent_orders"] }) {
                 <span
                   className="inline-flex px-2 py-0.5 rounded-full text-[10px] border text-zinc-100"
                   style={{
-                    color: STATUS_COLORS[r.status] ?? "#f4f5f5",
+                    color:       STATUS_COLORS[r.status] ?? "#f4f5f5",
                     borderColor: (STATUS_COLORS[r.status] ?? "#f4f5f5") + "60",
                   }}
                 >
-                  {STATUS_LABELS[r.status] ?? r.status}
+                  {label(r.status)}
                 </span>
               </td>
             </tr>
@@ -320,26 +299,20 @@ function RecentOrdersTable({ data }: { data: Stats["recent_orders"] }) {
   );
 }
 
-function Empty() {
-  return <p className="text-sm text-zinc-600 py-6 text-center">Нет данных за выбранный период</p>;
-}
-
-// ─────────────────────────────────────────────
-// Sortable block wrapper
-// ─────────────────────────────────────────────
 function BlockContent({ id, stats }: { id: BlockId; stats: Stats | null }) {
   if (!stats) return <div className="h-40 animate-pulse bg-zinc-800/40 rounded-lg" />;
   switch (id) {
     case "revenue_trend": return <RevenueTrendChart data={stats.revenue_by_day} />;
     case "top_customers": return <TopCustomersChart data={stats.top_customers} />;
-    case "top_items": return <TopItemsChart data={stats.top_items} />;
-    case "status_pie": return <StatusPieChart data={stats.order_statuses} />;
-    case "churn_risk": return <ChurnRiskTable data={stats.churn_risk} />;
+    case "top_items":     return <TopItemsChart    data={stats.top_items} />;
+    case "status_pie":    return <StatusPieChart   data={stats.order_statuses} />;
+    case "churn_risk":    return <ChurnRiskTable   data={stats.churn_risk} />;
     case "recent_orders": return <RecentOrdersTable data={stats.recent_orders} />;
   }
 }
 
 function SortableBlock({ id, stats, overlay }: { id: BlockId; stats: Stats | null; overlay?: boolean }) {
+  const t = useT();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = { transform: CSS.Transform.toString(transform), transition };
 
@@ -361,7 +334,7 @@ function SortableBlock({ id, stats, overlay }: { id: BlockId; stats: Stats | nul
         >
           <GripVertical className="w-4 h-4" />
         </button>
-        <span className="text-sm font-semibold text-zinc-200">{BLOCK_TITLES[id]}</span>
+        <span className="text-sm font-semibold text-zinc-200">{t(`dashboard.blocks.${id}`)}</span>
       </div>
       <div className="p-4">
         <BlockContent id={id} stats={stats} />
@@ -370,9 +343,6 @@ function SortableBlock({ id, stats, overlay }: { id: BlockId; stats: Stats | nul
   );
 }
 
-// ─────────────────────────────────────────────
-// Filter bar helpers
-// ─────────────────────────────────────────────
 function FilterChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
     <button
@@ -388,19 +358,16 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
   );
 }
 
-// ─────────────────────────────────────────────
-// Main Dashboard
-// ─────────────────────────────────────────────
 export default function Dashboard() {
-  const [period, setPeriod] = useState<Period>("30d");
-  const [saleType, setSaleType] = useState<SaleType>("all");
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [fetchErr, setFetchErr] = useState<string | null>(null);
-  const [blocks, setBlocks] = useState<BlockId[]>(DEFAULT_BLOCKS);
-  const [draggingId, setDraggingId] = useState<BlockId | null>(null);
+  const t = useT();
+  const [period,    setPeriod]    = useState<Period>("30d");
+  const [saleType,  setSaleType]  = useState<SaleType>("all");
+  const [stats,     setStats]     = useState<Stats | null>(null);
+  const [loading,   setLoading]   = useState(true);
+  const [fetchErr,  setFetchErr]  = useState<string | null>(null);
+  const [blocks,    setBlocks]    = useState<BlockId[]>(DEFAULT_BLOCKS);
+  const [draggingId,setDraggingId]= useState<BlockId | null>(null);
 
-  // Load block order from localStorage after mount (avoids hydration mismatch)
   useEffect(() => {
     try {
       const saved: BlockId[] = JSON.parse(localStorage.getItem("crm_dash_blocks") ?? "[]");
@@ -415,21 +382,19 @@ export default function Dashboard() {
   }, []);
 
   const fetchStats = useCallback(() => {
-    setLoading(true);
-    setFetchErr(null);
-    setStats(null);
+    setLoading(true); setFetchErr(null); setStats(null);
     fetch(`/api/dashboard/stats?period=${period}&saleType=${saleType}`)
       .then(r => r.json())
       .then((data: Stats & { error?: string }) => {
-        if (data.error) { setFetchErr(data.error); }
-        else { setStats(data); }
+        if (data.error) setFetchErr(data.error);
+        else setStats(data);
         setLoading(false);
       })
       .catch((e: unknown) => {
-        setFetchErr(e instanceof Error ? e.message : "Ошибка загрузки");
+        setFetchErr(e instanceof Error ? e.message : t("dashboard.fetchError"));
         setLoading(false);
       });
-  }, [period, saleType]);
+  }, [period, saleType, t]);
 
   useEffect(() => { fetchStats(); }, [fetchStats]);
 
@@ -438,9 +403,7 @@ export default function Dashboard() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  function handleDragStart({ active }: DragStartEvent) {
-    setDraggingId(active.id as BlockId);
-  }
+  function handleDragStart({ active }: DragStartEvent) { setDraggingId(active.id as BlockId); }
 
   function handleDragEnd({ active, over }: DragEndEvent) {
     setDraggingId(null);
@@ -454,43 +417,51 @@ export default function Dashboard() {
 
   const kpi = stats?.kpi;
 
+  const PERIOD_LABELS: Record<Period, string> = {
+    "7d":  t("dashboard.periods.d7"),
+    "30d": t("dashboard.periods.d30"),
+    "90d": t("dashboard.periods.d90"),
+    "ytd": t("dashboard.periods.ytd"),
+  };
+  const SALETYPE_LABELS: Record<SaleType, string> = {
+    all:      t("dashboard.saleTypes.all"),
+    domestic: t("dashboard.saleTypes.domestic"),
+    export:   t("dashboard.saleTypes.export"),
+  };
+
   return (
     <div className="p-4 sm:p-6 space-y-5 mx-auto">
-
-      {/* Filter bar */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-zinc-800 mr-1">Период:</span>
+          <span className="text-xs text-zinc-800 mr-1">{t("dashboard.period")}:</span>
           {(["7d", "30d", "90d", "ytd"] as Period[]).map(p => (
-            <FilterChip key={p} label={{ "7d": "7 дней", "30d": "30 дней", "90d": "90 дней", "ytd": "Год" }[p]} active={period === p} onClick={() => setPeriod(p)} />
+            <FilterChip key={p} label={PERIOD_LABELS[p]} active={period === p} onClick={() => setPeriod(p)} />
           ))}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-zinc-100 mr-1">Тип:</span>
+          <span className="text-xs text-zinc-100 mr-1">{t("dashboard.type")}:</span>
           {(["all", "domestic", "export"] as SaleType[]).map(s => (
-            <FilterChip key={s} label={{ "all": "Все", "domestic": "Местные", "export": "Экспорт" }[s]} active={saleType === s} onClick={() => setSaleType(s)} />
+            <FilterChip key={s} label={SALETYPE_LABELS[s]} active={saleType === s} onClick={() => setSaleType(s)} />
           ))}
           <button
             onClick={fetchStats}
             className="ml-2 p-1.5 rounded-lg border border-zinc-800 text-zinc-800 hover:text-zinc-300 hover:bg-zinc-800 transition"
-            title="Обновить"
+            title={t("common.refresh")}
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
           </button>
         </div>
       </div>
 
-      {/* Error banner */}
       {fetchErr && (
         <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-          <span className="font-medium">Ошибка запроса:</span> {fetchErr}
+          <span className="font-medium">{t("dashboard.fetchError")}:</span> {fetchErr}
         </div>
       )}
 
-      {/* KPI row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <KpiCard
-          label="Выручка"
+          label={t("dashboard.revenue")}
           value={kpi ? fmtNum(kpi.revenue) : "—"}
           sub="MDL"
           curr={kpi?.revenue}
@@ -498,25 +469,24 @@ export default function Dashboard() {
           accent="text-emerald-400"
         />
         <KpiCard
-          label="Заказов"
+          label={t("dashboard.orders")}
           value={kpi ? String(kpi.orders) : "—"}
           curr={kpi?.orders}
           prev={kpi?.orders_prev}
         />
         <KpiCard
-          label="Активных клиентов"
+          label={t("dashboard.activeCustomers")}
           value={kpi ? String(kpi.active_customers) : "—"}
-          sub="с заказами за период"
+          sub={t("dashboard.activeSub")}
         />
         <KpiCard
-          label="Непрочитанных"
+          label={t("notifications.unreadMessages")}
           value={kpi ? String(kpi.unread) : "—"}
-          sub="сообщений в Inbox"
+          sub={t("dashboard.unreadSub")}
           accent={kpi && kpi.unread > 0 ? "text-amber-400" : undefined}
         />
       </div>
 
-      {/* Sortable blocks */}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -530,12 +500,10 @@ export default function Dashboard() {
             ))}
           </div>
         </SortableContext>
-
         <DragOverlay>
           {draggingId ? <SortableBlock id={draggingId} stats={stats} overlay /> : null}
         </DragOverlay>
       </DndContext>
-
     </div>
   );
 }

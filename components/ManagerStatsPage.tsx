@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useT } from "@/lib/locale";
 
 interface ManagerStat {
   id: number; username: string;
@@ -29,7 +30,8 @@ function Bar({ value, max, cls }: { value: number; max: number; cls: string }) {
 }
 
 export default function ManagerStatsPage() {
-  const [stats, setStats]   = useState<ManagerStat[]>([]);
+  const t = useT();
+  const [stats, setStats]     = useState<ManagerStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
 
@@ -37,10 +39,10 @@ export default function ManagerStatsPage() {
     setLoading(true); setError(null);
     const res  = await fetch("/api/manager-stats");
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) setError((data as { error?: string }).error ?? "Ошибка");
+    if (!res.ok) setError((data as { error?: string }).error ?? t("common.error"));
     else setStats(data as ManagerStat[]);
     setLoading(false);
-  }, []);
+  }, [t]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -48,47 +50,44 @@ export default function ManagerStatsPage() {
   const maxTasks = Math.max(...stats.map(s => s.total_tasks), 1);
   const maxActs7 = Math.max(...stats.map(s => s.acts_7d),     1);
 
-  if (loading) return <div className="p-8 text-zinc-500">Загрузка...</div>;
+  if (loading) return <div className="p-8 text-zinc-500">{t("common.loading")}</div>;
   if (error)   return <div className="p-8 text-red-400">{error}</div>;
 
   return (
     <div className="p-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Аналитика по менеджерам</h1>
-        <p className="text-sm text-zinc-500 mt-1">Активности и задачи по каждому сотруднику</p>
+        <h1 className="text-2xl font-bold">{t("managers.title")}</h1>
+        <p className="text-sm text-zinc-500 mt-1">{t("managers.subtitle")}</p>
       </div>
 
-      {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         <div className="border border-zinc-800 rounded-xl p-4">
           <div className="text-2xl font-bold text-zinc-200">{stats.length}</div>
-          <div className="text-xs text-zinc-500 mt-1">Сотрудников</div>
+          <div className="text-xs text-zinc-500 mt-1">{t("managers.employees")}</div>
         </div>
         <div className="border border-zinc-800 rounded-xl p-4">
           <div className="text-2xl font-bold text-emerald-400">
             {stats.reduce((s, m) => s + m.total_acts, 0)}
           </div>
-          <div className="text-xs text-zinc-500 mt-1">Активностей всего</div>
+          <div className="text-xs text-zinc-500 mt-1">{t("managers.totalActs")}</div>
         </div>
         <div className="border border-zinc-800 rounded-xl p-4">
           <div className="text-2xl font-bold text-sky-400">
             {stats.reduce((s, m) => s + m.acts_7d, 0)}
           </div>
-          <div className="text-xs text-zinc-500 mt-1">За последние 7 дней</div>
+          <div className="text-xs text-zinc-500 mt-1">{t("managers.last7days")}</div>
         </div>
         <div className="border border-zinc-800 rounded-xl p-4">
           <div className="text-2xl font-bold text-amber-400">
             {stats.reduce((s, m) => s + m.open_tasks, 0)}
           </div>
-          <div className="text-xs text-zinc-500 mt-1">Открытых задач</div>
+          <div className="text-xs text-zinc-500 mt-1">{t("managers.openTasks")}</div>
         </div>
       </div>
 
-      {/* Per-manager cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {stats.map((m) => (
           <div key={m.id} className="border border-zinc-800 rounded-xl p-5 space-y-4">
-            {/* Header */}
             <div className="flex items-start justify-between">
               <div>
                 <div className="font-semibold text-zinc-100">{displayName(m)}</div>
@@ -99,37 +98,37 @@ export default function ManagerStatsPage() {
                   ? "border-amber-500/50 text-amber-400 bg-amber-500/10"
                   : "border-zinc-700 text-zinc-400"
               }`}>
-                {m.role === "admin" ? "Администратор" : "Менеджер"}
+                {m.role === "admin" ? t("common.admin") : t("common.manager")}
               </span>
             </div>
 
-            {/* Activities */}
             <div>
-              <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Активности</div>
+              <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">{t("managers.activities")}</div>
               <div className="space-y-2">
                 <div className="flex justify-between text-xs text-zinc-400 mb-1">
-                  <span>Всего</span>
+                  <span>{t("managers.total")}</span>
                   <span className="text-zinc-200 font-mono">{m.total_acts}</span>
                 </div>
-                <Bar value={m.acts_7d}  max={maxActs7} cls="bg-sky-500" />
-                <div className="text-[10px] text-zinc-600">7 дней: {m.acts_7d} · 30 дней: {m.acts_30d}</div>
+                <Bar value={m.acts_7d} max={maxActs7} cls="bg-sky-500" />
+                <div className="text-[10px] text-zinc-600">
+                  7 {t("common.days")}: {m.acts_7d} · 30 {t("common.days")}: {m.acts_30d}
+                </div>
                 <div className="flex gap-3 text-xs text-zinc-500 mt-1">
-                  <span>📞 {m.calls} звонков</span>
-                  <span>🤝 {m.meetings} встреч</span>
-                  <span>📝 {m.notes} заметок</span>
+                  <span>📞 {m.calls} {t("managers.calls")}</span>
+                  <span>🤝 {m.meetings} {t("managers.meetings")}</span>
+                  <span>📝 {m.notes} {t("managers.notes")}</span>
                 </div>
               </div>
             </div>
 
-            {/* Tasks */}
             <div>
-              <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">Задачи</div>
+              <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">{t("managers.tasks")}</div>
               <Bar value={m.total_tasks} max={maxTasks} cls="bg-emerald-500" />
               <div className="flex gap-3 text-xs mt-2">
-                <span className="text-amber-400">{m.open_tasks} откр.</span>
-                <span className="text-emerald-400">{m.done_tasks} выполн.</span>
+                <span className="text-amber-400">{m.open_tasks} {t("managers.open")}</span>
+                <span className="text-emerald-400">{m.done_tasks} {t("managers.done")}</span>
                 {m.overdue_tasks > 0 && (
-                  <span className="text-red-400">{m.overdue_tasks} просроч.</span>
+                  <span className="text-red-400">{m.overdue_tasks} {t("managers.overdue")}</span>
                 )}
               </div>
             </div>
@@ -138,7 +137,7 @@ export default function ManagerStatsPage() {
       </div>
 
       {stats.length === 0 && (
-        <div className="text-center text-zinc-600 py-16">Нет данных</div>
+        <div className="text-center text-zinc-600 py-16">{t("managers.noData")}</div>
       )}
     </div>
   );

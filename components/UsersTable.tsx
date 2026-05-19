@@ -6,6 +6,7 @@ import {
   Table, TableBody, TableCell,
   TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { useT, useLocale } from "@/lib/locale";
 
 interface User {
   id: number;
@@ -33,12 +34,13 @@ type EditForm = {
   first_name: string;
   last_name: string;
   role: Role;
-  password: string; // необязательно — если пустое, не меняем
+  password: string;
 };
 
 // ─── Create Modal ────────────────────────────────────────────────────────────
 
 function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const t = useT();
   const [form, setForm] = useState<CreateForm>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +56,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
     });
     const data = await res.json();
     setSaving(false);
-    if (!res.ok) { setError(data.error ?? "Ошибка"); return; }
+    if (!res.ok) { setError(data.error ?? t("common.error")); return; }
     onCreated();
     onClose();
   }
@@ -62,13 +64,13 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
-        <h2 className="text-lg font-semibold">Новый пользователь</h2>
+        <h2 className="text-lg font-semibold">{t("users.newUser")}</h2>
         <div className="space-y-3">
           {[
-            { key: "first_name", label: "Имя", placeholder: "Иван" },
-            { key: "last_name", label: "Фамилия", placeholder: "Иванов" },
-            { key: "username", label: "Логин *", placeholder: "ivan" },
-            { key: "password", label: "Пароль *", placeholder: "минимум 6 символов", type: "password" },
+            { key: "first_name", label: t("users.firstName"),    placeholder: "Ivan" },
+            { key: "last_name",  label: t("users.lastName"),     placeholder: "Ivanov" },
+            { key: "username",   label: `${t("common.username")} *`, placeholder: "ivan" },
+            { key: "password",   label: `${t("common.password")} *`, placeholder: t("users.passwordMin"), type: "password" },
           ].map(({ key, label, placeholder, type }) => (
             <div key={key} className="flex flex-col gap-1">
               <label className="text-sm text-gray-600">{label}</label>
@@ -82,14 +84,14 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
             </div>
           ))}
           <div className="flex flex-col gap-1">
-            <label className="text-sm text-gray-600">Роль</label>
+            <label className="text-sm text-gray-600">{t("common.role")}</label>
             <select
               className="border rounded-lg px-3 py-2 text-sm text-black outline-none focus:ring-2 focus:ring-black/10 bg-white"
               value={form.role}
               onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as Role }))}
             >
-              <option value="manager">manager</option>
-              <option value="admin">admin</option>
+              <option value="manager">{t("common.manager")}</option>
+              <option value="admin">{t("common.admin")}</option>
             </select>
           </div>
         </div>
@@ -101,13 +103,13 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
         )}
 
         <div className="flex justify-end gap-2 pt-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm rounded-lg border hover:bg-gray-50 transition">Отмена</button>
+          <button onClick={onClose} className="px-4 py-2 text-sm rounded-lg border hover:bg-gray-50 transition">{t("common.cancel")}</button>
           <button
             onClick={handleSubmit}
             disabled={saving || !form.username || !form.password}
             className="px-4 py-2 text-sm rounded-lg bg-black text-white hover:bg-gray-800 disabled:opacity-50 transition"
           >
-            {saving ? "Создание..." : "Создать"}
+            {saving ? t("users.creating") : t("common.create")}
           </button>
         </div>
       </div>
@@ -118,6 +120,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
 // ─── Edit Modal ───────────────────────────────────────────────────────────────
 
 function EditModal({ user, onClose, onSaved }: { user: User; onClose: () => void; onSaved: () => void }) {
+  const t = useT();
   const [form, setForm] = useState<EditForm>({
     first_name: user.first_name ?? "",
     last_name: user.last_name ?? "",
@@ -130,8 +133,6 @@ function EditModal({ user, onClose, onSaved }: { user: User; onClose: () => void
   async function handleSubmit() {
     setSaving(true);
     setError(null);
-
-    // Отправляем пароль только если он заполнен
     const body: Record<string, unknown> = {
       id: user.id,
       first_name: form.first_name,
@@ -150,7 +151,7 @@ function EditModal({ user, onClose, onSaved }: { user: User; onClose: () => void
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setError((data as { error?: string }).error ?? "Ошибка");
+      setError((data as { error?: string }).error ?? t("common.error"));
       return;
     }
 
@@ -162,14 +163,14 @@ function EditModal({ user, onClose, onSaved }: { user: User; onClose: () => void
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
         <div>
-          <h2 className="text-lg font-semibold">Редактировать пользователя</h2>
+          <h2 className="text-lg font-semibold">{t("users.editTitle")}</h2>
           <p className="text-sm text-gray-400 mt-0.5">{user.username}</p>
         </div>
 
         <div className="space-y-3">
           {[
-            { key: "first_name", label: "Имя", placeholder: "Иван" },
-            { key: "last_name", label: "Фамилия", placeholder: "Иванов" },
+            { key: "first_name", label: t("users.firstName"), placeholder: "Ivan" },
+            { key: "last_name",  label: t("users.lastName"),  placeholder: "Ivanov" },
           ].map(({ key, label, placeholder }) => (
             <div key={key} className="flex flex-col gap-1">
               <label className="text-sm text-gray-600">{label}</label>
@@ -184,21 +185,21 @@ function EditModal({ user, onClose, onSaved }: { user: User; onClose: () => void
           ))}
 
           <div className="flex flex-col gap-1">
-            <label className="text-sm text-gray-600">Роль</label>
+            <label className="text-sm text-gray-600">{t("common.role")}</label>
             <select
               className="border rounded-lg px-3 py-2 text-sm text-black outline-none focus:ring-2 focus:ring-black/10 bg-white"
               value={form.role}
               onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as Role }))}
             >
-              <option value="manager">manager</option>
-              <option value="admin">admin</option>
+              <option value="manager">{t("common.manager")}</option>
+              <option value="admin">{t("common.admin")}</option>
             </select>
           </div>
 
           <div className="flex flex-col gap-1">
             <label className="text-sm text-gray-600">
-              Новый пароль{" "}
-              <span className="text-gray-400">(оставьте пустым, чтобы не менять)</span>
+              {t("users.newPassword")}{" "}
+              <span className="text-gray-400">{t("users.leaveEmptyToKeep")}</span>
             </label>
             <input
               type="password"
@@ -218,14 +219,14 @@ function EditModal({ user, onClose, onSaved }: { user: User; onClose: () => void
 
         <div className="flex justify-end gap-2 pt-2">
           <button onClick={onClose} className="px-4 py-2 text-sm rounded-lg border hover:bg-gray-50 transition">
-            Отмена
+            {t("common.cancel")}
           </button>
           <button
             onClick={handleSubmit}
             disabled={saving}
             className="px-4 py-2 text-sm rounded-lg bg-black text-white hover:bg-gray-800 disabled:opacity-50 transition"
           >
-            {saving ? "Сохранение..." : "Сохранить"}
+            {saving ? t("common.saving") : t("common.save")}
           </button>
         </div>
       </div>
@@ -238,21 +239,22 @@ function EditModal({ user, onClose, onSaved }: { user: User; onClose: () => void
 function ConfirmModal({ name, onClose, onConfirm, loading }: {
   name: string; onClose: () => void; onConfirm: () => void; loading: boolean;
 }) {
+  const t = useT();
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4">
-        <h2 className="text-lg font-semibold">Удалить пользователя?</h2>
+        <h2 className="text-lg font-semibold">{t("users.deleteConfirm")}</h2>
         <p className="text-sm text-gray-500">
-          Вы уверены что хотите удалить <span className="font-medium text-black">{name}</span>? Это действие необратимо.
+          {name}? {t("users.deleteConfirmMsg")}
         </p>
         <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm rounded-lg border hover:bg-gray-50 transition">Отмена</button>
+          <button onClick={onClose} className="px-4 py-2 text-sm rounded-lg border hover:bg-gray-50 transition">{t("common.cancel")}</button>
           <button
             onClick={onConfirm}
             disabled={loading}
             className="px-4 py-2 text-sm rounded-lg bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 transition"
           >
-            {loading ? "Удаление..." : "Удалить"}
+            {loading ? t("customers.deleting") : t("common.delete")}
           </button>
         </div>
       </div>
@@ -273,6 +275,8 @@ function RoleBadge({ role }: { role: Role }) {
 // ─── Main Table ───────────────────────────────────────────────────────────────
 
 export default function UsersTable({ currentUserId }: { currentUserId: number }) {
+  const t = useT();
+  const { locale } = useLocale();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -285,10 +289,10 @@ export default function UsersTable({ currentUserId }: { currentUserId: number })
     setLoading(true);
     const res = await fetch("/api/users");
     const data = await res.json();
-    if (!res.ok) setError(data.error ?? "Ошибка");
+    if (!res.ok) setError(data.error ?? t("common.error"));
     else setUsers(data);
     setLoading(false);
-  }, []);
+  }, [t]);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
@@ -301,13 +305,15 @@ export default function UsersTable({ currentUserId }: { currentUserId: number })
       body: JSON.stringify({ id: deleteTarget.id }),
     });
     setDeleting(false);
-    if (!res.ok) { alert("Ошибка удаления"); return; }
+    if (!res.ok) { alert(t("customers.deleteError")); return; }
     setUsers((prev) => prev.filter((u) => u.id !== deleteTarget.id));
     setDeleteTarget(null);
   }
 
-  if (loading) return <div className="mt-5 text-sm text-gray-400">Загрузка...</div>;
-  if (error) return <div className="mt-5 text-sm text-red-500">Ошибка: {error}</div>;
+  const loc = locale === "ru" ? "ru-RU" : locale === "ro" ? "ro-RO" : "en-GB";
+
+  if (loading) return <div className="mt-5 text-sm text-gray-400">{t("common.loading")}</div>;
+  if (error) return <div className="mt-5 text-sm text-red-500">{t("common.error")}: {error}</div>;
 
   return (
     <>
@@ -316,7 +322,7 @@ export default function UsersTable({ currentUserId }: { currentUserId: number })
           onClick={() => setCreateOpen(true)}
           className="px-4 py-2 text-sm rounded-lg bg-black text-white hover:bg-gray-800 transition"
         >
-          + Добавить пользователя
+          + {t("users.addUser")}
         </button>
       </div>
 
@@ -324,18 +330,18 @@ export default function UsersTable({ currentUserId }: { currentUserId: number })
         <Table>
           <TableHeader className="sticky top-0 z-20 bg-white">
             <TableRow>
-              <TableHead className="text-center">Имя</TableHead>
-              <TableHead className="text-center">Фамилия</TableHead>
-              <TableHead className="text-center">Логин</TableHead>
-              <TableHead className="text-center">Роль</TableHead>
-              <TableHead className="text-center">Создан</TableHead>
-              <TableHead className="text-center">Действия</TableHead>
+              <TableHead className="text-center">{t("users.firstName")}</TableHead>
+              <TableHead className="text-center">{t("users.lastName")}</TableHead>
+              <TableHead className="text-center">{t("common.username")}</TableHead>
+              <TableHead className="text-center">{t("common.role")}</TableHead>
+              <TableHead className="text-center">{t("common.createdAt")}</TableHead>
+              <TableHead className="text-center">{t("common.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-gray-400">Нет пользователей</TableCell>
+                <TableCell colSpan={6} className="text-center text-gray-400">{t("users.noUsers")}</TableCell>
               </TableRow>
             ) : (
               users.map((u) => (
@@ -345,7 +351,7 @@ export default function UsersTable({ currentUserId }: { currentUserId: number })
                   <TableCell className="text-center">{u.username}</TableCell>
                   <TableCell className="text-center"><RoleBadge role={u.role} /></TableCell>
                   <TableCell className="text-center">
-                    {new Date(u.created_at).toLocaleDateString("ru-RU")}
+                    {new Date(u.created_at).toLocaleDateString(loc)}
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-2">
@@ -353,15 +359,15 @@ export default function UsersTable({ currentUserId }: { currentUserId: number })
                         onClick={() => setEditTarget(u)}
                         className="px-3 py-1 text-xs rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 transition"
                       >
-                        Изменить
+                        {t("users.changing")}
                       </button>
                       <button
                         onClick={() => setDeleteTarget(u)}
                         disabled={u.id === currentUserId}
-                        title={u.id === currentUserId ? "Нельзя удалить себя" : ""}
+                        title={u.id === currentUserId ? t("users.cannotDeleteSelf") : ""}
                         className="px-3 py-1 text-xs rounded-md border border-gray-300 text-red-500 hover:bg-red-50 disabled:opacity-40 disabled:hover:bg-transparent transition"
                       >
-                        Удалить
+                        {t("common.delete")}
                       </button>
                     </div>
                   </TableCell>

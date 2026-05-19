@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useT } from "@/lib/locale";
 
 interface AuditEntry {
   id: number; entity_type: string; entity_id: number;
@@ -8,15 +9,6 @@ interface AuditEntry {
   changed_by: string | null; changed_at: string | null;
   old_values: string | null; new_values: string | null;
 }
-
-const ENTITY_LABELS: Record<string, string> = {
-  customer: "Клиент", task: "Задача", lead: "Лид",
-};
-const ACTION_CFG: Record<string, { label: string; cls: string }> = {
-  create: { label: "Создан",  cls: "text-emerald-400 border-emerald-500/40 bg-emerald-500/10" },
-  update: { label: "Изменён", cls: "text-sky-400     border-sky-500/40     bg-sky-500/10"     },
-  delete: { label: "Удалён",  cls: "text-red-400     border-red-500/40     bg-red-500/10"     },
-};
 
 function fmtDate(s: string | null) {
   if (!s) return "—";
@@ -49,40 +41,48 @@ function DiffBlock({ label, raw }: { label: string; raw: string | null }) {
   );
 }
 
+const ACTION_CLS: Record<string, string> = {
+  create: "text-emerald-400 border-emerald-500/40 bg-emerald-500/10",
+  update: "text-sky-400     border-sky-500/40     bg-sky-500/10",
+  delete: "text-red-400     border-red-500/40     bg-red-500/10",
+};
+
 export default function AuditLogPage() {
-  const [entries, setEntries]   = useState<AuditEntry[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState<string | null>(null);
+  const t = useT();
+  const [entries, setEntries]       = useState<AuditEntry[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState<string | null>(null);
   const [entityType, setEntityType] = useState("all");
-  const [expanded, setExpanded] = useState<number | null>(null);
+  const [expanded, setExpanded]     = useState<number | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true); setError(null);
     const q = entityType !== "all" ? `?entity_type=${entityType}&limit=100` : "?limit=100";
     const res  = await fetch(`/api/audit-log${q}`);
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) setError((data as { error?: string }).error ?? "Ошибка");
+    if (!res.ok) setError((data as { error?: string }).error ?? t("common.error"));
     else setEntries(data as AuditEntry[]);
     setLoading(false);
-  }, [entityType]);
+  }, [entityType, t]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const FILTERS = [
+    { v: "all",      label: t("auditLog.filter.all")       },
+    { v: "customer", label: t("auditLog.filter.customers") },
+    { v: "task",     label: t("auditLog.filter.tasks")     },
+    { v: "lead",     label: t("auditLog.filter.leads")     },
+  ];
 
   return (
     <div className="p-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">История изменений</h1>
-        <p className="text-sm text-zinc-500 mt-1">Аудит действий в системе</p>
+        <h1 className="text-2xl font-bold">{t("auditLog.title")}</h1>
+        <p className="text-sm text-zinc-500 mt-1">{t("auditLog.subtitle")}</p>
       </div>
 
-      {/* Filters */}
       <div className="flex items-center gap-2 mb-6 flex-wrap">
-        {[
-          { v: "all",      label: "Все" },
-          { v: "customer", label: "Клиенты" },
-          { v: "task",     label: "Задачи" },
-          { v: "lead",     label: "Лиды" },
-        ].map(f => (
+        {FILTERS.map(f => (
           <button key={f.v} onClick={() => setEntityType(f.v)}
             className={`px-3 py-1.5 rounded-lg text-xs border transition ${
               entityType === f.v
@@ -94,30 +94,29 @@ export default function AuditLogPage() {
         ))}
       </div>
 
-      {loading && <div className="text-zinc-500 py-8">Загрузка...</div>}
+      {loading && <div className="text-zinc-500 py-8">{t("common.loading")}</div>}
       {error   && <div className="text-red-400 py-8">{error}</div>}
 
       {!loading && !error && (
         <div className="space-y-2">
           {entries.length === 0 && (
-            <div className="text-center text-zinc-600 py-16">История пуста</div>
+            <div className="text-center text-zinc-600 py-16">{t("auditLog.empty")}</div>
           )}
           {entries.map(e => {
-            const actionCfg = ACTION_CFG[e.action] ?? { label: e.action, cls: "text-zinc-400 border-zinc-700" };
-            const isOpen    = expanded === e.id;
+            const cls    = ACTION_CLS[e.action] ?? "text-zinc-400 border-zinc-700";
+            const isOpen = expanded === e.id;
             return (
-              <div key={e.id}
-                className="border border-zinc-800 rounded-xl overflow-hidden">
+              <div key={e.id} className="border border-zinc-800 rounded-xl overflow-hidden">
                 <button
                   className="w-full text-left px-4 py-3 hover:bg-zinc-900/40 transition flex items-start gap-3"
                   onClick={() => setExpanded(isOpen ? null : e.id)}>
-                  <span className={`shrink-0 mt-0.5 text-[10px] px-2 py-0.5 rounded-full border ${actionCfg.cls}`}>
-                    {actionCfg.label}
+                  <span className={`shrink-0 mt-0.5 text-[10px] px-2 py-0.5 rounded-full border ${cls}`}>
+                    {t(`auditLog.actions.${e.action}`) || e.action}
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm text-zinc-200 flex items-center gap-2 flex-wrap">
                       <span className="text-zinc-500 text-xs">
-                        {ENTITY_LABELS[e.entity_type] ?? e.entity_type} #{e.entity_id}
+                        {t(`auditLog.entities.${e.entity_type}`) || e.entity_type} #{e.entity_id}
                       </span>
                       {e.entity_name && <span className="font-medium">{e.entity_name}</span>}
                     </div>
@@ -129,10 +128,10 @@ export default function AuditLogPage() {
                 </button>
                 {isOpen && (
                   <div className="px-4 pb-4 border-t border-zinc-800/60">
-                    <DiffBlock label="Было" raw={e.old_values} />
-                    <DiffBlock label="Стало" raw={e.new_values} />
+                    <DiffBlock label={t("auditLog.was")}    raw={e.old_values} />
+                    <DiffBlock label={t("auditLog.became")} raw={e.new_values} />
                     {!e.old_values && !e.new_values && (
-                      <div className="text-xs text-zinc-600 mt-2">Детали не сохранены</div>
+                      <div className="text-xs text-zinc-600 mt-2">{t("auditLog.noDetails")}</div>
                     )}
                   </div>
                 )}
@@ -144,7 +143,7 @@ export default function AuditLogPage() {
 
       {!loading && entries.length > 0 && (
         <div className="mt-4 text-right text-xs text-zinc-600">
-          Показано: {entries.length} записей
+          {t("auditLog.showing")}: {entries.length} {t("auditLog.records")}
         </div>
       )}
     </div>

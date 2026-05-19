@@ -5,16 +5,17 @@ import {
   Table, TableBody, TableCell,
   TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { useT, useLocale } from "@/lib/locale";
 
-const FILE_TYPE_LABEL: Record<string, { label: string; icon: string }> = {
-  image:   { label: "Изображение", icon: "🖼️" },
-  pdf:     { label: "PDF",         icon: "📋" },
-  word:    { label: "Word",        icon: "📝" },
-  excel:   { label: "Excel",       icon: "📊" },
-  archive: { label: "Архив",       icon: "🗜️" },
-  video:   { label: "Видео",       icon: "🎬" },
-  audio:   { label: "Аудио",       icon: "🎵" },
-  other:   { label: "Другое",      icon: "📄" },
+const FILE_TYPE_ICON: Record<string, string> = {
+  image:   "🖼️",
+  pdf:     "📋",
+  word:    "📝",
+  excel:   "📊",
+  archive: "🗜️",
+  video:   "🎬",
+  audio:   "🎵",
+  other:   "📄",
 };
 
 interface Document {
@@ -39,6 +40,8 @@ function formatSize(bytes: number | null) {
 }
 
 export default function Documents() {
+  const t = useT();
+  const { locale } = useLocale();
   const [documents, setDocuments]       = useState<Document[]>([]);
   const [tasks, setTasks]               = useState<Task[]>([]);
   const [users, setUsers]               = useState<User[]>([]);
@@ -50,6 +53,16 @@ export default function Documents() {
   const [deleteTarget, setDeleteTarget] = useState<Document | null>(null);
   const [deleting, setDeleting]         = useState(false);
 
+  const loc = locale === "ru" ? "ru-RU" : locale === "ro" ? "ro-RO" : "en-GB";
+
+  function getTypeLabel(type: string | null) {
+    const icon = FILE_TYPE_ICON[type ?? "other"] ?? "📄";
+    const key = `files.types.${type}`;
+    const translated = t(key);
+    const label = translated !== key ? translated : (type ?? t("files.types.file"));
+    return { label, icon };
+  }
+
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
@@ -58,14 +71,14 @@ export default function Documents() {
         fetch("/api/tasks"),
         fetch("/api/users/for-tasks"),
       ]);
-      if (!docsRes.ok) { setError("Ошибка загрузки документов"); setLoading(false); return; }
+      if (!docsRes.ok) { setError(t("common.error")); setLoading(false); return; }
       setDocuments(await docsRes.json());
       setTasks(await tasksRes.json());
       setUsers(await usersRes.json());
       setLoading(false);
     }
     fetchData();
-  }, []);
+  }, [t]);
 
   const filtered = useMemo(() => {
     return documents.filter((d) => {
@@ -93,7 +106,7 @@ export default function Documents() {
 
   function getTaskTitle(taskId: number | null) {
     if (!taskId) return "—";
-    return tasks.find((t) => t.id === taskId)?.title ?? "—";
+    return tasks.find((task) => task.id === taskId)?.title ?? "—";
   }
 
   function getUserName(userId: number | null) {
@@ -103,26 +116,24 @@ export default function Documents() {
     return [u.first_name, u.last_name].filter(Boolean).join(" ") || u.email;
   }
 
-  if (loading) return <div className="p-6 text-sm text-gray-400">Загрузка...</div>;
-  if (error)   return <div className="p-6 text-sm text-red-500">Ошибка: {error}</div>;
+  if (loading) return <div className="p-6 text-sm text-gray-400">{t("common.loading")}</div>;
+  if (error)   return <div className="p-6 text-sm text-red-500">{t("common.error")}: {error}</div>;
 
   const uniqueTypes = [...new Set(documents.map((d) => d.file_type).filter(Boolean))] as string[];
 
   return (
     <div className="p-6">
-      {/* Заголовок */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold">Документы</h1>
-          <p className="text-sm text-gray-400 mt-0.5">Всего: {filtered.length}</p>
+          <h1 className="text-xl font-bold">{t("common.files")}</h1>
+          <p className="text-sm text-gray-400 mt-0.5">{t("common.total")}: {filtered.length}</p>
         </div>
       </div>
 
-      {/* Фильтры */}
       <div className="flex flex-wrap gap-3 mb-6">
         <input
           type="text"
-          placeholder="Поиск по названию..."
+          placeholder={t("common.search")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/10 w-full sm:w-64"
@@ -132,9 +143,9 @@ export default function Documents() {
           onChange={(e) => setTypeFilter(e.target.value)}
           className="border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/10 bg-white"
         >
-          <option value="all">Все типы</option>
-          {uniqueTypes.map((t) => (
-            <option key={t} value={t}>{FILE_TYPE_LABEL[t]?.label ?? t}</option>
+          <option value="all">{t("common.all")}</option>
+          {uniqueTypes.map((type) => (
+            <option key={type} value={type}>{getTypeLabel(type).label}</option>
           ))}
         </select>
         <select
@@ -142,9 +153,9 @@ export default function Documents() {
           onChange={(e) => setTaskFilter(e.target.value)}
           className="border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/10 bg-white"
         >
-          <option value="all">Все задачи</option>
-          {tasks.map((t) => (
-            <option key={t.id} value={String(t.id)}>{t.title}</option>
+          <option value="all">{t("common.all")} {t("tasks.title").toLowerCase()}</option>
+          {tasks.map((task) => (
+            <option key={task.id} value={String(task.id)}>{task.title}</option>
           ))}
         </select>
         {(search || typeFilter !== "all" || taskFilter !== "all") && (
@@ -152,31 +163,30 @@ export default function Documents() {
             onClick={() => { setSearch(""); setTypeFilter("all"); setTaskFilter("all"); }}
             className="px-3 py-2 text-sm rounded-lg border hover:bg-gray-50 transition text-gray-500"
           >
-            Сбросить
+            {t("common.reset")}
           </button>
         )}
       </div>
 
-      {/* Таблица */}
       {filtered.length === 0 ? (
-        <div className="border rounded-xl p-8 text-center text-sm text-gray-400">Документы не найдены</div>
+        <div className="border rounded-xl p-8 text-center text-sm text-gray-400">{t("common.noData")}</div>
       ) : (
         <div className="border rounded-xl overflow-auto">
           <Table>
             <TableHeader className="sticky top-0 z-20 bg-white">
               <TableRow>
-                <TableHead className="text-center">Файл</TableHead>
-                <TableHead className="text-center">Тип</TableHead>
-                <TableHead className="text-center">Размер</TableHead>
-                <TableHead className="text-center">Задача</TableHead>
-                <TableHead className="text-center">Загрузил</TableHead>
-                <TableHead className="text-center">Дата</TableHead>
-                <TableHead className="text-center">Действия</TableHead>
+                <TableHead className="text-center">{t("common.file")}</TableHead>
+                <TableHead className="text-center">{t("common.type")}</TableHead>
+                <TableHead className="text-center">{t("common.size")}</TableHead>
+                <TableHead className="text-center">{t("tasks.title")}</TableHead>
+                <TableHead className="text-center">{t("files.uploadedBy")}</TableHead>
+                <TableHead className="text-center">{t("common.date")}</TableHead>
+                <TableHead className="text-center">{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.map((doc) => {
-                const typeInfo = FILE_TYPE_LABEL[doc.file_type ?? "other"] ?? { label: "Другое", icon: "📄" };
+                const typeInfo = getTypeLabel(doc.file_type);
                 const url      = `https://13.63.74.74/files/${doc.full_name}`;
                 return (
                   <TableRow key={doc.id}>
@@ -188,20 +198,20 @@ export default function Documents() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className=" text-center">
+                    <TableCell className="text-center">
                       <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-center">{typeInfo.label}</span>
                     </TableCell>
                     <TableCell className="text-sm text-gray-500 text-center">{formatSize(doc.size)}</TableCell>
                     <TableCell className="text-sm text-gray-500 max-w-32 truncate text-center">{getTaskTitle(doc.task_id)}</TableCell>
                     <TableCell className="text-sm text-gray-500 text-center">{getUserName(doc.uploaded_by)}</TableCell>
                     <TableCell className="text-sm text-gray-500 text-center">
-                      {new Date(doc.created_at).toLocaleDateString("ru-RU")}
+                      {new Date(doc.created_at).toLocaleDateString(loc)}
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-center gap-2">
-                        <a href={url} target="_blank" rel="noopener noreferrer" className="px-3 py-1 text-xs rounded-md border hover:bg-gray-50 transition">Открыть</a>
-                        <a href={url} download={doc.name} className="px-3 py-1 text-xs rounded-md border border-black bg-black text-white hover:bg-gray-800 transition">Скачать</a>
-                        <button onClick={() => setDeleteTarget(doc)} className="px-3 py-1 text-xs rounded-md border border-red-200 text-red-500 hover:bg-red-50 transition">Удалить</button>
+                        <a href={url} target="_blank" rel="noopener noreferrer" className="px-3 py-1 text-xs rounded-md border hover:bg-gray-50 transition">{t("common.details")}</a>
+                        <a href={url} download={doc.name} className="px-3 py-1 text-xs rounded-md border border-black bg-black text-white hover:bg-gray-800 transition">{t("common.download")}</a>
+                        <button onClick={() => setDeleteTarget(doc)} className="px-3 py-1 text-xs rounded-md border border-red-200 text-red-500 hover:bg-red-50 transition">{t("common.delete")}</button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -212,19 +222,17 @@ export default function Documents() {
         </div>
       )}
 
-      {/* Модалка удаления */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4">
-            <h2 className="text-lg font-semibold">Удалить документ?</h2>
+            <h2 className="text-lg font-semibold">{t("files.deleteConfirmQ")}</h2>
             <p className="text-sm text-gray-500">
-              Вы уверены что хотите удалить{" "}
-              <span className="font-medium text-black">{deleteTarget.name}</span>? Это действие необратимо.
+              <span className="font-medium text-black">{deleteTarget.name}</span>
             </p>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 text-sm rounded-lg border hover:bg-gray-50 transition">Отмена</button>
+              <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 text-sm rounded-lg border hover:bg-gray-50 transition">{t("common.cancel")}</button>
               <button onClick={() => handleDelete(deleteTarget)} disabled={deleting} className="px-4 py-2 text-sm rounded-lg bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 transition">
-                {deleting ? "Удаление..." : "Удалить"}
+                {deleting ? t("customers.deleting") : t("common.delete")}
               </button>
             </div>
           </div>

@@ -3,29 +3,31 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import { useT } from "@/lib/locale";
 
-const SEGMENTS = [
-  { v: "all",      label: "Все клиенты",         desc: "Все привязанные к Telegram" },
-  { v: "vip",      label: "VIP",                  desc: "Выручка ≥ 50 000 MDL за 90 дней" },
-  { v: "active",   label: "Активные",             desc: "Заказ в последние 60 дней" },
-  { v: "new",      label: "Новые",                desc: "Первый заказ в последние 30 дней" },
-  { v: "sleeping", label: "Спящие",               desc: "Последний заказ 60–180 дней назад" },
-  { v: "churned",  label: "Ушедшие",              desc: "Нет заказов > 180 дней" },
-];
+const SEGMENT_KEYS = ["all", "vip", "active", "new", "sleeping", "churned"] as const;
+type SegmentKey = typeof SEGMENT_KEYS[number];
 
 interface SendResult { sent: number; total: number; errors: string[]; }
 
 export default function BroadcastPage() {
+  const t = useT();
   const searchParams = useSearchParams();
-  const [segment, setSegment]   = useState("all");
+  const [segment, setSegment]   = useState<SegmentKey>("all");
   const [message, setMessage]   = useState("");
   const [sending, setSending]   = useState(false);
   const [result, setResult]     = useState<SendResult | null>(null);
   const [error, setError]       = useState<string | null>(null);
 
+  const SEGMENTS = SEGMENT_KEYS.map((v) => ({
+    v,
+    label: v === "all" ? t("broadcasts.allCustomers") : t(`segments.${v}`),
+    desc:  v === "all" ? t("segments.allDesc") : t(`segments.${v}Desc`),
+  }));
+
   useEffect(() => {
     const s = searchParams.get("segment");
-    if (s && SEGMENTS.some(seg => seg.v === s)) setSegment(s);
+    if (s && SEGMENT_KEYS.includes(s as SegmentKey)) setSegment(s as SegmentKey);
   }, [searchParams]);
 
   async function send() {
@@ -38,7 +40,7 @@ export default function BroadcastPage() {
     });
     const json = await res.json().catch(() => ({})) as SendResult & { error?: string };
     setSending(false);
-    if (!res.ok) { setError(json.error ?? "Ошибка"); return; }
+    if (!res.ok) { setError(json.error ?? t("common.error")); return; }
     setResult(json);
     setMessage("");
   }
@@ -48,14 +50,14 @@ export default function BroadcastPage() {
   return (
     <div className="p-8 ">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Рассылки</h1>
-        <p className="text-sm text-zinc-500 mt-1">Отправить Telegram-сообщение сегменту клиентов</p>
+        <h1 className="text-2xl font-bold">{t("broadcasts.title")}</h1>
+        <p className="text-sm text-zinc-500 mt-1">{t("broadcasts.subtitle")}</p>
       </div>
 
       <div className="space-y-5">
         {/* Segment picker */}
         <div>
-          <label className="block text-sm font-medium mb-2">Сегмент получателей</label>
+          <label className="block text-sm font-medium mb-2">{t("broadcasts.segmentRecipients")}</label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {SEGMENTS.map(s => (
               <button
@@ -76,18 +78,18 @@ export default function BroadcastPage() {
 
         {/* Message */}
         <div>
-          <label className="block text-sm font-medium mb-2">Текст сообщения</label>
+          <label className="block text-sm font-medium mb-2">{t("broadcasts.messageText")}</label>
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             rows={5}
-            placeholder="Уважаемые клиенты! ..."
+            placeholder={t("broadcasts.messagePlaceholder")}
             className="w-full border border-zinc-700 rounded-xl px-4 py-3 text-sm outline-none focus:border-zinc-400 transition resize-none"
           />
           <div className="flex justify-between items-center mt-1">
-            <span className="text-xs text-zinc-600">{message.length} символов</span>
+            <span className="text-xs text-zinc-600">{message.length} {t("broadcasts.chars")}</span>
             {message.length > 4096 && (
-              <span className="text-xs text-red-400">Превышен лимит Telegram (4096)</span>
+              <span className="text-xs text-red-400">{t("broadcasts.limitExceeded")}</span>
             )}
           </div>
         </div>
@@ -95,7 +97,7 @@ export default function BroadcastPage() {
         {/* Preview */}
         {message.trim() && (
           <div className="border border-zinc-800 rounded-xl p-4">
-            <div className="text-xs text-zinc-500 mb-2">Предпросмотр → {seg?.label}</div>
+            <div className="text-xs text-zinc-500 mb-2">{t("broadcasts.preview")} → {seg?.label}</div>
             <div className="bg-blue-200 border border-blue-700/30 rounded-xl px-4 py-3 text-sm text-zinc-800 whitespace-pre-wrap w-full wrap-break-word">
               {message}
             </div>
@@ -108,7 +110,7 @@ export default function BroadcastPage() {
           disabled={sending || !message.trim() || message.length > 4096}
           className="w-full py-3 rounded-xl bg-white text-black border border-zinc-800 font-medium text-sm hover:bg-zinc-200 disabled:opacity-40 transition"
         >
-          {sending ? "Отправка..." : `Отправить сегменту «${seg?.label}»`}
+          {sending ? t("broadcasts.sending") : `${t("broadcasts.sendToSegment")} «${seg?.label}»`}
         </button>
 
         {/* Result */}
@@ -119,11 +121,11 @@ export default function BroadcastPage() {
               : "border-amber-500/30 bg-amber-500/10 text-amber-300"
           }`}>
             <div className="font-medium mb-1">
-              ✓ Отправлено: {result.sent} из {result.total}
+              ✓ {t("broadcasts.sent")}: {result.sent} {t("broadcasts.sentOf")} {result.total}
             </div>
             {result.errors.length > 0 && (
               <div className="space-y-1 mt-2">
-                <div className="text-xs font-medium text-amber-400">Ошибки:</div>
+                <div className="text-xs font-medium text-amber-400">{t("broadcasts.errors")}:</div>
                 {result.errors.map((e, i) => (
                   <div key={i} className="text-xs text-amber-300/70">{e}</div>
                 ))}

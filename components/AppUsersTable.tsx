@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -7,6 +8,7 @@ import {
 } from "@/components/ui/table";
 import LinkCustomerModal from "@/components/LinkCustomerModal";
 import AppUserEventsModal from "@/components/AppUserEventsModal";
+import { useT, useLocale } from "@/lib/locale";
 
 interface AppUser {
   id:                number;
@@ -30,26 +32,16 @@ function StatusBadge({ s }: { s: string }) {
     linked:   "border-emerald-500/40 text-emerald-300",
     blocked:  "border-red-500/40 text-red-300",
   };
-  const label: Record<string, string> = {
-    pending: "pending",
-    linked:  "linked",
-    blocked: "blocked",
-  };
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs border ${map[s] ?? "border-zinc-600"}`}>
-      {label[s] ?? s}
+      {s}
     </span>
   );
 }
 
-function fmtDate(s: string | null) {
-  if (!s) return "—";
-  const d = new Date(s);
-  if (Number.isNaN(d.getTime())) return s;
-  return d.toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
-}
-
 export default function AppUsersTable() {
+  const t = useT();
+  const { locale } = useLocale();
   const [users, setUsers]       = useState<AppUser[]>([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
@@ -58,14 +50,22 @@ export default function AppUsersTable() {
   const [eventsTarget, setEventsTarget] = useState<AppUser | null>(null);
   const [busy, setBusy]         = useState(false);
 
+  function fmtDate(s: string | null) {
+    if (!s) return "—";
+    const d = new Date(s);
+    if (Number.isNaN(d.getTime())) return s;
+    const loc = locale === "ru" ? "ru-RU" : locale === "ro" ? "ro-RO" : "en-GB";
+    return d.toLocaleString(loc, { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  }
+
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     const res  = await fetch("/api/app-users");
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) setError((data as { error?: string }).error ?? "Ошибка");
+    if (!res.ok) setError((data as { error?: string }).error ?? t("common.error"));
     else         setUsers(data as AppUser[]);
     setLoading(false);
-  }, []);
+  }, [t]);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
@@ -90,7 +90,7 @@ export default function AppUsersTable() {
     setBusy(false);
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
-      alert((j as { error?: string }).error ?? "Ошибка");
+      alert((j as { error?: string }).error ?? t("common.error"));
       return;
     }
     fetchUsers();
@@ -104,22 +104,22 @@ export default function AppUsersTable() {
     <div className="p-8">
       <div className="flex items-start justify-between mb-6 gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Подписчики бота</h1>
-          <p className="text-sm text-gray-500 mt-1">Все, кто запускал бота. Привяжите их к клиентам или заблокируйте.</p>
+          <h1 className="text-2xl font-bold">{t("appUsers.title")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t("appUsers.subtitle")}</p>
         </div>
         <div className="flex gap-2">
-          <FilterBtn active={filter === "all"}     onClick={() => setFilter("all")}     label="Все"           count={stats.total} />
-          <FilterBtn active={filter === "pending"} onClick={() => setFilter("pending")} label="Pending"       count={stats.pending} />
-          <FilterBtn active={filter === "linked"}  onClick={() => setFilter("linked")}  label="Привязаны"     count={stats.linked} />
-          <FilterBtn active={filter === "blocked"} onClick={() => setFilter("blocked")} label="Заблокированы" count={stats.blocked} />
+          <FilterBtn active={filter === "all"}     onClick={() => setFilter("all")}     label={t("appUsers.filterAll")}     count={stats.total} />
+          <FilterBtn active={filter === "pending"} onClick={() => setFilter("pending")} label={t("appUsers.filterPending")} count={stats.pending} />
+          <FilterBtn active={filter === "linked"}  onClick={() => setFilter("linked")}  label={t("appUsers.filterLinked")}  count={stats.linked} />
+          <FilterBtn active={filter === "blocked"} onClick={() => setFilter("blocked")} label={t("appUsers.filterBlocked")} count={stats.blocked} />
         </div>
       </div>
 
       <div className="flex flex-1 gap-4 mb-6">
-        <StatCard label="Всего"          value={String(stats.total)} />
-        <StatCard label="Pending"        value={String(stats.pending)} />
-        <StatCard label="Привязаны"      value={String(stats.linked)} />
-        <StatCard label="Заблокированы"  value={String(stats.blocked)} />
+        <StatCard label={t("appUsers.statsTotal")}   value={String(stats.total)} />
+        <StatCard label={t("appUsers.statsPending")} value={String(stats.pending)} />
+        <StatCard label={t("appUsers.statsLinked")}  value={String(stats.linked)} />
+        <StatCard label={t("appUsers.statsBlocked")} value={String(stats.blocked)} />
       </div>
 
       <div className="border border-zinc-800 rounded-xl overflow-auto">
@@ -127,22 +127,22 @@ export default function AppUsersTable() {
           <TableHeader>
             <TableRow>
               <TableHead>TG USERNAME</TableHead>
-              <TableHead>ИМЯ</TableHead>
+              <TableHead>{t("appUsers.colName").toUpperCase()}</TableHead>
               <TableHead>CHAT ID</TableHead>
-              <TableHead>СТАТУС</TableHead>
-              <TableHead>КЛИЕНТ</TableHead>
-              <TableHead>ПЕРВЫЙ КОНТАКТ</TableHead>
-              <TableHead>ПОСЛЕДНИЙ</TableHead>
-              <TableHead className="text-right">ДЕЙСТВИЯ</TableHead>
+              <TableHead>{t("appUsers.colStatus").toUpperCase()}</TableHead>
+              <TableHead>{t("appUsers.colCustomer").toUpperCase()}</TableHead>
+              <TableHead>{t("appUsers.colFirstContact").toUpperCase()}</TableHead>
+              <TableHead>{t("appUsers.colLast").toUpperCase()}</TableHead>
+              <TableHead className="text-right">{t("common.actions").toUpperCase()}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={8} className="text-center text-gray-400 py-6">Загрузка...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center text-gray-400 py-6">{t("common.loading")}</TableCell></TableRow>
             ) : error ? (
               <TableRow><TableCell colSpan={8} className="text-center text-red-500 py-6">{error}</TableCell></TableRow>
             ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={8} className="text-center text-gray-400 py-6">Пусто</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center text-gray-400 py-6">{t("appUsers.empty")}</TableCell></TableRow>
             ) : (
               filtered.map((u) => (
                 <TableRow key={u.id}>
@@ -164,34 +164,34 @@ export default function AppUsersTable() {
                       <button
                         onClick={() => setEventsTarget(u)}
                         className="px-2 py-1 text-xs rounded-md border border-zinc-700 hover:bg-zinc-800 transition"
-                        title="Журнал событий"
+                        title={t("appUsers.events")}
                       >
-                        События
+                        {t("appUsers.events")}
                       </button>
                       {u.status !== "blocked" && !u.customer_id && (
                         <button
                           onClick={() => setLinkTarget(u)}
                           className="px-2 py-1 text-xs rounded-md border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10 transition"
                         >
-                          Привязать
+                          {t("appUsers.link")}
                         </button>
                       )}
                       {u.status === "linked" && (
                         <button
                           disabled={busy}
-                          onClick={() => { if (confirm("Отвязать?")) patch(u.id, { action: "unlink" }); }}
+                          onClick={() => { if (confirm(t("appUsers.unlinkConfirm"))) patch(u.id, { action: "unlink" }); }}
                           className="px-2 py-1 text-xs rounded-md border border-zinc-700 hover:bg-zinc-800 transition"
                         >
-                          Отвязать
+                          {t("appUsers.unlink")}
                         </button>
                       )}
                       {u.status !== "blocked" && (
                         <button
                           disabled={busy}
-                          onClick={() => { if (confirm("Заблокировать?")) patch(u.id, { action: "block" }); }}
+                          onClick={() => { if (confirm(t("appUsers.blockConfirm"))) patch(u.id, { action: "block" }); }}
                           className="px-2 py-1 text-xs rounded-md border border-red-500/40 text-red-300 hover:bg-red-500/10 transition"
                         >
-                          Блок
+                          {t("appUsers.block")}
                         </button>
                       )}
                       {u.status === "blocked" && (
@@ -200,7 +200,7 @@ export default function AppUsersTable() {
                           onClick={() => patch(u.id, { action: "unblock" })}
                           className="px-2 py-1 text-xs rounded-md border border-zinc-700 hover:bg-zinc-800 transition"
                         >
-                          Разблок
+                          {t("appUsers.unblock")}
                         </button>
                       )}
                     </div>

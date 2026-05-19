@@ -5,6 +5,7 @@ import {
   Table, TableBody, TableCell,
   TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { useT } from "@/lib/locale";
 
 interface Lead {
   id: number; name: string; company: string | null;
@@ -14,30 +15,17 @@ interface Lead {
   created_by: string | null; created_at: string | null; updated_at: string | null;
 }
 
-const STATUS_CFG: Record<string, { label: string; cls: string }> = {
-  new:       { label: "Новый",       cls: "border-sky-500/50   text-sky-400   bg-sky-500/10"   },
-  contacted: { label: "Контакт",     cls: "border-blue-500/50  text-blue-400  bg-blue-500/10"  },
-  qualified: { label: "Квалифицирован", cls: "border-violet-500/50 text-violet-400 bg-violet-500/10" },
-  proposal:  { label: "Предложение", cls: "border-amber-500/50 text-amber-400 bg-amber-500/10" },
-  won:       { label: "Выигран",     cls: "border-emerald-500/50 text-emerald-400 bg-emerald-500/10" },
-  lost:      { label: "Проигран",    cls: "border-red-500/50   text-red-400   bg-red-500/10"   },
-};
-
-const SOURCE_LABELS: Record<string, string> = {
-  web: "Сайт", referral: "Рекомендация", cold_call: "Холодный звонок",
-  social: "Соцсети", exhibition: "Выставка", other: "Другое",
+const STATUS_CLS: Record<string, string> = {
+  new:       "border-sky-500/50   text-sky-400   bg-sky-500/10",
+  contacted: "border-blue-500/50  text-blue-400  bg-blue-500/10",
+  qualified: "border-violet-500/50 text-violet-400 bg-violet-500/10",
+  proposal:  "border-amber-500/50 text-amber-400 bg-amber-500/10",
+  won:       "border-emerald-500/50 text-emerald-400 bg-emerald-500/10",
+  lost:      "border-red-500/50   text-red-400   bg-red-500/10",
 };
 
 const STATUS_ORDER = ["new","contacted","qualified","proposal","won","lost"];
-
-function StatusBadge({ status }: { status: string }) {
-  const cfg = STATUS_CFG[status] ?? { label: status, cls: "border-zinc-700 text-zinc-400" };
-  return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cfg.cls}`}>
-      {cfg.label}
-    </span>
-  );
-}
+const SOURCE_ORDER = ["web","referral","cold_call","social","exhibition","other"];
 
 function fmtDate(s: string | null) {
   if (!s) return "—";
@@ -51,6 +39,7 @@ const BLANK: Partial<Lead> = {
 };
 
 export default function LeadsPage() {
+  const t = useT();
   const [leads, setLeads]     = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
@@ -64,10 +53,10 @@ export default function LeadsPage() {
     setLoading(true); setError(null);
     const res  = await fetch("/api/leads");
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) setError((data as { error?: string }).error ?? "Ошибка");
+    if (!res.ok) setError((data as { error?: string }).error ?? t("common.error"));
     else setLeads(data as Lead[]);
     setLoading(false);
-  }, []);
+  }, [t]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -90,61 +79,51 @@ export default function LeadsPage() {
     });
   }, [leads, status, search]);
 
-  function openCreate() {
-    setForm({ ...BLANK });
-    setModal("create");
-  }
-
-  function openEdit(lead: Lead) {
-    setForm({ ...lead });
-    setModal({ lead });
-  }
+  function openCreate() { setForm({ ...BLANK }); setModal("create"); }
+  function openEdit(lead: Lead) { setForm({ ...lead }); setModal({ lead }); }
 
   async function handleSave() {
     setSaving(true);
     const isEdit = modal !== "create" && modal !== null;
     const url    = isEdit ? `/api/leads/${(modal as { lead: Lead }).lead.id}` : "/api/leads";
     const method = isEdit ? "PATCH" : "POST";
-
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
-
     setSaving(false);
-    if (res.ok) {
-      setModal(null);
-      fetchData();
-    }
+    if (res.ok) { setModal(null); fetchData(); }
   }
 
   async function handleDelete(id: number) {
-    if (!confirm("Удалить лид?")) return;
+    if (!confirm(t("leads.deleteConfirm"))) return;
     await fetch(`/api/leads/${id}`, { method: "DELETE" });
     fetchData();
   }
 
-  function set(k: keyof Lead, v: string) {
-    setForm(f => ({ ...f, [k]: v }));
-  }
+  function set(k: keyof Lead, v: string) { setForm(f => ({ ...f, [k]: v })); }
+
+  const statusFilters = [
+    { v: "all", label: t("common.all") },
+    ...STATUS_ORDER.map(s => ({ v: s, label: t(`leadStatuses.${s}`) })),
+  ];
 
   return (
     <div className="p-8">
       <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Лиды</h1>
-          <p className="text-sm text-zinc-500 mt-1">Потенциальные клиенты до первой покупки</p>
+          <h1 className="text-2xl font-bold">{t("leads.title")}</h1>
+          <p className="text-sm text-zinc-500 mt-1">{t("leads.subtitle")}</p>
         </div>
         <button onClick={openCreate}
           className="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white text-sm rounded-lg transition">
-          + Новый лид
+          + {t("leads.newLead")}
         </button>
       </div>
 
-      {/* Status filter */}
       <div className="flex flex-wrap gap-2 mb-6">
-        {[{ v: "all", label: "Все" }, ...STATUS_ORDER.map(s => ({ v: s, label: STATUS_CFG[s].label }))].map(s => (
+        {statusFilters.map(s => (
           <button key={s.v} onClick={() => setStatus(s.v)}
             className={`px-3 py-1.5 rounded-lg text-xs border transition ${
               status === s.v
@@ -157,17 +136,16 @@ export default function LeadsPage() {
         ))}
       </div>
 
-      {/* Search */}
       <div className="flex items-center gap-3 mb-4">
         <input
-          type="text" placeholder="Поиск по имени, компании..."
+          type="text" placeholder={t("leads.searchPlaceholder")}
           value={search} onChange={e => setSearch(e.target.value)}
           className="border border-zinc-700 bg-transparent rounded-lg px-3 py-1.5 text-sm outline-none focus:border-zinc-400 transition w-64"
         />
         {(search || status !== "all") && (
           <button onClick={() => { setSearch(""); setStatus("all"); }}
             className="text-xs text-zinc-500 hover:text-zinc-300 transition">
-            Сбросить
+            {t("common.reset")}
           </button>
         )}
       </div>
@@ -176,21 +154,21 @@ export default function LeadsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>КОНТАКТ</TableHead>
-              <TableHead>СТАТУС</TableHead>
-              <TableHead>ИСТОЧНИК</TableHead>
-              <TableHead>ОТВЕТСТВЕННЫЙ</TableHead>
-              <TableHead>ДАТА</TableHead>
+              <TableHead>{t("leads.cols.contact")}</TableHead>
+              <TableHead>{t("leads.cols.status")}</TableHead>
+              <TableHead>{t("leads.cols.source")}</TableHead>
+              <TableHead>{t("leads.cols.assigned")}</TableHead>
+              <TableHead>{t("leads.cols.date")}</TableHead>
               <TableHead className="w-16"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={6} className="text-center text-zinc-500 py-8">Загрузка...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center text-zinc-500 py-8">{t("common.loading")}</TableCell></TableRow>
             ) : error ? (
               <TableRow><TableCell colSpan={6} className="text-center text-red-400 py-8">{error}</TableCell></TableRow>
             ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-center text-zinc-600 py-8">Лидов не найдено</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center text-zinc-600 py-8">{t("leads.noLeads")}</TableCell></TableRow>
             ) : filtered.map(l => (
               <TableRow key={l.id} className="hover:bg-zinc-100 transition-colors cursor-pointer"
                 onClick={() => openEdit(l)}>
@@ -200,9 +178,13 @@ export default function LeadsPage() {
                   {l.phone   && <div className="text-xs text-zinc-600 font-mono">{l.phone}</div>}
                   {l.email   && <div className="text-xs text-zinc-600">{l.email}</div>}
                 </TableCell>
-                <TableCell><StatusBadge status={l.status} /></TableCell>
+                <TableCell>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${STATUS_CLS[l.status] ?? "border-zinc-700 text-zinc-400"}`}>
+                    {t(`leadStatuses.${l.status}`) || l.status}
+                  </span>
+                </TableCell>
                 <TableCell className="text-xs text-zinc-400">
-                  {SOURCE_LABELS[l.source] ?? l.source}
+                  {t(`leadSources.${l.source}`) || l.source}
                 </TableCell>
                 <TableCell className="text-xs text-zinc-400">
                   {l.assigned_to ?? <span className="text-zinc-700">—</span>}
@@ -220,64 +202,59 @@ export default function LeadsPage() {
 
       {filtered.length > 0 && !loading && (
         <div className="mt-3 text-right text-xs text-zinc-500">
-          Показано: {filtered.length} из {leads.length}
+          {t("common.showing")}: {filtered.length} {t("common.of")} {leads.length}
         </div>
       )}
 
-      {/* Modal */}
       {modal !== null && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
           <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-lg shadow-2xl">
             <div className="px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
               <h2 className="text-lg font-semibold">
-                {modal === "create" ? "Новый лид" : "Редактировать лид"}
+                {modal === "create" ? t("leads.newLead") : t("common.edit")}
               </h2>
               <button onClick={() => setModal(null)} className="text-zinc-500 hover:text-zinc-300 transition text-xl">×</button>
             </div>
             <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
-              <Field label="Имя *" value={form.name ?? ""} onChange={v => set("name", v)} />
-              <Field label="Компания" value={form.company ?? ""} onChange={v => set("company", v)} />
-              <Field label="Телефон" value={form.phone ?? ""} onChange={v => set("phone", v)} />
-              <Field label="Email" value={form.email ?? ""} onChange={v => set("email", v)} />
+              <Field label={`${t("common.name")} *`} value={form.name ?? ""} onChange={v => set("name", v)} />
+              <Field label={t("common.company")}      value={form.company ?? ""} onChange={v => set("company", v)} />
+              <Field label={t("common.phone")}        value={form.phone ?? ""}   onChange={v => set("phone", v)} />
+              <Field label={t("common.email")}        value={form.email ?? ""}   onChange={v => set("email", v)} />
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs text-zinc-500 block mb-1">Источник</label>
+                  <label className="text-xs text-zinc-500 block mb-1">{t("common.source")}</label>
                   <select value={form.source ?? "other"} onChange={e => set("source", e.target.value)}
                     className="w-full border border-zinc-700 bg-zinc-900 rounded-lg px-3 py-1.5 text-sm text-zinc-200 outline-none focus:border-zinc-400">
-                    {Object.entries(SOURCE_LABELS).map(([v, l]) => (
-                      <option key={v} value={v}>{l}</option>
+                    {SOURCE_ORDER.map(s => (
+                      <option key={s} value={s}>{t(`leadSources.${s}`)}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-zinc-500 block mb-1">Статус</label>
+                  <label className="text-xs text-zinc-500 block mb-1">{t("common.status")}</label>
                   <select value={form.status ?? "new"} onChange={e => set("status", e.target.value)}
                     className="w-full border border-zinc-700 bg-zinc-900 rounded-lg px-3 py-1.5 text-sm text-zinc-200 outline-none focus:border-zinc-400">
                     {STATUS_ORDER.map(s => (
-                      <option key={s} value={s}>{STATUS_CFG[s].label}</option>
+                      <option key={s} value={s}>{t(`leadStatuses.${s}`)}</option>
                     ))}
                   </select>
                 </div>
               </div>
-              <Field label="Ответственный" value={form.assigned_to ?? ""} onChange={v => set("assigned_to", v)} />
+              <Field label={t("common.assigned")} value={form.assigned_to ?? ""} onChange={v => set("assigned_to", v)} />
               <div>
-                <label className="text-xs text-zinc-500 block mb-1">Заметки</label>
-                <textarea
-                  rows={3}
-                  value={form.notes ?? ""}
-                  onChange={e => set("notes", e.target.value)}
-                  className="w-full border border-zinc-700 bg-zinc-900 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-zinc-400 resize-none"
-                />
+                <label className="text-xs text-zinc-500 block mb-1">{t("common.notes")}</label>
+                <textarea rows={3} value={form.notes ?? ""} onChange={e => set("notes", e.target.value)}
+                  className="w-full border border-zinc-700 bg-zinc-900 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-zinc-400 resize-none" />
               </div>
             </div>
             <div className="px-6 py-4 border-t border-zinc-800 flex justify-end gap-3">
               <button onClick={() => setModal(null)}
                 className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 transition">
-                Отмена
+                {t("common.cancel")}
               </button>
               <button onClick={handleSave} disabled={saving || !form.name?.trim()}
                 className="px-4 py-2 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white text-sm rounded-lg transition">
-                {saving ? "Сохранение..." : "Сохранить"}
+                {saving ? t("common.saving") : t("common.save")}
               </button>
             </div>
           </div>
@@ -291,10 +268,8 @@ function Field({ label, value, onChange }: { label: string; value: string; onCha
   return (
     <div>
       <label className="text-xs text-zinc-500 block mb-1">{label}</label>
-      <input
-        type="text" value={value} onChange={e => onChange(e.target.value)}
-        className="w-full border border-zinc-700 bg-zinc-900 rounded-lg px-3 py-1.5 text-sm text-zinc-200 outline-none focus:border-zinc-400 transition"
-      />
+      <input type="text" value={value} onChange={e => onChange(e.target.value)}
+        className="w-full border border-zinc-700 bg-zinc-900 rounded-lg px-3 py-1.5 text-sm text-zinc-200 outline-none focus:border-zinc-400 transition" />
     </div>
   );
 }
