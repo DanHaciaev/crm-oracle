@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import LinkCustomerModal from "@/components/LinkCustomerModal";
 import CreateCustomerModal from "@/components/CreateCustomerModal";
 import AppUserEventsModal from "@/components/AppUserEventsModal";
+import { useT, useLocale } from "@/lib/locale";
 
 interface Thread {
   id:                number;
@@ -36,24 +37,6 @@ interface Message {
 
 type Filter = "all" | "pending" | "linked" | "blocked" | "unread" | "archived";
 
-function fmtTime(s: string | null) {
-  if (!s) return "";
-  const d = new Date(s);
-  if (Number.isNaN(d.getTime())) return "";
-  const now = new Date();
-  const sameDay = d.toDateString() === now.toDateString();
-  return sameDay
-    ? d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })
-    : d.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" });
-}
-
-function fmtFullTime(s: string | null) {
-  if (!s) return "";
-  const d = new Date(s);
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
-}
-
 function threadTitle(t: Thread) {
   if (t.customer_name) return t.customer_name;
   if (t.telegram_username) return `@${t.telegram_username}`;
@@ -68,6 +51,8 @@ function previewText(t: Thread) {
 }
 
 export default function Inbox() {
+  const t = useT();
+  const { locale } = useLocale();
   const [threads, setThreads]     = useState<Thread[]>([]);
   const [activeId, setActiveId]   = useState<number | null>(null);
   const [messages, setMessages]   = useState<Message[]>([]);
@@ -89,7 +74,26 @@ export default function Inbox() {
 
   const inArchive = filter === "archived";
 
-  // ---- fetch ----
+  function fmtTime(s: string | null) {
+    if (!s) return "";
+    const d = new Date(s);
+    if (Number.isNaN(d.getTime())) return "";
+    const now = new Date();
+    const sameDay = d.toDateString() === now.toDateString();
+    const loc = locale === "ru" ? "ru-RU" : locale === "ro" ? "ro-RO" : "en-GB";
+    return sameDay
+      ? d.toLocaleTimeString(loc, { hour: "2-digit", minute: "2-digit" })
+      : d.toLocaleDateString(loc, { day: "2-digit", month: "2-digit" });
+  }
+
+  function fmtFullTime(s: string | null) {
+    if (!s) return "";
+    const d = new Date(s);
+    if (Number.isNaN(d.getTime())) return "";
+    const loc = locale === "ru" ? "ru-RU" : locale === "ro" ? "ro-RO" : "en-GB";
+    return d.toLocaleString(loc, { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  }
+
   const fetchThreads = useCallback(async () => {
     const url = inArchive ? "/api/chat/threads?archived=1" : "/api/chat/threads";
     const res = await fetch(url);
@@ -114,7 +118,6 @@ export default function Inbox() {
 
   useEffect(() => { fetchThreads(); }, [fetchThreads]);
 
-  // polling: threads каждые 5с, активный чат каждые 3с
   useEffect(() => {
     const i = setInterval(fetchThreads, 5000);
     return () => clearInterval(i);
@@ -128,12 +131,10 @@ export default function Inbox() {
     return () => clearInterval(i);
   }, [activeId, fetchMessages, markRead]);
 
-  // scroll to bottom on new messages
   useEffect(() => {
     chatBottom.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
-  // ---- actions ----
   async function send() {
     if (!active || !reply.trim()) return;
     setSending(true);
@@ -145,7 +146,7 @@ export default function Inbox() {
     setSending(false);
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
-      alert((j as { error?: string }).error ?? "Ошибка");
+      alert((j as { error?: string }).error ?? t("common.error"));
       return;
     }
     setReply("");
@@ -162,10 +163,9 @@ export default function Inbox() {
     });
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
-      alert((j as { error?: string }).error ?? "Ошибка");
+      alert((j as { error?: string }).error ?? t("common.error"));
       return;
     }
-    // если архивировали/восстановили — текущий тред выпадет из выборки, чистим выбор
     if (action === "archive" || action === "unarchive") {
       setActiveId(null);
       setMessages([]);
@@ -175,11 +175,11 @@ export default function Inbox() {
 
   async function hardDelete() {
     if (!active) return;
-    if (!confirm("Удалить навсегда? Сообщения и события будут стёрты безвозвратно.")) return;
+    if (!confirm(t("inbox.deletePermanentConfirm"))) return;
     const res = await fetch(`/api/app-users/${active.id}`, { method: "DELETE" });
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
-      alert((j as { error?: string }).error ?? "Ошибка");
+      alert((j as { error?: string }).error ?? t("common.error"));
       return;
     }
     setActiveId(null);
@@ -187,9 +187,8 @@ export default function Inbox() {
     fetchThreads();
   }
 
-  // ---- filtering ----
   const filtered = useMemo(() => {
-    if (filter === "archived") return threads; // уже отфильтровано на сервере
+    if (filter === "archived") return threads;
     if (filter === "all")      return threads;
     if (filter === "unread")   return threads.filter((t) => t.unread_count > 0);
     return threads.filter((t) => t.status === filter);
@@ -211,53 +210,55 @@ export default function Inbox() {
         <div className="p-3 sm:p-4 border-b border-zinc-800">
           <div className="flex items-baseline justify-between mb-3">
             <h1 className="text-lg font-bold">Inbox</h1>
-            <span className="text-xs text-gray-500">{totalUnread > 0 ? `${totalUnread} непрочитанных` : "всё прочитано"}</span>
+            <span className="text-xs text-gray-500">
+              {totalUnread > 0 ? `${totalUnread} ${t("inbox.unreadCount")}` : t("inbox.allRead")}
+            </span>
           </div>
           <div className="flex flex-wrap gap-1">
-            <Tab label="Все"          active={filter==="all"}      onClick={() => setFilter("all")} />
-            <Tab label="Непрочитан."  active={filter==="unread"}   onClick={() => setFilter("unread")} />
-            <Tab label="Pending"      active={filter==="pending"}  onClick={() => setFilter("pending")} />
-            <Tab label="Привязаны"    active={filter==="linked"}   onClick={() => setFilter("linked")} />
-            <Tab label="Блок"         active={filter==="blocked"}  onClick={() => setFilter("blocked")} />
-            <Tab label="Архив"        active={filter==="archived"} onClick={() => setFilter("archived")} />
+            <Tab label={t("inbox.tabs.all")}      active={filter==="all"}      onClick={() => setFilter("all")} />
+            <Tab label={t("inbox.tabs.unread")}   active={filter==="unread"}   onClick={() => setFilter("unread")} />
+            <Tab label="Pending"                   active={filter==="pending"}  onClick={() => setFilter("pending")} />
+            <Tab label={t("inbox.tabs.linked")}   active={filter==="linked"}   onClick={() => setFilter("linked")} />
+            <Tab label={t("inbox.tabs.blocked")}  active={filter==="blocked"}  onClick={() => setFilter("blocked")} />
+            <Tab label={t("inbox.tabs.archive")}  active={filter==="archived"} onClick={() => setFilter("archived")} />
           </div>
         </div>
         <div className="flex-1 overflow-y-auto">
           {loadingThreads ? (
-            <div className="p-4 text-sm text-gray-500">Загрузка...</div>
+            <div className="p-4 text-sm text-gray-500">{t("common.loading")}</div>
           ) : filtered.length === 0 ? (
-            <div className="p-4 text-sm text-gray-500">Пусто</div>
+            <div className="p-4 text-sm text-gray-500">{t("inbox.empty")}</div>
           ) : (
-            filtered.map((t) => {
-              const isActive = t.id === activeId;
+            filtered.map((th) => {
+              const isActive = th.id === activeId;
               return (
                 <button
-                  key={t.id}
-                  onClick={() => setActiveId(t.id)}
+                  key={th.id}
+                  onClick={() => setActiveId(th.id)}
                   className={`w-full text-left px-4 py-3 border-b border-zinc-800/60 transition flex items-start gap-3 ${
                     isActive ? "bg-zinc-800/60" : "hover:bg-zinc-900/50"
                   }`}
                 >
-                  <Avatar t={t} />
+                  <Avatar th={th} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline justify-between gap-2">
-                      <div className="font-medium truncate">{threadTitle(t)}</div>
-                      <div className="text-xs text-gray-500 shrink-0">{fmtTime(t.last_message_at)}</div>
+                      <div className="font-medium truncate">{threadTitle(th)}</div>
+                      <div className="text-xs text-gray-500 shrink-0">{fmtTime(th.last_message_at)}</div>
                     </div>
                     <div className="flex items-baseline justify-between gap-2 mt-0.5">
                       <div className="text-xs text-gray-400 truncate">
-                        {t.last_dir === "out" ? "Вы: " : ""}{previewText(t)}
+                        {th.last_dir === "out" ? t("inbox.youPrefix") : ""}{previewText(th)}
                       </div>
-                      {t.unread_count > 0 && (
+                      {th.unread_count > 0 && (
                         <span className="shrink-0 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full text-[10px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                          {t.unread_count}
+                          {th.unread_count}
                         </span>
                       )}
                     </div>
                     <div className="mt-1">
-                      <StatusBadge s={t.status} />
-                      {t.customer_name && (
-                        <span className="ml-2 text-[10px] text-gray-500">→ {t.customer_name}</span>
+                      <StatusBadge s={th.status} />
+                      {th.customer_name && (
+                        <span className="ml-2 text-[10px] text-gray-500">→ {th.customer_name}</span>
                       )}
                     </div>
                   </div>
@@ -276,7 +277,7 @@ export default function Inbox() {
       >
         {!active ? (
           <div className="flex-1 flex items-center justify-center text-sm text-gray-500">
-            Выберите собеседника слева
+            {t("inbox.selectContact")}
           </div>
         ) : (
           <>
@@ -285,14 +286,14 @@ export default function Inbox() {
               <div className="flex items-start gap-2 sm:gap-3 min-w-0">
                 <button
                   onClick={() => { setActiveId(null); setMessages([]); }}
-                  aria-label="Назад"
+                  aria-label={t("common.back")}
                   className="inbox:hidden shrink-0 -ml-1 mt-1 w-8 h-8 rounded-md flex items-center justify-center text-gray-300 hover:bg-zinc-800 transition"
                 >
                   <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
                     <path fillRule="evenodd" d="M12.78 15.78a.75.75 0 01-1.06 0l-5.25-5.25a.75.75 0 010-1.06l5.25-5.25a.75.75 0 111.06 1.06L8.06 10l4.72 4.72a.75.75 0 010 1.06z" clipRule="evenodd" />
                   </svg>
                 </button>
-                <Avatar t={active} big />
+                <Avatar th={active} big />
                 <div className="min-w-0">
                   <div className="font-semibold truncate">{threadTitle(active)}</div>
                   <div className="text-xs text-gray-400 mt-0.5 flex items-center gap-2 flex-wrap">
@@ -307,7 +308,7 @@ export default function Inbox() {
                   onClick={() => setEventsModal(true)}
                   className="px-3 py-1 text-xs rounded-md border border-zinc-700 hover:bg-zinc-800 transition"
                 >
-                  События
+                  {t("inbox.events")}
                 </button>
 
                 {inArchive ? (
@@ -316,13 +317,13 @@ export default function Inbox() {
                       onClick={() => patchAppUser("unarchive")}
                       className="px-3 py-1 text-xs rounded-md border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10 transition"
                     >
-                      Восстановить
+                      {t("inbox.restore")}
                     </button>
                     <button
                       onClick={hardDelete}
                       className="px-3 py-1 text-xs rounded-md border border-red-500/40 text-red-300 hover:bg-red-500/10 transition"
                     >
-                      Удалить навсегда
+                      {t("inbox.deletePermanent")}
                     </button>
                   </>
                 ) : (
@@ -333,44 +334,44 @@ export default function Inbox() {
                           onClick={() => setCreateModal(true)}
                           className="px-3 py-1 text-xs rounded-md border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10 transition"
                         >
-                          + Создать клиента
+                          {t("inbox.createCustomer")}
                         </button>
                         <button
                           onClick={() => setLinkModal(true)}
                           className="px-3 py-1 text-xs rounded-md border border-zinc-700 hover:bg-zinc-800 transition"
                         >
-                          Привязать существ.
+                          {t("inbox.linkExisting")}
                         </button>
                       </>
                     )}
                     {active.status === "linked" && (
                       <button
-                        onClick={() => { if (confirm("Отвязать?")) patchAppUser("unlink"); }}
+                        onClick={() => { if (confirm(t("inbox.unlinkConfirm"))) patchAppUser("unlink"); }}
                         className="px-3 py-1 text-xs rounded-md border border-zinc-700 hover:bg-zinc-800 transition"
                       >
-                        Отвязать
+                        {t("inbox.unlink")}
                       </button>
                     )}
                     {active.status !== "blocked" ? (
                       <button
-                        onClick={() => { if (confirm("Заблокировать?")) patchAppUser("block"); }}
+                        onClick={() => { if (confirm(t("inbox.blockConfirm"))) patchAppUser("block"); }}
                         className="px-3 py-1 text-xs rounded-md border border-red-500/40 text-red-300 hover:bg-red-500/10 transition"
                       >
-                        Блок
+                        {t("inbox.block")}
                       </button>
                     ) : (
                       <button
                         onClick={() => patchAppUser("unblock")}
                         className="px-3 py-1 text-xs rounded-md border border-zinc-700 hover:bg-zinc-800 transition"
                       >
-                        Разблок
+                        {t("inbox.unblock")}
                       </button>
                     )}
                     <button
-                      onClick={() => { if (confirm("Архивировать?")) patchAppUser("archive"); }}
+                      onClick={() => { if (confirm(t("inbox.archiveConfirm"))) patchAppUser("archive"); }}
                       className="px-3 py-1 text-xs rounded-md border border-zinc-700 hover:bg-zinc-800 transition"
                     >
-                      В архив
+                      {t("inbox.archive")}
                     </button>
                   </>
                 )}
@@ -380,12 +381,12 @@ export default function Inbox() {
             {/* messages */}
             <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2">
               {loadingMessages && messages.length === 0 ? (
-                <div className="text-sm text-gray-500 text-center py-6">Загрузка...</div>
+                <div className="text-sm text-gray-500 text-center py-6">{t("common.loading")}</div>
               ) : messages.length === 0 ? (
-                <div className="text-sm text-gray-500 text-center py-6">Сообщений нет</div>
+                <div className="text-sm text-gray-500 text-center py-6">{t("inbox.chatMessages")}</div>
               ) : (
                 messages.map((m) => (
-                  <MessageBubble key={m.id} m={m} />
+                  <MessageBubble key={m.id} m={m} fmtTime={fmtFullTime} />
                 ))
               )}
               <div ref={chatBottom} />
@@ -404,9 +405,9 @@ export default function Inbox() {
                     }
                   }}
                   placeholder={
-                    inArchive                  ? "Архивный тред — сначала «Восстановить»"
-                  : active.status === "blocked" ? "Заблокирован — отправка недоступна"
-                  : "Ваш ответ..."
+                    inArchive                   ? t("inbox.archivedNote")
+                  : active.status === "blocked" ? t("inbox.blockedNote")
+                  : t("inbox.replyPlaceholder")
                   }
                   disabled={sending || active.status === "blocked" || inArchive}
                   rows={2}
@@ -417,7 +418,7 @@ export default function Inbox() {
                   disabled={sending || !reply.trim() || active.status === "blocked" || inArchive}
                   className="shrink-0 px-3 sm:px-4 py-2 text-sm rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 transition text-white"
                 >
-                  {sending ? "..." : "Отправить"}
+                  {sending ? "..." : t("common.send")}
                 </button>
               </div>
             </div>
@@ -483,8 +484,8 @@ function StatusBadge({ s }: { s: string }) {
   );
 }
 
-function Avatar({ t, big }: { t: Thread; big?: boolean }) {
-  const initial = (t.first_name?.[0] ?? t.telegram_username?.[0] ?? "?").toUpperCase();
+function Avatar({ th, big }: { th: Thread; big?: boolean }) {
+  const initial = (th.first_name?.[0] ?? th.telegram_username?.[0] ?? "?").toUpperCase();
   const size = big ? "w-10 h-10 text-base" : "w-9 h-9 text-sm";
   return (
     <div className={`shrink-0 rounded-full bg-zinc-700 text-zinc-200 flex items-center justify-center font-semibold ${size}`}>
@@ -493,7 +494,7 @@ function Avatar({ t, big }: { t: Thread; big?: boolean }) {
   );
 }
 
-function MessageBubble({ m }: { m: Message }) {
+function MessageBubble({ m, fmtTime }: { m: Message; fmtTime: (s: string | null) => string }) {
   const out = m.direction === "out";
   return (
     <div className={`flex ${out ? "justify-end" : "justify-start"}`}>
@@ -510,7 +511,7 @@ function MessageBubble({ m }: { m: Message }) {
         {m.body && <div className="whitespace-pre-wrap wrap-break-word">{m.body}</div>}
         <div className="text-[10px] text-gray-400 mt-1 flex items-center gap-2 justify-end">
           {out && m.sent_by_name && <span>{m.sent_by_name}</span>}
-          <span>{fmtFullTime(m.created_at)}</span>
+          <span>{fmtTime(m.created_at)}</span>
           {out && m.status === "failed" && <span className="text-red-400">✗</span>}
           {out && m.status === "pending" && <span className="text-gray-500">⌛</span>}
         </div>

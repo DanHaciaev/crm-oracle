@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Inter, Geist } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import { TooltipProvider } from "@/components/ui/tooltip"
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { I18nProvider } from "@/lib/locale";
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -29,7 +30,7 @@ export default function RootLayout({
       className={cn("antialiased", inter.className, "font-sans", geist.variable)}
     >
       <body className="min-h-full flex flex-col">
-        <TooltipProvider>{children}</TooltipProvider>
+        <TooltipProvider><I18nProvider>{children}</I18nProvider></TooltipProvider>
       </body>
     </html>
   );

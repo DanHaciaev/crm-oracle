@@ -5,6 +5,7 @@ import {
   Table, TableBody, TableCell,
   TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { useT, useLocale } from "@/lib/locale";
 
 interface Line {
   id:           number;
@@ -31,20 +32,26 @@ interface Detail {
   lines:            Line[];
 }
 
-function fmt(n: number) {
-  return n.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-function fmtDate(s: string | null) {
-  if (!s) return "—";
-  const d = new Date(s);
-  if (Number.isNaN(d.getTime())) return s;
-  return d.toUTCString();
-}
-
 export default function WeightTicketDetailModal({ id, onClose }: { id: number; onClose: () => void }) {
+  const t = useT();
+  const { locale } = useLocale();
   const [data, setData]       = useState<Detail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const [sendResult, setSendResult] = useState<string | null>(null);
+
+  const loc = locale === "ru" ? "ru-RU" : locale === "ro" ? "ro-RO" : "en-GB";
+
+  function fmt(n: number) {
+    return n.toLocaleString(loc, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function fmtDate(s: string | null) {
+    if (!s) return "—";
+    const d = new Date(s);
+    if (Number.isNaN(d.getTime())) return s;
+    return d.toLocaleDateString(loc, { day: "2-digit", month: "2-digit", year: "numeric" });
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -53,12 +60,12 @@ export default function WeightTicketDetailModal({ id, onClose }: { id: number; o
       const res  = await fetch(`/api/weight-tickets/${id}`);
       const json = await res.json().catch(() => ({}));
       if (cancelled) return;
-      if (!res.ok) setError(json.error ?? "Ошибка");
+      if (!res.ok) setError((json as { error?: string }).error ?? t("common.error"));
       else         setData(json as Detail);
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [id]);
+  }, [id, t]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
@@ -67,8 +74,6 @@ export default function WeightTicketDetailModal({ id, onClose }: { id: number; o
   }, [onClose]);
 
   const totalNet = data?.lines.reduce((s, l) => s + l.net_kg, 0) ?? 0;
-  const [sending, setSending] = useState(false);
-  const [sendResult, setSendResult] = useState<string | null>(null);
 
   function handlePrint() {
     if (!data) return;
@@ -83,12 +88,12 @@ export default function WeightTicketDetailModal({ id, onClose }: { id: number; o
       const res = await fetch(`/api/weight-tickets/${data.id}/send-telegram`, { method: "POST" });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setSendResult(json.error ?? "Ошибка отправки");
+        setSendResult((json as { error?: string }).error ?? t("common.error"));
       } else {
-        setSendResult("✅ Отправлено в Telegram");
+        setSendResult(t("weightTickets.detail.tgSuccess"));
       }
     } catch {
-      setSendResult("❌ Ошибка сети");
+      setSendResult(t("weightTickets.networkError"));
     } finally {
       setSending(false);
     }
@@ -99,18 +104,18 @@ export default function WeightTicketDetailModal({ id, onClose }: { id: number; o
       <div className="bg-zinc-950 border border-zinc-800 text-zinc-100 rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-auto">
         <div className="p-6 space-y-4">
           <div className="flex items-start justify-between">
-            <h2 className="text-lg font-semibold">Акт взвешивания / Act de cântărire</h2>
+            <h2 className="text-lg font-semibold">{t("weightTickets.title")}</h2>
             <button
               onClick={onClose}
               className="text-zinc-500 hover:text-zinc-200 text-xl leading-none"
-              aria-label="Закрыть"
+              aria-label={t("common.close")}
             >
               ×
             </button>
           </div>
 
           {loading ? (
-            <div className="text-sm text-gray-400 py-10 text-center">Загрузка...</div>
+            <div className="text-sm text-gray-400 py-10 text-center">{t("common.loading")}</div>
           ) : error ? (
             <div className="text-sm text-red-500 py-10 text-center">{error}</div>
           ) : !data ? null : (
@@ -118,13 +123,13 @@ export default function WeightTicketDetailModal({ id, onClose }: { id: number; o
               <div>
                 <div className="text-xl font-bold font-mono">{data.ticket_number}</div>
                 <div className="text-xs text-gray-400 mt-2 flex flex-wrap gap-x-2 gap-y-1">
-                  <span>Клиент: <strong className="text-zinc-200">{data.customer_name ?? "—"}</strong></span>
+                  <span>{t("weightTickets.detail.customer")}: <strong className="text-zinc-200">{data.customer_name ?? "—"}</strong></span>
                   <span>|</span>
-                  <span>Склад: <strong className="text-zinc-200">{data.warehouse_name ?? "—"}</strong></span>
+                  <span>{t("weightTickets.detail.warehouse")}: <strong className="text-zinc-200">{data.warehouse_name ?? "—"}</strong></span>
                   <span>|</span>
-                  <span>Дата: <strong className="text-zinc-200">{fmtDate(data.ticket_date)}</strong></span>
+                  <span>{t("weightTickets.detail.date")}: <strong className="text-zinc-200">{fmtDate(data.ticket_date)}</strong></span>
                   <span>|</span>
-                  <span>Статус: <strong className="text-zinc-200">{data.status}</strong></span>
+                  <span>{t("weightTickets.detail.status")}: <strong className="text-zinc-200">{data.status}</strong></span>
                 </div>
               </div>
 
@@ -133,17 +138,17 @@ export default function WeightTicketDetailModal({ id, onClose }: { id: number; o
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-10">#</TableHead>
-                      <TableHead>ШТРИХКОД</TableHead>
-                      <TableHead>ПРОДУКТ</TableHead>
-                      <TableHead className="text-right">БРУТТО</TableHead>
-                      <TableHead className="text-right">ТАРА</TableHead>
-                      <TableHead className="text-right">НЕТТО</TableHead>
+                      <TableHead>{t("weightTickets.detail.barcode").toUpperCase()}</TableHead>
+                      <TableHead>{t("weightTickets.detail.product").toUpperCase()}</TableHead>
+                      <TableHead className="text-right">{t("weightTickets.detail.gross").toUpperCase()}</TableHead>
+                      <TableHead className="text-right">{t("weightTickets.detail.tare").toUpperCase()}</TableHead>
+                      <TableHead className="text-right">{t("weightTickets.detail.net").toUpperCase()}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {data.lines.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center text-gray-400 py-6">Нет строк</TableCell>
+                        <TableCell colSpan={6} className="text-center text-gray-400 py-6">{t("weightTickets.detail.noLines")}</TableCell>
                       </TableRow>
                     ) : (
                       data.lines.map((l, idx) => (
@@ -162,7 +167,7 @@ export default function WeightTicketDetailModal({ id, onClose }: { id: number; o
               </div>
 
               <div className="text-right text-sm">
-                Итого нетто: <span className="text-lg font-bold">{fmt(totalNet)} кг</span>
+                {t("weightTickets.detail.totalNet")}: <span className="text-lg font-bold">{fmt(totalNet)} кг</span>
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
@@ -170,20 +175,20 @@ export default function WeightTicketDetailModal({ id, onClose }: { id: number; o
                   onClick={onClose}
                   className="px-4 py-2 text-sm rounded-lg border border-zinc-700 hover:bg-zinc-800 transition"
                 >
-                  Закрыть / Închide
+                  {t("common.close")}
                 </button>
                 <button
                   onClick={handleSendTelegram}
                   disabled={sending}
                   className="px-4 py-2 text-sm rounded-lg border border-sky-600 text-sky-400 hover:bg-sky-950/50 transition disabled:opacity-50"
                 >
-                  {sending ? "Отправка..." : "Отправить в Telegram"}
+                  {sending ? t("weightTickets.detail.sending") : t("weightTickets.detail.sendTg")}
                 </button>
                 <button
                   onClick={handlePrint}
                   className="px-4 py-2 text-sm rounded-lg border border-zinc-300 bg-zinc-100 text-black hover:bg-white transition"
                 >
-                  Печать
+                  {t("weightTickets.detail.print")}
                 </button>
               </div>
               {sendResult && (

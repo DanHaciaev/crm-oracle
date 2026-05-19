@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useT, useLocale } from "@/lib/locale";
 
 interface Rule {
   id: number; name: string; trigger_type: string;
@@ -19,37 +20,15 @@ interface LogEntry {
 
 interface AutoData { rules: Rule[]; log: LogEntry[] }
 
-const ACTION_LABELS: Record<string, string> = {
-  tg_message:   "TG клиенту",
-  manager_task: "Задача менеджеру",
+const RESULT_CLS: Record<string, string> = {
+  success: "border-emerald-500/40 text-emerald-400",
+  error:   "border-red-500/40 text-red-400",
+  skipped: "border-zinc-600 text-zinc-500",
 };
-const SEGMENT_LABELS: Record<string, string> = {
-  all: "Все", vip: "VIP", active: "Активные",
-  sleeping: "Спящие", churned: "Ушедшие",
-};
-const RESULT_CFG: Record<string, { label: string; cls: string }> = {
-  success: { label: "OK",       cls: "border-emerald-500/40 text-emerald-400" },
-  error:   { label: "Ошибка",   cls: "border-red-500/40 text-red-400"         },
-  skipped: { label: "Пропущен", cls: "border-zinc-600 text-zinc-500"          },
-};
-
-const EMPTY_FORM = {
-  name: "", condition_days: 30, action_type: "tg_message",
-  message_template: "Привет, {{customer_name}}! Вы не делали заказ {{days_since}} дней. Готовы возобновить сотрудничество?",
-  task_title: "", cooldown_days: 14, segment: "all", active: true,
-};
-
-function fmtDate(s: string | null) {
-  if (!s) return "—";
-  const d = new Date(s);
-  if (Number.isNaN(d.getTime())) return s;
-  return d.toLocaleString("ru-RU", {
-    day: "2-digit", month: "2-digit", year: "numeric",
-    hour: "2-digit", minute: "2-digit",
-  });
-}
 
 export default function AutomationsPage() {
+  const t = useT();
+  const { locale } = useLocale();
   const [data, setData]         = useState<AutoData | null>(null);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
@@ -58,19 +37,55 @@ export default function AutomationsPage() {
   const [toggling, setToggling] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
 
+  function emptyForm() {
+    return {
+      name: "", condition_days: 30, action_type: "tg_message",
+      message_template: t("automations.defaultTemplate"),
+      task_title: "", cooldown_days: 14, segment: "all", active: true,
+    };
+  }
+
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm]         = useState({ ...EMPTY_FORM });
+  const [form, setForm]         = useState(() => emptyForm());
   const [saving, setSaving]     = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  const ACTION_LABELS: Record<string, string> = {
+    tg_message:   t("automationActions.tg_message"),
+    manager_task: t("automationActions.manager_task"),
+  };
+  const SEGMENT_LABELS: Record<string, string> = {
+    all:      t("segments.all"),
+    vip:      t("segments.vip"),
+    active:   t("segments.active"),
+    sleeping: t("segments.sleeping"),
+    churned:  t("segments.churned"),
+  };
+  const RESULT_LABELS: Record<string, string> = {
+    success: t("automations.results.success"),
+    error:   t("automations.results.error"),
+    skipped: t("automations.results.skipped"),
+  };
+
+  function fmtDate(s: string | null) {
+    if (!s) return "—";
+    const d = new Date(s);
+    if (Number.isNaN(d.getTime())) return s;
+    const loc = locale === "ru" ? "ru-RU" : locale === "ro" ? "ro-RO" : "en-GB";
+    return d.toLocaleString(loc, {
+      day: "2-digit", month: "2-digit", year: "numeric",
+      hour: "2-digit", minute: "2-digit",
+    });
+  }
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
     const res  = await fetch("/api/automations");
     const json = await res.json().catch(() => ({}));
-    if (!res.ok) setError((json as { error?: string }).error ?? "Ошибка");
+    if (!res.ok) setError((json as { error?: string }).error ?? t("common.error"));
     else setData(json as AutoData);
     setLoading(false);
-  }, []);
+  }, [t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -84,12 +99,12 @@ export default function AutomationsPage() {
       error?: string;
     };
     setRunning(false);
-    if (!res.ok) { setRunResult(`Ошибка: ${json.error ?? "неизвестно"}`); return; }
+    if (!res.ok) { setRunResult(`${t("common.error")}: ${json.error ?? "?"}`); return; }
     const parts = (json.summary ?? []).map(
-      (s) => `${s.rule}: отправлено ${s.fired}, пропущено ${s.skipped}${s.errors ? `, ошибок ${s.errors}` : ""}`
+      (s) => `${s.rule}: ${t("broadcasts.sent")} ${s.fired}, ${t("automations.results.skipped")} ${s.skipped}${s.errors ? `, ${t("broadcasts.errors")} ${s.errors}` : ""}`
     );
     setRunResult(
-      `Проверено правил: ${json.rules_checked}. Всего отправлено: ${json.total_fired}. ` +
+      `${t("automations.cols.condition")}: ${json.rules_checked}. ${t("broadcasts.sent")}: ${json.total_fired}. ` +
       (parts.length ? `\n${parts.join("\n")}` : "")
     );
     load();
@@ -108,7 +123,7 @@ export default function AutomationsPage() {
   }
 
   async function deleteRule(id: number, name: string) {
-    if (!confirm(`Удалить правило "${name}"? Лог срабатываний тоже будет удалён.`)) return;
+    if (!confirm(`${t("automations.deleteConfirm")} "${name}"? ${t("automations.deleteRuleConfirm")}`)) return;
     setDeleting(id);
     await fetch(`/api/automations/${id}`, { method: "DELETE" });
     setDeleting(null);
@@ -134,13 +149,13 @@ export default function AutomationsPage() {
     });
     const json = await res.json().catch(() => ({})) as { error?: string };
     setSaving(false);
-    if (!res.ok) { setFormError(json.error ?? "Ошибка"); return; }
+    if (!res.ok) { setFormError(json.error ?? t("common.error")); return; }
     setShowForm(false);
-    setForm({ ...EMPTY_FORM });
+    setForm(emptyForm());
     load();
   }
 
-  if (loading) return <div className="p-8 text-sm text-zinc-500">Загрузка...</div>;
+  if (loading) return <div className="p-8 text-sm text-zinc-500">{t("common.loading")}</div>;
   if (error)   return <div className="p-8 text-sm text-red-400">{error}</div>;
   if (!data)   return null;
 
@@ -150,21 +165,21 @@ export default function AutomationsPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold">Автоматизация</h1>
-          <p className="text-sm text-zinc-500 mt-1">Правила, которые система выполняет автоматически по расписанию</p>
+          <h1 className="text-2xl font-bold">{t("automations.title")}</h1>
+          <p className="text-sm text-zinc-500 mt-1">{t("automations.subtitle")}</p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => { setShowForm(true); setFormError(null); }}
             className="px-4 py-2 text-sm rounded-lg border border-zinc-700 hover:bg-zinc-800 transition"
           >
-            + Новое правило
+            + {t("automations.newRule")}
           </button>
           <button
             onClick={runNow} disabled={running}
             className="px-4 py-2 text-sm rounded-lg bg-white text-black hover:bg-zinc-200 disabled:opacity-50 transition"
           >
-            {running ? "Запускаем..." : "▶ Запустить сейчас"}
+            {running ? t("automations.running") : `▶ ${t("automations.runNow")}`}
           </button>
         </div>
       </div>
@@ -178,30 +193,28 @@ export default function AutomationsPage() {
 
       {/* Cron hint */}
       <div className="border border-zinc-800 rounded-xl px-4 py-3 text-xs text-zinc-500 space-y-1">
-        <div className="text-zinc-400 font-medium mb-1">Запуск по расписанию</div>
-        <div>Вызывай этот эндпоинт раз в день (cron, OCI Scheduler, systemd timer):</div>
+        <div className="text-zinc-400 font-medium mb-1">{t("automations.scheduleTitle")}</div>
         <code className="text-zinc-300 block mt-1">
           curl -X POST https://&lt;your-domain&gt;/api/cron/automations \<br/>
           &nbsp;&nbsp;-H &quot;Authorization: Bearer $CRON_SECRET&quot;
         </code>
-        <div className="mt-1">Если переменная <code>CRON_SECRET</code> не задана в .env — секрет не нужен.</div>
       </div>
 
       {/* Rules table */}
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-zinc-300">Правила</h2>
+        <h2 className="text-sm font-semibold text-zinc-300">{t("automations.cols.name")}</h2>
         <div className="border border-zinc-800 rounded-xl overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-zinc-900/60 text-xs text-zinc-500 border-b border-zinc-800">
               <tr>
-                <th className="text-left px-4 py-3">Название</th>
-                <th className="text-center px-3 py-3">Условие</th>
-                <th className="text-center px-3 py-3">Сегмент</th>
-                <th className="text-center px-3 py-3">Действие</th>
-                <th className="text-center px-3 py-3">Кулдаун</th>
-                <th className="text-center px-3 py-3">За 30 дн.</th>
-                <th className="text-center px-3 py-3">Последний запуск</th>
-                <th className="text-center px-3 py-3">Статус</th>
+                <th className="text-left px-4 py-3">{t("automations.ruleName")}</th>
+                <th className="text-center px-3 py-3">{t("automations.cols.condition")}</th>
+                <th className="text-center px-3 py-3">{t("automations.cols.segment")}</th>
+                <th className="text-center px-3 py-3">{t("automations.cols.action")}</th>
+                <th className="text-center px-3 py-3">{t("automations.cols.cooldown")}</th>
+                <th className="text-center px-3 py-3">{t("automations.last30days")}</th>
+                <th className="text-center px-3 py-3">{t("automations.lastRun")}</th>
+                <th className="text-center px-3 py-3">{t("automations.cols.status")}</th>
                 <th className="text-center px-3 py-3"></th>
               </tr>
             </thead>
@@ -214,14 +227,14 @@ export default function AutomationsPage() {
                       {r.message_template ?? r.task_title ?? "—"}
                     </div>
                   </td>
-                  <td className="px-3 py-3 text-center text-zinc-400">нет заказов {r.condition_days} дн.</td>
+                  <td className="px-3 py-3 text-center text-zinc-400">{t("automations.noOrdersDays")} {r.condition_days} {t("common.days")}</td>
                   <td className="px-3 py-3 text-center">
                     <span className="inline-flex px-2 py-0.5 rounded-full text-xs border border-zinc-700 text-zinc-400">
                       {SEGMENT_LABELS[r.segment] ?? r.segment}
                     </span>
                   </td>
                   <td className="px-3 py-3 text-center text-zinc-400 text-xs">{ACTION_LABELS[r.action_type] ?? r.action_type}</td>
-                  <td className="px-3 py-3 text-center text-zinc-500 text-xs">{r.cooldown_days} дн.</td>
+                  <td className="px-3 py-3 text-center text-zinc-500 text-xs">{r.cooldown_days} {t("common.days")}</td>
                   <td className="px-3 py-3 text-center font-mono text-zinc-300">{r.fired_30d}</td>
                   <td className="px-3 py-3 text-center text-xs text-zinc-500">{fmtDate(r.last_fired)}</td>
                   <td className="px-3 py-3 text-center">
@@ -240,7 +253,7 @@ export default function AutomationsPage() {
                       onClick={() => deleteRule(r.id, r.name)}
                       disabled={deleting === r.id}
                       className="text-zinc-600 hover:text-red-400 transition text-xs disabled:opacity-40"
-                      title="Удалить правило"
+                      title={t("automations.deleteConfirm")}
                     >
                       ✕
                     </button>
@@ -250,7 +263,7 @@ export default function AutomationsPage() {
               {data.rules.length === 0 && (
                 <tr>
                   <td colSpan={9} className="text-center text-zinc-600 py-6 text-sm">
-                    Правил пока нет — создайте первое
+                    {t("automations.noRulesYet")}
                   </td>
                 </tr>
               )}
@@ -261,26 +274,27 @@ export default function AutomationsPage() {
 
       {/* Log */}
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-zinc-300">Последние срабатывания</h2>
+        <h2 className="text-sm font-semibold text-zinc-300">{t("automations.lastFirings")}</h2>
         {data.log.length === 0 ? (
           <p className="text-sm text-zinc-600 py-4 text-center border border-zinc-800 rounded-xl">
-            Ещё не было ни одного запуска
+            {t("automations.noFirings")}
           </p>
         ) : (
           <div className="border border-zinc-800 rounded-xl overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-zinc-900/60 text-xs text-zinc-500 border-b border-zinc-800">
                 <tr>
-                  <th className="text-left px-4 py-3">Правило</th>
-                  <th className="text-left px-3 py-3">Клиент</th>
-                  <th className="text-center px-3 py-3">Действие</th>
-                  <th className="text-center px-3 py-3">Результат</th>
-                  <th className="text-right px-4 py-3">Время</th>
+                  <th className="text-left px-4 py-3">{t("automations.ruleName")}</th>
+                  <th className="text-left px-3 py-3">{t("sales.customer")}</th>
+                  <th className="text-center px-3 py-3">{t("automations.cols.action")}</th>
+                  <th className="text-center px-3 py-3">{t("automations.result")}</th>
+                  <th className="text-right px-4 py-3">{t("automations.firedAt")}</th>
                 </tr>
               </thead>
               <tbody>
                 {data.log.map((l) => {
-                  const res = RESULT_CFG[l.result] ?? RESULT_CFG.error;
+                  const cls = RESULT_CLS[l.result] ?? RESULT_CLS.error;
+                  const label = RESULT_LABELS[l.result] ?? l.result;
                   return (
                     <tr key={l.id} className="border-b border-zinc-800/50 last:border-0 hover:bg-zinc-800/20 transition">
                       <td className="px-4 py-2.5 text-zinc-300">{l.rule_name}</td>
@@ -289,8 +303,8 @@ export default function AutomationsPage() {
                         {ACTION_LABELS[l.action_type ?? ""] ?? l.action_type ?? "—"}
                       </td>
                       <td className="px-3 py-2.5 text-center">
-                        <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] border ${res.cls}`}>
-                          {res.label}
+                        <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] border ${cls}`}>
+                          {label}
                         </span>
                         {l.details && (
                           <div className="text-[10px] text-red-400 mt-0.5 max-w-xs truncate">{l.details}</div>
@@ -312,22 +326,19 @@ export default function AutomationsPage() {
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
           <div className="bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-semibold">Новое правило автоматизации</h2>
+            <h2 className="text-lg font-semibold">{t("automations.newRuleTitle")}</h2>
 
-            {/* Name */}
             <div className="space-y-1">
-              <label className="text-xs text-zinc-400">Название *</label>
+              <label className="text-xs text-zinc-400">{t("automations.nameLabel")}</label>
               <input
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                placeholder="Например: Нет заказов 30 дней → TG"
                 className="w-full border border-zinc-700 bg-zinc-900 rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-400"
               />
             </div>
 
-            {/* Trigger */}
             <div className="space-y-1">
-              <label className="text-xs text-zinc-400">Условие — нет заказов (дней)</label>
+              <label className="text-xs text-zinc-400">{t("automations.conditionLabel")}</label>
               <input
                 type="number" min={1} max={365}
                 value={form.condition_days}
@@ -336,9 +347,8 @@ export default function AutomationsPage() {
               />
             </div>
 
-            {/* Segment */}
             <div className="space-y-1">
-              <label className="text-xs text-zinc-400">Сегмент клиентов</label>
+              <label className="text-xs text-zinc-400">{t("automations.segmentLabel")}</label>
               <select
                 value={form.segment}
                 onChange={(e) => setForm((f) => ({ ...f, segment: e.target.value }))}
@@ -350,9 +360,8 @@ export default function AutomationsPage() {
               </select>
             </div>
 
-            {/* Action type */}
             <div className="space-y-1">
-              <label className="text-xs text-zinc-400">Действие</label>
+              <label className="text-xs text-zinc-400">{t("automations.cols.action")}</label>
               <div className="flex gap-2">
                 {Object.entries(ACTION_LABELS).map(([k, v]) => (
                   <button
@@ -369,11 +378,10 @@ export default function AutomationsPage() {
               </div>
             </div>
 
-            {/* Message template */}
             {form.action_type === "tg_message" && (
               <div className="space-y-1">
                 <label className="text-xs text-zinc-400">
-                  Текст сообщения — доступны: <code className="text-zinc-300">{"{{customer_name}}"}</code> <code className="text-zinc-300">{"{{days_since}}"}</code>
+                  {t("automations.messageTplLabel")} — <code className="text-zinc-300">{"{{customer_name}}"}</code> <code className="text-zinc-300">{"{{days_since}}"}</code>
                 </label>
                 <textarea
                   rows={4}
@@ -384,22 +392,19 @@ export default function AutomationsPage() {
               </div>
             )}
 
-            {/* Task title */}
             {form.action_type === "manager_task" && (
               <div className="space-y-1">
-                <label className="text-xs text-zinc-400">Заголовок задачи</label>
+                <label className="text-xs text-zinc-400">{t("automations.taskTitleLabel")}</label>
                 <input
                   value={form.task_title}
                   onChange={(e) => setForm((f) => ({ ...f, task_title: e.target.value }))}
-                  placeholder="Позвонить клиенту — нет заказов"
                   className="w-full border border-zinc-700 bg-zinc-900 rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-400"
                 />
               </div>
             )}
 
-            {/* Cooldown */}
             <div className="space-y-1">
-              <label className="text-xs text-zinc-400">Кулдаун (дней между повторными срабатываниями)</label>
+              <label className="text-xs text-zinc-400">{t("automations.cooldownLabel")}</label>
               <input
                 type="number" min={1} max={365}
                 value={form.cooldown_days}
@@ -408,7 +413,6 @@ export default function AutomationsPage() {
               />
             </div>
 
-            {/* Active */}
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setForm((f) => ({ ...f, active: !f.active }))}
@@ -418,7 +422,7 @@ export default function AutomationsPage() {
                 <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform
                   ${form.active ? "translate-x-4" : "translate-x-1"}`} />
               </button>
-              <span className="text-sm text-zinc-400">Активно сразу после создания</span>
+              <span className="text-sm text-zinc-400">{t("automations.activeImmediately")}</span>
             </div>
 
             {formError && <p className="text-sm text-red-400">{formError}</p>}
@@ -429,14 +433,14 @@ export default function AutomationsPage() {
                 disabled={saving}
                 className="px-4 py-2 text-sm rounded-lg border border-zinc-700 text-zinc-300 hover:bg-zinc-800 transition disabled:opacity-50"
               >
-                Отмена
+                {t("common.cancel")}
               </button>
               <button
                 onClick={createRule}
                 disabled={saving || !form.name}
                 className="px-4 py-2 text-sm rounded-lg bg-white text-black hover:bg-zinc-200 transition disabled:opacity-50"
               >
-                {saving ? "Создаём..." : "Создать"}
+                {saving ? t("common.saving") : t("common.create")}
               </button>
             </div>
           </div>

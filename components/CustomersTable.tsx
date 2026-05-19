@@ -7,6 +7,7 @@ import {
   Table, TableBody, TableCell,
   TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { useT } from "@/lib/locale";
 
 interface Customer {
   id:              number;
@@ -35,10 +36,11 @@ async function exportCustomersCsv() {
 }
 
 function TgStatusCell({ c }: { c: Customer }) {
+  const t = useT();
   if (c.tg_linked) {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border border-emerald-500/30 text-emerald-300">
-        ✓ {c.tg_username ? `@${c.tg_username}` : "привязан"}
+        ✓ {c.tg_username ? `@${c.tg_username}` : t("customers.tgLinked")}
       </span>
     );
   }
@@ -52,11 +54,10 @@ function TgStatusCell({ c }: { c: Customer }) {
   return <span className="text-zinc-600 text-xs">—</span>;
 }
 
-// "confirm" → первый экран подтверждения
-// "has_deps" → у клиента есть документы, предлагаем деактивацию
 type ModalStep = "confirm" | "has_deps";
 
 export default function CustomersTable() {
+  const t = useT();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
@@ -71,10 +72,10 @@ export default function CustomersTable() {
     setLoading(true);
     const res  = await fetch("/api/customers");
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) setError((data as { error?: string }).error ?? "Ошибка");
+    if (!res.ok) setError((data as { error?: string }).error ?? t("common.error"));
     else         setCustomers(data as Customer[]);
     setLoading(false);
-  }, []);
+  }, [t]);
 
   useEffect(() => { fetchCustomers(); }, [fetchCustomers]);
 
@@ -84,15 +85,8 @@ export default function CustomersTable() {
         c.code.toLowerCase().includes(search.toLowerCase()))
     : customers;
 
-  function openDelete(c: Customer) {
-    setDeleteTarget(c);
-    setModalStep("confirm");
-  }
-
-  function closeModal() {
-    if (working) return;
-    setDeleteTarget(null);
-  }
+  function openDelete(c: Customer) { setDeleteTarget(c); setModalStep("confirm"); }
+  function closeModal() { if (working) return; setDeleteTarget(null); }
 
   async function handleHardDelete() {
     if (!deleteTarget) return;
@@ -100,7 +94,6 @@ export default function CustomersTable() {
     const res  = await fetch(`/api/customers/${deleteTarget.id}`, { method: "DELETE" });
     const json = await res.json().catch(() => ({}));
     setWorking(false);
-
     if (res.ok) {
       setCustomers((prev) => prev.filter((c) => c.id !== deleteTarget.id));
       setDeleteTarget(null);
@@ -108,7 +101,7 @@ export default function CustomersTable() {
       setDepCounts((json as { counts?: { sales: number; weight_tickets: number } }).counts ?? null);
       setModalStep("has_deps");
     } else {
-      alert((json as { error?: string }).error ?? "Ошибка удаления");
+      alert((json as { error?: string }).error ?? t("customers.deleteError"));
     }
   }
 
@@ -122,7 +115,7 @@ export default function CustomersTable() {
       setCustomers((prev) => prev.filter((c) => c.id !== deleteTarget.id));
       setDeleteTarget(null);
     } else {
-      alert((json as { error?: string }).error ?? "Ошибка удаления");
+      alert((json as { error?: string }).error ?? t("customers.deleteError"));
     }
   }
 
@@ -132,14 +125,13 @@ export default function CustomersTable() {
     const res  = await fetch(`/api/customers/${deleteTarget.id}?soft=1`, { method: "DELETE" });
     const json = await res.json().catch(() => ({}));
     setWorking(false);
-
     if (res.ok) {
       setCustomers((prev) =>
         prev.map((c) => c.id === deleteTarget.id ? { ...c, active: false } : c)
       );
       setDeleteTarget(null);
     } else {
-      alert((json as { error?: string }).error ?? "Ошибка деактивации");
+      alert((json as { error?: string }).error ?? t("customers.deactivateError"));
     }
   }
 
@@ -147,13 +139,13 @@ export default function CustomersTable() {
     <div className="p-8">
       <div className="flex items-start justify-between mb-10 gap-4 flex-col acts:flex-row acts:mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Клиенты</h1>
-          <p className="text-sm text-gray-500 mt-1">Список клиентов и привязка к Telegram</p>
+          <h1 className="text-2xl font-bold">{t("customers.title")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t("customers.subtitle")}</p>
         </div>
         <div className="flex items-center gap-2">
           <input
             type="text"
-            placeholder="Поиск по коду или названию..."
+            placeholder={t("customers.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="border border-zinc-700 bg-transparent rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-400 transition w-72"
@@ -161,7 +153,7 @@ export default function CustomersTable() {
           <button
             onClick={exportCustomersCsv}
             className="flex items-center gap-2 px-3 py-2 rounded-md border border-zinc-700 text-sm hover:bg-zinc-800/40 transition shrink-0"
-            title="Экспорт в CSV (с сегментом и LTV)"
+            title={t("common.export")}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
@@ -176,29 +168,29 @@ export default function CustomersTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>КОД</TableHead>
-              <TableHead>НАЗВАНИЕ</TableHead>
-              <TableHead>СТРАНА</TableHead>
-              <TableHead>ТИП</TableHead>
-              <TableHead>ТЕЛЕФОН</TableHead>
+              <TableHead>{t("customers.code").toUpperCase()}</TableHead>
+              <TableHead>{t("common.name").toUpperCase()}</TableHead>
+              <TableHead>{t("common.country").toUpperCase()}</TableHead>
+              <TableHead>{t("common.type").toUpperCase()}</TableHead>
+              <TableHead>{t("common.phone").toUpperCase()}</TableHead>
               <TableHead>TELEGRAM</TableHead>
-              <TableHead className="text-right">ДЕЙСТВИЯ</TableHead>
+              <TableHead className="text-right">{t("common.actions").toUpperCase()}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={7} className="text-center text-gray-400 py-6">Загрузка...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center text-gray-400 py-6">{t("common.loading")}</TableCell></TableRow>
             ) : error ? (
               <TableRow><TableCell colSpan={7} className="text-center text-red-500 py-6">{error}</TableCell></TableRow>
             ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={7} className="text-center text-gray-400 py-6">Нет клиентов</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center text-gray-400 py-6">{t("customers.noCustomers")}</TableCell></TableRow>
             ) : (
               filtered.map((c) => (
                 <TableRow key={c.id} className={!c.active ? "opacity-50" : ""}>
                   <TableCell className="font-mono">{c.code}</TableCell>
                   <TableCell className="font-medium">
                     {c.name}
-                    {!c.active && <span className="ml-2 text-xs text-zinc-500">(деактивирован)</span>}
+                    {!c.active && <span className="ml-2 text-xs text-zinc-500">({t("customers.deactivated")})</span>}
                   </TableCell>
                   <TableCell>{c.country ?? "—"}</TableCell>
                   <TableCell className="text-xs text-gray-400">{c.customer_type ?? "—"}</TableCell>
@@ -210,13 +202,13 @@ export default function CustomersTable() {
                         href={`/customers/${c.id}`}
                         className="inline-block px-3 py-1 text-xs rounded-md border border-zinc-700 hover:bg-zinc-300 transition"
                       >
-                        Открыть
+                        {t("customers.open")}
                       </Link>
                       <button
                         onClick={() => openDelete(c)}
                         className="px-3 py-1 text-xs rounded-md border border-red-800/60 text-red-400 hover:bg-red-950/40 transition"
                       >
-                        Удалить
+                        {t("common.delete")}
                       </button>
                     </div>
                   </TableCell>
@@ -227,74 +219,55 @@ export default function CustomersTable() {
         </Table>
       </div>
 
-      {/* Delete modal */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="bg-zinc-950 border border-zinc-800 rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
             {modalStep === "confirm" ? (
               <>
-                <h2 className="text-lg font-semibold text-white">Удалить клиента?</h2>
+                <h2 className="text-lg font-semibold text-white">{t("customers.deleteConfirmTitle")}</h2>
                 <p className="text-sm text-zinc-400">
-                  Вы собираетесь удалить{" "}
-                  <span className="font-semibold text-white">{deleteTarget.name}</span>.
-                  TG-привязки и токены приглашений будут удалены. Это действие необратимо.
+                  <span className="font-semibold text-white">{deleteTarget.name}</span>
                 </p>
                 <div className="flex justify-end gap-2 pt-2">
-                  <button
-                    onClick={closeModal}
-                    disabled={working}
-                    className="px-4 py-2 text-sm text-white rounded-lg border border-zinc-700 hover:bg-zinc-800 transition disabled:opacity-50"
-                  >
-                    Отмена
+                  <button onClick={closeModal} disabled={working}
+                    className="px-4 py-2 text-sm text-white rounded-lg border border-zinc-700 hover:bg-zinc-800 transition disabled:opacity-50">
+                    {t("common.cancel")}
                   </button>
-                  <button
-                    onClick={handleHardDelete}
-                    disabled={working}
-                    className="px-4 py-2 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700 transition disabled:opacity-50"
-                  >
-                    {working ? "Удаление..." : "Удалить"}
+                  <button onClick={handleHardDelete} disabled={working}
+                    className="px-4 py-2 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700 transition disabled:opacity-50">
+                    {working ? t("customers.deleting") : t("common.delete")}
                   </button>
                 </div>
               </>
             ) : (
               <>
-                <h2 className="text-lg font-semibold text-white">Есть связанные документы</h2>
+                <h2 className="text-lg font-semibold text-white">{t("customers.hasDepsTitle")}</h2>
                 <p className="text-sm text-zinc-400">
-                  У клиента <span className="font-semibold text-white">{deleteTarget.name}</span> есть связанные данные
+                  <span className="font-semibold text-white">{deleteTarget.name}</span>
                   {depCounts && (
                     <span className="text-white">
                       {": "}
-                      {depCounts.sales > 0 && `${depCounts.sales} прод.`}
+                      {depCounts.sales > 0 && `${depCounts.sales} ${t("sales.title").toLowerCase()}`}
                       {depCounts.sales > 0 && depCounts.weight_tickets > 0 && ", "}
-                      {depCounts.weight_tickets > 0 && `${depCounts.weight_tickets} актов`}
+                      {depCounts.weight_tickets > 0 && `${depCounts.weight_tickets} ${t("weightTickets.title").toLowerCase()}`}
                     </span>
                   )}
-                  .
                 </p>
                 <div className="rounded-lg border border-red-900/40 bg-red-950/20 p-3 text-xs text-red-400">
-                  Удаление уничтожит все продажи, акты взвешивания, чаты и историю этого клиента. Это необратимо.
+                  {t("customers.hasDepsWarning")}
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
-                  <button
-                    onClick={closeModal}
-                    disabled={working}
-                    className="px-4 py-2 text-sm rounded-lg text-white border border-zinc-700 hover:bg-zinc-800 transition disabled:opacity-50"
-                  >
-                    Отмена
+                  <button onClick={closeModal} disabled={working}
+                    className="px-4 py-2 text-sm rounded-lg text-white border border-zinc-700 hover:bg-zinc-800 transition disabled:opacity-50">
+                    {t("common.cancel")}
                   </button>
-                  <button
-                    onClick={handleSoftDelete}
-                    disabled={working}
-                    className="px-4 py-2 text-sm rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition disabled:opacity-50"
-                  >
-                    {working ? "..." : "Деактивировать"}
+                  <button onClick={handleSoftDelete} disabled={working}
+                    className="px-4 py-2 text-sm rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition disabled:opacity-50">
+                    {working ? "..." : t("customers.deactivate")}
                   </button>
-                  <button
-                    onClick={handleCascadeDelete}
-                    disabled={working}
-                    className="px-4 py-2 text-sm rounded-lg bg-red-700 text-white hover:bg-red-800 transition disabled:opacity-50"
-                  >
-                    {working ? "Удаление..." : "Удалить всё"}
+                  <button onClick={handleCascadeDelete} disabled={working}
+                    className="px-4 py-2 text-sm rounded-lg bg-red-700 text-white hover:bg-red-800 transition disabled:opacity-50">
+                    {working ? t("customers.deleting") : t("customers.deleteAll")}
                   </button>
                 </div>
               </>

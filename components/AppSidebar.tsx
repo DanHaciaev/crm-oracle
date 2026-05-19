@@ -13,28 +13,30 @@ import { usePathname } from "next/navigation"
 import { format } from "date-fns"
 import Link from "next/link"
 import { useAuth } from "@/hooks/useAuth"
+import { useT } from "@/lib/locale"
 
 export function AppSidebar() {
   const pathname    = usePathname()
   const today       = format(new Date(), "dd MMM yyyy")
   const { user, logout } = useAuth()
+  const t = useT()
 
   const links = [
-    { name: "Dashboard",         href: "/dashboard",       adminOnly: false },
-    { name: "Inbox",             href: "/inbox",           adminOnly: false },
-    { name: "Клиенты",           href: "/customers",       adminOnly: false },
-    { name: "Сегментация",       href: "/segments",        adminOnly: false },
-    { name: "Продажи",           href: "/sales",           adminOnly: false },
-    { name: "Задачи",            href: "/tasks",           adminOnly: false },
-    { name: "Риск оттока",       href: "/churn",           adminOnly: false },
-    { name: "Рассылки",          href: "/broadcasts",      adminOnly: false },
-    { name: "Автоматизация",     href: "/automations",     adminOnly: false },
-    { name: "Лиды",              href: "/leads",           adminOnly: false },
-    { name: "Товары",            href: "/items",           adminOnly: false },
-    { name: "Акты взвешивания",  href: "/weight-tickets",  adminOnly: false },
-    { name: "Менеджеры",         href: "/managers",        adminOnly: true  },
-    { name: "История изменений", href: "/audit-log",       adminOnly: true  },
-    { name: "Пользователи",      href: "/users",           adminOnly: true  },
+    { name: t("nav.dashboard"),     href: "/dashboard",       adminOnly: false },
+    { name: t("nav.inbox"),         href: "/inbox",           adminOnly: false },
+    { name: t("nav.customers"),     href: "/customers",       adminOnly: false },
+    { name: t("nav.segments"),      href: "/segments",        adminOnly: false },
+    { name: t("nav.sales"),         href: "/sales",           adminOnly: false },
+    { name: t("nav.tasks"),         href: "/tasks",           adminOnly: false },
+    { name: t("nav.leads"),         href: "/leads",           adminOnly: false },
+    { name: t("nav.churn"),         href: "/churn",           adminOnly: false },
+    { name: t("nav.broadcasts"),    href: "/broadcasts",      adminOnly: false },
+    { name: t("nav.automations"),   href: "/automations",     adminOnly: false },
+    { name: t("nav.items"),         href: "/items",           adminOnly: false },
+    { name: t("nav.weightTickets"), href: "/weight-tickets",  adminOnly: false },
+    { name: t("nav.managers"),      href: "/managers",        adminOnly: true  },
+    { name: t("nav.auditLog"),      href: "/audit-log",       adminOnly: true  },
+    { name: t("nav.users"),         href: "/users",           adminOnly: true  },
   ].filter((l) => !l.adminOnly || user?.role === "admin")
 
   return (
@@ -73,11 +75,11 @@ export function AppSidebar() {
               onClick={logout}
               className="border border-zinc-400 rounded-4xl px-2 py-1 text-zinc-400 hover:text-white transition-colors"
             >
-              Выйти
+              {t("common.logout")}
             </button>
           )}
         </div>
-        <div>Сегодня: {today}</div>
+        <div>{t("common.today")}: {today}</div>
       </SidebarFooter>
     </Sidebar>
   )
