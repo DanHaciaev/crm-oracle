@@ -94,43 +94,43 @@ function RetentionBlock({ stats }: { stats: CustomerStats }) {
   }
 
   return (
-    <section className="border border-zinc-800 rounded-xl p-5 space-y-4">
-      <h2 className="text-sm font-semibold text-zinc-300">{t("customers.retention.title")}</h2>
+    <section className="border border-gray-800 rounded-xl p-5 space-y-4">
+      <h2 className="text-sm font-semibold text-gray-700">{t("customers.retention.title")}</h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
-        <div className="border border-zinc-800 rounded-xl p-3">
-          <div className="text-xs text-zinc-500 mb-1">{t("customers.ltv")}</div>
-          <div className="text-lg font-bold text-zinc-100 tabular-nums">
+        <div className="border border-gray-800 rounded-xl p-3">
+          <div className="text-sm text-gray-400 mb-1">{t("customers.ltv")}</div>
+          <div className="text-lg font-bold text-gray-800 tabular-nums">
             {total_revenue.toLocaleString("ru-RU", { maximumFractionDigits: 0 })}
           </div>
-          <div className="text-[10px] text-zinc-600">MDL</div>
+          <div className="text-[10px] text-gray-400">MDL</div>
         </div>
-        <div className="border border-zinc-800 rounded-xl p-3">
-          <div className="text-xs text-zinc-500 mb-1">{t("customers.retention.avgCheck")}</div>
-          <div className="text-lg font-bold text-zinc-100 tabular-nums">
+        <div className="border border-gray-800 rounded-xl p-3">
+          <div className="text-sm text-gray-400 mb-1">{t("customers.retention.avgCheck")}</div>
+          <div className="text-lg font-bold text-gray-800 tabular-nums">
             {avg_check.toLocaleString("ru-RU", { maximumFractionDigits: 0 })}
           </div>
-          <div className="text-[10px] text-zinc-600">MDL · {order_count} {t("customers.ordersCount").toLowerCase()}</div>
+          <div className="text-[10px] text-gray-400">MDL · {order_count} {t("customers.ordersCount").toLowerCase()}</div>
         </div>
-        <div className="border border-zinc-800 rounded-xl p-3">
-          <div className="text-xs text-zinc-500 mb-1">{t("customers.retention.daysSinceLast")}</div>
+        <div className="border border-gray-800 rounded-xl p-3">
+          <div className="text-sm text-gray-400 mb-1">{t("customers.retention.daysSinceLast")}</div>
           <div className={`text-lg font-bold tabular-nums ${daysColor}`}>
             {days_since_last !== null ? days_since_last : "—"}
           </div>
-          <div className="text-[10px] text-zinc-600">
+          <div className="text-[10px] text-gray-400">
             {avg_days_between !== null
               ? `${t("customers.retention.cycle")}${avg_days_between} ${t("common.days")}`
               : t("customers.retention.unknownCycle")}
           </div>
         </div>
-        <div className="border border-zinc-800 rounded-xl p-3">
-          <div className="text-xs text-zinc-500 mb-1">{t("customers.retention.nextOrder")}</div>
-          <div className="text-sm font-semibold text-zinc-200">{fmtD(next_order_expected)}</div>
+        <div className="border border-gray-800 rounded-xl p-3">
+          <div className="text-sm text-gray-400 mb-1">{t("customers.retention.nextOrder")}</div>
+          <div className="text-sm font-semibold text-gray-800">{fmtD(next_order_expected)}</div>
           {overdue_days !== null && overdue_days > 0 ? (
             <div className="text-[10px] text-red-400 mt-0.5">
               {t("customers.retention.overdue")} {overdue_days} {t("common.days")}
             </div>
           ) : (
-            <div className="text-[10px] text-zinc-600 mt-0.5">{t("customers.retention.forecast")}</div>
+            <div className="text-[10px] text-gray-400 mt-0.5">{t("customers.retention.forecast")}</div>
           )}
         </div>
       </div>
@@ -152,7 +152,7 @@ function RetentionBlock({ stats }: { stats: CustomerStats }) {
 function Field({ label, value }: { label: string; value: string | null }) {
   return (
     <div>
-      <div className="text-xs text-zinc-500">{label}</div>
+      <div className="text-sm text-gray-400">{label}</div>
       <div className="mt-0.5">{value && String(value).trim() !== "" ? value : "—"}</div>
     </div>
   );
@@ -160,22 +160,22 @@ function Field({ label, value }: { label: string; value: string | null }) {
 
 function KpiCard({ label, value, highlight }: { label: string; value: string; highlight?: string }) {
   return (
-    <div className="border border-zinc-800 rounded-xl p-4 text-center">
+    <div className="border border-gray-800 rounded-xl p-4 text-center">
       <div className={`text-xl font-bold tabular-nums ${highlight ?? ""}`}>{value}</div>
-      <div className="text-xs text-zinc-500 mt-1">{label}</div>
+      <div className="text-sm text-gray-400 mt-1">{label}</div>
     </div>
   );
 }
 
 function BindingStatus({ s }: { s: string }) {
   const map: Record<string, string> = {
-    pending: "border-zinc-600 text-zinc-300",
-    bound:   "border-emerald-500/40 text-emerald-300",
-    revoked: "border-red-500/40 text-red-300",
-    expired: "border-orange-500/40 text-orange-300",
+    pending: "border-gray-800 text-gray-500",
+    bound:   "border-emerald-400 text-emerald-600",
+    revoked: "border-red-300 text-red-500",
+    expired: "border-orange-400 text-orange-500",
   };
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs border ${map[s] ?? "border-zinc-600 text-zinc-300"}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-sm border ${map[s] ?? "border-gray-800 text-gray-500"}`}>
       {s}
     </span>
   );
@@ -291,7 +291,7 @@ export default function CustomerDetail({ id }: { id: string }) {
 
   return (
     <div className="p-8 space-y-6">
-      <Link href="/customers" className="text-sm text-zinc-500 hover:text-zinc-300 transition">
+      <Link href="/customers" className="text-sm text-gray-400 hover:text-gray-700 transition">
         {t("customers.backToList")}
       </Link>
 
@@ -306,27 +306,27 @@ export default function CustomerDetail({ id }: { id: string }) {
           <div className="flex gap-4 text-center">
             <div>
               <div className="text-lg font-bold tabular-nums">{fmtMoney(stats.total_revenue)}</div>
-              <div className="text-xs text-zinc-500">LTV (MDL)</div>
+              <div className="text-sm text-gray-400">LTV (MDL)</div>
             </div>
             <div>
               <div className="text-lg font-bold tabular-nums">{stats.order_count}</div>
-              <div className="text-xs text-zinc-500">{t("customers.ordersCount")}</div>
+              <div className="text-sm text-gray-400">{t("customers.ordersCount")}</div>
             </div>
             <div>
               <div className={`text-lg font-bold tabular-nums ${churnColor ?? ""}`}>
                 {churnPct !== null ? `${churnPct > 0 ? "+" : ""}${churnPct}%` : "—"}
               </div>
-              <div className="text-xs text-zinc-500">{t("customers.dynamics30")}</div>
+              <div className="text-sm text-gray-400">{t("customers.dynamics30")}</div>
             </div>
           </div>
         )}
       </div>
 
-      <div className="flex gap-1 border-b border-zinc-800 pb-0">
+      <div className="flex gap-1 border-b border-gray-800 pb-0">
         {TABS.map((tb) => (
           <button key={tb.key} onClick={() => setTab(tb.key)}
             className={`px-4 py-2 text-sm transition border-b-2 -mb-px ${
-              tab === tb.key ? "border-white text-white" : "border-transparent text-zinc-500 hover:text-zinc-300"
+              tab === tb.key ? "border-gray-800 text-gray-900" : "border-transparent text-gray-400 hover:text-gray-700"
             }`}>
             {tb.label}
           </button>
@@ -335,7 +335,7 @@ export default function CustomerDetail({ id }: { id: string }) {
 
       {tab === "info" && (
         <div className="space-y-6">
-          <section className="border border-zinc-800 rounded-xl p-5 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm">
+          <section className="border border-gray-800 rounded-xl p-5 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm">
             <Field label={t("common.type")}             value={data.customer_type} />
             <Field label={t("common.country")}          value={data.country} />
             <Field label="Tax ID"                       value={data.tax_id} />
@@ -349,7 +349,7 @@ export default function CustomerDetail({ id }: { id: string }) {
 
           <section className="border border-red-500/30 rounded-xl p-5">
             <h2 className="text-base font-semibold text-red-300 mb-1">{t("customers.dangerZone")}</h2>
-            <p className="text-xs text-gray-400 mb-4">{t("customers.dangerZoneDesc")}</p>
+            <p className="text-sm text-gray-400 mb-4">{t("customers.dangerZoneDesc")}</p>
             <div className="flex flex-wrap gap-2">
               <button onClick={() => deleteCustomer(false)} disabled={deleting}
                 className="px-4 py-2 text-sm rounded-lg border border-red-500/40 text-red-300 hover:bg-red-500/10 disabled:opacity-50 transition">
@@ -357,7 +357,7 @@ export default function CustomerDetail({ id }: { id: string }) {
               </button>
               {data.active && (
                 <button onClick={() => deleteCustomer(true)} disabled={deleting}
-                  className="px-4 py-2 text-sm rounded-lg border border-zinc-700 hover:bg-zinc-800 disabled:opacity-50 transition">
+                  className="px-4 py-2 text-sm rounded-lg border border-gray-800 hover:bg-gray-100 text-gray-700 disabled:opacity-50 transition">
                   {t("customers.deactivate")}
                 </button>
               )}
@@ -384,7 +384,7 @@ export default function CustomerDetail({ id }: { id: string }) {
           )}
 
           {stats && stats.monthly.length > 0 && (
-            <div className="border border-zinc-800 rounded-xl p-5">
+            <div className="border border-gray-800 rounded-xl p-5">
               <div className="text-sm font-medium mb-4">{t("customers.revenueChartTitle")}</div>
               <ResponsiveContainer width="100%" height={180}>
                 <BarChart data={stats.monthly} margin={{ top: 4, right: 4, bottom: 4, left: 0 }}>
@@ -395,7 +395,7 @@ export default function CustomerDetail({ id }: { id: string }) {
                     labelFormatter={(s: unknown) => fmtMonthL(String(s ?? ""))} />
                   <Bar dataKey="revenue" radius={[3, 3, 0, 0]}>
                     {stats.monthly.map((_, i) => (
-                      <Cell key={i} fill={i === stats.monthly.length - 1 ? "#60a5fa" : "#3f3f46"} />
+                      <Cell key={i} fill={i === stats.monthly.length - 1 ? "#3b82f6" : "#d1d5db"} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -420,7 +420,7 @@ export default function CustomerDetail({ id }: { id: string }) {
       )}
 
       {tab === "telegram" && (
-        <section className="border border-zinc-800 rounded-xl p-5 space-y-4">
+        <section className="border border-gray-800 rounded-xl p-5 space-y-4">
           {data.AGRO_CRM_APP_USERS.length > 0 ? (
             <div className="space-y-3">
               {data.AGRO_CRM_APP_USERS.map((u) => (
@@ -430,7 +430,7 @@ export default function CustomerDetail({ id }: { id: string }) {
                       <span className="text-emerald-300 mr-2">{t("customers.tg.linked")}</span>
                       {u.telegram_username ? <span className="font-mono">@{u.telegram_username}</span> : null}
                     </div>
-                    <div className="text-xs text-gray-400 mt-1">
+                    <div className="text-sm text-gray-400 mt-1">
                       chat_id: <span className="font-mono">{u.telegram_chat_id}</span>
                       {" · "}{t("appUsers.firstSeen")}: {fmtDate(u.first_seen)}
                       {" · "}{t("appUsers.lastSeen")}: {fmtDate(u.last_seen)}
@@ -445,17 +445,17 @@ export default function CustomerDetail({ id }: { id: string }) {
 
           <div className="flex items-center gap-3">
             <button onClick={generateLink} disabled={generating}
-              className="px-4 py-2 text-sm rounded-lg border border-zinc-300 bg-zinc-100 text-black hover:bg-white disabled:opacity-50 transition">
+              className="px-4 py-2 text-sm rounded-lg border border-gray-800 bg-white text-gray-800 hover:bg-gray-50 disabled:opacity-50 transition">
               {generating ? t("customers.tg.creating") : t("customers.tg.createInvite")}
             </button>
-            <span className="text-xs text-gray-500">{t("customers.tg.ttl")}</span>
+            <span className="text-sm text-gray-500">{t("customers.tg.ttl")}</span>
           </div>
 
           {newLink && (
             <div className="border border-emerald-500/30 bg-emerald-500/10 rounded-lg p-3 text-sm flex items-center justify-between gap-3">
               <code className="break-all text-emerald-200">{newLink}</code>
               <button onClick={() => copy(newLink)}
-                className="px-3 py-1 text-xs rounded-md border border-emerald-400/40 hover:bg-emerald-500/20 shrink-0">
+                className="px-3 py-1 text-sm rounded-md border border-emerald-400/40 hover:bg-emerald-500/20 shrink-0">
                 {t("common.copy")}
               </button>
             </div>
@@ -463,31 +463,31 @@ export default function CustomerDetail({ id }: { id: string }) {
 
           {data.bindings.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-gray-300 mb-2">{t("customers.tg.history")}</h3>
-              <div className="border border-zinc-800 rounded-lg overflow-hidden">
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">{t("customers.tg.history")}</h3>
+              <div className="border border-gray-800 rounded-lg overflow-hidden">
                 <table className="w-full text-sm">
-                  <thead className="bg-zinc-900/60 text-xs text-gray-400">
+                  <thead className="bg-gray-50 text-sm text-gray-500">
                     <tr>
                       <th className="text-left px-3 py-2">{t("customers.tg.token")}</th>
                       <th className="text-left px-3 py-2">{t("common.status")}</th>
                       <th className="text-left px-3 py-2">{t("customers.tg.created")}</th>
                       <th className="text-left px-3 py-2">{t("customers.tg.expires")}</th>
                       <th className="text-left px-3 py-2">{t("customers.tg.bound")}</th>
-                      <th className="text-right px-3 py-2"></th>
+                      <th className="text-center px-3 py-2"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {data.bindings.map((b) => (
-                      <tr key={b.id} className="border-t border-zinc-800">
-                        <td className="px-3 py-2 font-mono text-xs">{shortToken(b.invite_token)}</td>
-                        <td className="px-3 py-2 text-xs"><BindingStatus s={b.status} /></td>
-                        <td className="px-3 py-2 text-xs">{fmtDate(b.created_at)}</td>
-                        <td className="px-3 py-2 text-xs">{fmtDate(b.expires_at)}</td>
-                        <td className="px-3 py-2 text-xs">{fmtDate(b.bound_at)}</td>
-                        <td className="px-3 py-2 text-right">
+                      <tr key={b.id} className="border-t border-gray-800">
+                        <td className="px-3 py-2 font-mono text-sm">{shortToken(b.invite_token)}</td>
+                        <td className="px-3 py-2 text-sm"><BindingStatus s={b.status} /></td>
+                        <td className="px-3 py-2 text-sm">{fmtDate(b.created_at)}</td>
+                        <td className="px-3 py-2 text-sm">{fmtDate(b.expires_at)}</td>
+                        <td className="px-3 py-2 text-sm">{fmtDate(b.bound_at)}</td>
+                        <td className="px-3 py-2 text-center">
                           {b.status === "pending" && (
                             <button onClick={() => revokeBinding(b.id)}
-                              className="px-2 py-1 text-xs rounded-md border border-red-500/30 text-red-400 hover:bg-red-500/10 transition">
+                              className="px-2 py-1 text-sm rounded-md border border-red-500/30 text-red-400 hover:bg-red-500/10 transition">
                               {t("customers.tg.revoke")}
                             </button>
                           )}

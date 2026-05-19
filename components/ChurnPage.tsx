@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
@@ -96,15 +97,15 @@ export default function ChurnPage() {
           {PERIODS.map((p) => (
             <button key={p.v} onClick={() => setPeriod(p.v)}
               className={`px-3 py-1.5 rounded-md border text-sm transition ${
-                period === p.v ? "border-zinc-400 bg-zinc-800/50 text-white" : "border-zinc-800 text-zinc-500 hover:bg-zinc-800/20"
+                period === p.v ? "border-gray-800 bg-gray-900 text-white" : "border-gray-800 text-gray-500 hover:bg-gray-100"
               }`}>
               {p.l}
             </button>
           ))}
           <div className="flex items-center gap-2 text-sm">
-            <span className="text-zinc-500">{t("churn.threshold")}</span>
+            <span className="text-gray-500">{t("churn.threshold")}</span>
             <select value={threshold} onChange={(e) => setThreshold(Number(e.target.value))}
-              className="border border-zinc-700 bg-zinc-900 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-zinc-400 transition">
+              className="border border-gray-800 bg-white rounded-lg px-2 py-1.5 text-sm text-gray-900 outline-none focus:border-gray-800 transition">
               <option value={15}>-15%</option>
               <option value={20}>-20%</option>
               <option value={30}>-30%</option>
@@ -115,7 +116,7 @@ export default function ChurnPage() {
       </div>
 
       {data && (
-        <div className="text-xs text-zinc-500 mb-5">
+        <div className="text-sm text-gray-500 mb-5">
           {t("churn.current")}: {fmtDate(data.curr_from)} — {fmtDate(data.curr_to)}{" "}
           vs {t("churn.previous")}: {fmtDate(data.prev_from)} — {fmtDate(data.prev_to)}
         </div>
@@ -127,15 +128,15 @@ export default function ChurnPage() {
         <StatCard label={t("churn.risk.mediumFull")}   value={String(medium)}   cls="text-yellow-400" />
       </div>
 
-      <div className="border border-zinc-800 rounded-xl overflow-auto">
+      <div className="border border-gray-800 rounded-xl overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>{t("customers.title").toUpperCase()}</TableHead>
               <TableHead>{t("churn.riskLevel").toUpperCase()}</TableHead>
-              <TableHead className="text-right">{t("churn.prevPeriod").toUpperCase()}</TableHead>
-              <TableHead className="text-right">{t("churn.currPeriod").toUpperCase()}</TableHead>
-              <TableHead className="text-right">{t("churn.change").toUpperCase()}</TableHead>
+              <TableHead className="text-center">{t("churn.prevPeriod").toUpperCase()}</TableHead>
+              <TableHead className="text-center">{t("churn.currPeriod").toUpperCase()}</TableHead>
+              <TableHead className="text-center">{t("churn.change").toUpperCase()}</TableHead>
               <TableHead>{t("churn.lastOrder").toUpperCase()}</TableHead>
               <TableHead className="text-center">TG</TableHead>
               <TableHead className="text-center">{t("churn.action").toUpperCase()}</TableHead>
@@ -153,38 +154,38 @@ export default function ChurnPage() {
             ) : items.map((item) => {
               const risk = riskLabel(item.pct);
               return (
-                <TableRow key={item.id} className="hover:bg-zinc-900/40 transition-colors">
+                <TableRow key={item.id} className="hover:bg-gray-50 transition-colors">
                   <TableCell className="font-medium">
                     <Link href={`/customers/${item.id}`}
-                      className="hover:text-white transition underline underline-offset-2 decoration-zinc-700">
+                      className="hover:text-gray-900 transition underline underline-offset-2 decoration-gray-300">
                       {item.name}
                     </Link>
                   </TableCell>
                   <TableCell>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${risk.cls}`}>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-sm font-medium border ${risk.cls}`}>
                       {risk.label}
                     </span>
                   </TableCell>
-                  <TableCell className="text-right font-mono tabular-nums text-zinc-400">{fmtMoney(item.prev)} MDL</TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">{fmtMoney(item.curr)} MDL</TableCell>
-                  <TableCell className={`text-right font-mono tabular-nums ${pctColor(item.pct)}`}>
+                  <TableCell className="text-center font-mono tabular-nums text-gray-500">{fmtMoney(item.prev)} MDL</TableCell>
+                  <TableCell className="text-center font-mono tabular-nums">{fmtMoney(item.curr)} MDL</TableCell>
+                  <TableCell className={`text-center font-mono tabular-nums ${pctColor(item.pct)}`}>
                     {item.pct > 0 ? "+" : ""}{item.pct}%
                   </TableCell>
                   <TableCell className="tabular-nums">{fmtDate(item.last_date)}</TableCell>
                   <TableCell className="text-center">
                     {item.tg_linked
                       ? <span className="text-emerald-400 text-sm">✓</span>
-                      : <span className="text-zinc-600 text-xs">—</span>}
+                      : <span className="text-gray-400 text-sm">—</span>}
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-1">
                       <Link href={`/customers/${item.id}?tab=sales`}
-                        className="px-2.5 py-1 text-xs rounded-md border border-zinc-700 hover:bg-zinc-800 transition">
+                        className="px-2.5 py-1 text-sm rounded-md border border-gray-800 hover:bg-gray-100 transition text-gray-700">
                         {t("sales.title")}
                       </Link>
                       {item.tg_linked && (
                         <button onClick={() => sendTelegram(item)} disabled={sending === item.id}
-                          className="px-2.5 py-1 text-xs rounded-md border border-sky-700 text-sky-400 hover:bg-sky-950/50 transition disabled:opacity-40">
+                          className="px-2.5 py-1 text-sm rounded-md border border-sky-700 text-sky-400 hover:bg-sky-950/50 transition disabled:opacity-40">
                           {sending === item.id ? "..." : "TG"}
                         </button>
                       )}
@@ -198,7 +199,7 @@ export default function ChurnPage() {
       </div>
 
       {items.length > 0 && !loading && (
-        <div className="mt-3 text-right text-xs text-zinc-500">
+        <div className="mt-3 text-center text-sm text-gray-400">
           {t("churn.riskyCount")}: {items.length}
         </div>
       )}
@@ -208,9 +209,9 @@ export default function ChurnPage() {
 
 function StatCard({ label, value, cls }: { label: string; value: string; cls: string }) {
   return (
-    <div className="border border-zinc-800 rounded-xl p-4 text-center">
+    <div className="border border-gray-800 rounded-xl p-4 text-center">
       <div className={`text-3xl font-bold tabular-nums ${cls}`}>{value}</div>
-      <div className="text-xs text-zinc-500 mt-1">{label}</div>
+      <div className="text-sm text-gray-400 mt-1">{label}</div>
     </div>
   );
 }

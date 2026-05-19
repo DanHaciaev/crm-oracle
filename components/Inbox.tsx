@@ -205,12 +205,12 @@ export default function Inbox() {
       <aside
         className={`${
           activeId !== null ? "hidden inbox:flex" : "flex"
-        } w-full inbox:w-90 inbox:border-r border-zinc-800 flex-col`}
+        } w-full inbox:w-90 inbox:border-r border-gray-800 flex-col`}
       >
-        <div className="p-3 sm:p-4 border-b border-zinc-800">
+        <div className="p-3 sm:p-4 border-b border-gray-800">
           <div className="flex items-baseline justify-between mb-3">
             <h1 className="text-lg font-bold">Inbox</h1>
-            <span className="text-xs text-gray-500">
+            <span className="text-sm text-gray-500">
               {totalUnread > 0 ? `${totalUnread} ${t("inbox.unreadCount")}` : t("inbox.allRead")}
             </span>
           </div>
@@ -235,18 +235,18 @@ export default function Inbox() {
                 <button
                   key={th.id}
                   onClick={() => setActiveId(th.id)}
-                  className={`w-full text-left px-4 py-3 border-b border-zinc-800/60 transition flex items-start gap-3 ${
-                    isActive ? "bg-zinc-800/60" : "hover:bg-zinc-900/50"
+                  className={`w-full text-left px-4 py-3 border-b border-gray-800 transition flex items-start gap-3 ${
+                    isActive ? "bg-gray-100" : "hover:bg-gray-50"
                   }`}
                 >
                   <Avatar th={th} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline justify-between gap-2">
                       <div className="font-medium truncate">{threadTitle(th)}</div>
-                      <div className="text-xs text-gray-500 shrink-0">{fmtTime(th.last_message_at)}</div>
+                      <div className="text-sm text-gray-500 shrink-0">{fmtTime(th.last_message_at)}</div>
                     </div>
                     <div className="flex items-baseline justify-between gap-2 mt-0.5">
-                      <div className="text-xs text-gray-400 truncate">
+                      <div className="text-sm text-gray-400 truncate">
                         {th.last_dir === "out" ? t("inbox.youPrefix") : ""}{previewText(th)}
                       </div>
                       {th.unread_count > 0 && (
@@ -282,12 +282,12 @@ export default function Inbox() {
         ) : (
           <>
             {/* header */}
-            <div className="p-3 sm:p-4 border-b border-zinc-800 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div className="p-3 sm:p-4 border-b border-gray-800 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
               <div className="flex items-start gap-2 sm:gap-3 min-w-0">
                 <button
                   onClick={() => { setActiveId(null); setMessages([]); }}
                   aria-label={t("common.back")}
-                  className="inbox:hidden shrink-0 -ml-1 mt-1 w-8 h-8 rounded-md flex items-center justify-center text-gray-300 hover:bg-zinc-800 transition"
+                  className="inbox:hidden shrink-0 -ml-1 mt-1 w-8 h-8 rounded-md flex items-center justify-center text-gray-500 hover:bg-gray-100 transition"
                 >
                   <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
                     <path fillRule="evenodd" d="M12.78 15.78a.75.75 0 01-1.06 0l-5.25-5.25a.75.75 0 010-1.06l5.25-5.25a.75.75 0 111.06 1.06L8.06 10l4.72 4.72a.75.75 0 010 1.06z" clipRule="evenodd" />
@@ -296,7 +296,7 @@ export default function Inbox() {
                 <Avatar th={active} big />
                 <div className="min-w-0">
                   <div className="font-semibold truncate">{threadTitle(active)}</div>
-                  <div className="text-xs text-gray-400 mt-0.5 flex items-center gap-2 flex-wrap">
+                  <div className="text-sm text-gray-400 mt-0.5 flex items-center gap-2 flex-wrap">
                     <StatusBadge s={active.status} />
                     {active.telegram_username && <span className="truncate">@{active.telegram_username}</span>}
                     <span className="font-mono hidden sm:inline">chat {active.telegram_chat_id}</span>
@@ -306,7 +306,7 @@ export default function Inbox() {
               <div className="flex flex-wrap gap-2 sm:justify-end">
                 <button
                   onClick={() => setEventsModal(true)}
-                  className="px-3 py-1 text-xs rounded-md border border-zinc-700 hover:bg-zinc-800 transition"
+                  className="px-3 py-1 text-sm rounded-md border border-gray-800 hover:bg-gray-100 transition text-gray-700"
                 >
                   {t("inbox.events")}
                 </button>
@@ -315,13 +315,13 @@ export default function Inbox() {
                   <>
                     <button
                       onClick={() => patchAppUser("unarchive")}
-                      className="px-3 py-1 text-xs rounded-md border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10 transition"
+                      className="px-3 py-1 text-sm rounded-md border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10 transition"
                     >
                       {t("inbox.restore")}
                     </button>
                     <button
                       onClick={hardDelete}
-                      className="px-3 py-1 text-xs rounded-md border border-red-500/40 text-red-300 hover:bg-red-500/10 transition"
+                      className="px-3 py-1 text-sm rounded-md border border-red-500/40 text-red-300 hover:bg-red-500/10 transition"
                     >
                       {t("inbox.deletePermanent")}
                     </button>
@@ -332,13 +332,13 @@ export default function Inbox() {
                       <>
                         <button
                           onClick={() => setCreateModal(true)}
-                          className="px-3 py-1 text-xs rounded-md border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10 transition"
+                          className="px-3 py-1 text-sm rounded-md border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10 transition"
                         >
                           {t("inbox.createCustomer")}
                         </button>
                         <button
                           onClick={() => setLinkModal(true)}
-                          className="px-3 py-1 text-xs rounded-md border border-zinc-700 hover:bg-zinc-800 transition"
+                          className="px-3 py-1 text-sm rounded-md border border-gray-800 hover:bg-gray-100 transition text-gray-700"
                         >
                           {t("inbox.linkExisting")}
                         </button>
@@ -347,7 +347,7 @@ export default function Inbox() {
                     {active.status === "linked" && (
                       <button
                         onClick={() => { if (confirm(t("inbox.unlinkConfirm"))) patchAppUser("unlink"); }}
-                        className="px-3 py-1 text-xs rounded-md border border-zinc-700 hover:bg-zinc-800 transition"
+                        className="px-3 py-1 text-sm rounded-md border border-gray-800 hover:bg-gray-100 transition text-gray-700"
                       >
                         {t("inbox.unlink")}
                       </button>
@@ -355,21 +355,21 @@ export default function Inbox() {
                     {active.status !== "blocked" ? (
                       <button
                         onClick={() => { if (confirm(t("inbox.blockConfirm"))) patchAppUser("block"); }}
-                        className="px-3 py-1 text-xs rounded-md border border-red-500/40 text-red-300 hover:bg-red-500/10 transition"
+                        className="px-3 py-1 text-sm rounded-md border border-red-500/40 text-red-300 hover:bg-red-500/10 transition"
                       >
                         {t("inbox.block")}
                       </button>
                     ) : (
                       <button
                         onClick={() => patchAppUser("unblock")}
-                        className="px-3 py-1 text-xs rounded-md border border-zinc-700 hover:bg-zinc-800 transition"
+                        className="px-3 py-1 text-sm rounded-md border border-gray-800 hover:bg-gray-100 transition text-gray-700"
                       >
                         {t("inbox.unblock")}
                       </button>
                     )}
                     <button
                       onClick={() => { if (confirm(t("inbox.archiveConfirm"))) patchAppUser("archive"); }}
-                      className="px-3 py-1 text-xs rounded-md border border-zinc-700 hover:bg-zinc-800 transition"
+                      className="px-3 py-1 text-sm rounded-md border border-gray-800 hover:bg-gray-100 transition text-gray-700"
                     >
                       {t("inbox.archive")}
                     </button>
@@ -393,7 +393,7 @@ export default function Inbox() {
             </div>
 
             {/* reply */}
-            <div className="p-2 sm:p-3 border-t border-zinc-800">
+            <div className="p-2 sm:p-3 border-t border-gray-800">
               <div className="flex items-end gap-2">
                 <textarea
                   value={reply}
@@ -411,12 +411,12 @@ export default function Inbox() {
                   }
                   disabled={sending || active.status === "blocked" || inArchive}
                   rows={2}
-                  className="flex-1 min-w-0 resize-none rounded-lg border border-zinc-700 bg-transparent px-3 py-2 text-sm outline-none focus:border-zinc-400 transition disabled:opacity-50"
+                  className="flex-1 min-w-0 resize-none rounded-lg border border-gray-800 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-800 transition disabled:opacity-50"
                 />
                 <button
                   onClick={send}
                   disabled={sending || !reply.trim() || active.status === "blocked" || inArchive}
-                  className="shrink-0 px-3 sm:px-4 py-2 text-sm rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 transition text-white"
+                  className="shrink-0 px-3 sm:px-4 py-2 text-sm rounded-lg bg-green-700 transition text-white"
                 >
                   {sending ? "..." : t("common.send")}
                 </button>
@@ -462,8 +462,8 @@ function Tab({ active, onClick, label }: { active: boolean; onClick: () => void;
   return (
     <button
       onClick={onClick}
-      className={`px-2 py-1 rounded-md text-xs border transition ${
-        active ? "border-zinc-300 bg-zinc-800/60" : "border-zinc-800 hover:bg-zinc-800/40"
+      className={`px-2 py-1 rounded-md text-sm border transition ${
+        active ? "border-gray-800 bg-gray-200" : "border-gray-800 hover:bg-gray-100"
       }`}
     >
       {label}
@@ -473,12 +473,12 @@ function Tab({ active, onClick, label }: { active: boolean; onClick: () => void;
 
 function StatusBadge({ s }: { s: string }) {
   const cls: Record<string, string> = {
-    pending: "border-zinc-600 text-zinc-300",
-    linked:  "border-emerald-500/40 text-emerald-300",
-    blocked: "border-red-500/40 text-red-300",
+    pending: "border-gray-800 text-gray-500",
+    linked:  "border-emerald-400 text-emerald-600",
+    blocked: "border-red-300 text-red-500",
   };
   return (
-    <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] border ${cls[s] ?? "border-zinc-600"}`}>
+    <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] border ${cls[s] ?? "border-gray-800"}`}>
       {s}
     </span>
   );
@@ -488,7 +488,7 @@ function Avatar({ th, big }: { th: Thread; big?: boolean }) {
   const initial = (th.first_name?.[0] ?? th.telegram_username?.[0] ?? "?").toUpperCase();
   const size = big ? "w-10 h-10 text-base" : "w-9 h-9 text-sm";
   return (
-    <div className={`shrink-0 rounded-full bg-zinc-700 text-zinc-200 flex items-center justify-center font-semibold ${size}`}>
+    <div className={`shrink-0 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center font-semibold ${size}`}>
       {initial}
     </div>
   );
@@ -502,11 +502,11 @@ function MessageBubble({ m, fmtTime }: { m: Message; fmtTime: (s: string | null)
         className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${
           out
             ? "bg-emerald-700/40 border border-emerald-600/40 rounded-br-sm"
-            : "bg-zinc-800/80 border border-zinc-700 rounded-bl-sm"
+            : "bg-gray-100 border border-gray-800 rounded-bl-sm"
         }`}
       >
         {m.file_type && (
-          <div className="text-xs text-gray-400 mb-1">[{m.file_type}]</div>
+          <div className="text-sm text-gray-400 mb-1">[{m.file_type}]</div>
         )}
         {m.body && <div className="whitespace-pre-wrap wrap-break-word">{m.body}</div>}
         <div className="text-[10px] text-gray-400 mt-1 flex items-center gap-2 justify-end">

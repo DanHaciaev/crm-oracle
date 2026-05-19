@@ -67,13 +67,13 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarContent>
 
-      <SidebarFooter className="mt-auto border-t border-zinc-800 p-4 text-xs text-zinc-400 space-y-2">
+      <SidebarFooter className="mt-auto border-t border-zinc-800 p-4 text-sm text-zinc-400 space-y-2">
         <div className="flex items-center justify-between">
           <span>{user ? `${user.username}` : "—"}</span>
           {user && (
             <button
               onClick={logout}
-              className="border border-zinc-400 rounded-4xl px-2 py-1 text-zinc-400 hover:text-white transition-colors"
+              className="border border-gray-800 rounded-4xl px-2 py-1 text-zinc-400 hover:text-white transition-colors"
             >
               {t("common.logout")}
             </button>

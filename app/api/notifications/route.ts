@@ -86,5 +86,8 @@ export async function GET() {
     unread_messages.reduce((s, m) => s + m.count, 0) +
     recent_automations.length;
 
-  return NextResponse.json({ total, overdue_tasks, unread_messages, recent_automations });
+  return NextResponse.json(
+    { total, overdue_tasks, unread_messages, recent_automations },
+    { headers: { "Cache-Control": "private, max-age=20, stale-while-revalidate=10" } }
+  );
 }

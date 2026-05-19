@@ -10,15 +10,15 @@ import type { PdfLang } from "@/lib/pdf-act";
 import { useT, useLocale } from "@/lib/locale";
 
 export interface WeightTicket {
-  id:               number;
-  ticket_number:    string;
-  ticket_date:      string | null;
-  status:           string;
-  operator:         string | null;
-  customer_name:    string | null;
-  warehouse_name:   string | null;
+  id: number;
+  ticket_number: string;
+  ticket_date: string | null;
+  status: string;
+  operator: string | null;
+  customer_name: string | null;
+  warehouse_name: string | null;
   sales_doc_number: string | null;
-  net_kg:           number;
+  net_kg: number;
 }
 
 type StatusFilter = "all" | "draft" | "finalized";
@@ -26,12 +26,12 @@ type StatusFilter = "all" | "draft" | "finalized";
 function StatusBadge({ status }: { status: string }) {
   const t = useT();
   const cfg: Record<string, { label: string; cls: string }> = {
-    draft:     { label: t("weightTickets.statusDraft"),     cls: "border-amber-500/40 text-amber-400 bg-amber-500/10" },
+    draft: { label: t("weightTickets.statusDraft"), cls: "border-amber-500/40 text-amber-400 bg-amber-500/10" },
     finalized: { label: t("weightTickets.statusFinalized"), cls: "border-emerald-500/40 text-emerald-400 bg-emerald-500/10" },
   };
-  const { label, cls } = cfg[status] ?? { label: status, cls: "border-zinc-600 text-zinc-400 bg-zinc-800" };
+  const { label, cls } = cfg[status] ?? { label: status, cls: "border-gray-800 text-gray-500 bg-gray-100" };
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cls}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-sm font-medium border ${cls}`}>
       {label}
     </span>
   );
@@ -40,15 +40,15 @@ function StatusBadge({ status }: { status: string }) {
 export default function WeightTicketsTable() {
   const t = useT();
   const { locale } = useLocale();
-  const [tickets, setTickets]     = useState<WeightTicket[]>([]);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState<string | null>(null);
+  const [tickets, setTickets] = useState<WeightTicket[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatus] = useState<StatusFilter>("all");
-  const [search, setSearch]       = useState("");
-  const [dateFrom, setDateFrom]   = useState("");
-  const [dateTo, setDateTo]       = useState("");
-  const [openId, setOpenId]         = useState<number | null>(null);
-  const [sendingId, setSendingId]   = useState<number | null>(null);
+  const [search, setSearch] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [openId, setOpenId] = useState<number | null>(null);
+  const [sendingId, setSendingId] = useState<number | null>(null);
   const [langPickId, setLangPickId] = useState<number | null>(null);
 
   const loc = locale === "ru" ? "ru-RU" : locale === "ro" ? "ro-RO" : "en-GB";
@@ -102,22 +102,22 @@ export default function WeightTicketsTable() {
     setError(null);
     const params = new URLSearchParams();
     if (dateFrom) params.set("from", dateFrom);
-    if (dateTo)   params.set("to",   dateTo);
+    if (dateTo) params.set("to", dateTo);
     const url = `/api/weight-tickets${params.size ? "?" + params : ""}`;
-    const res  = await fetch(url);
+    const res = await fetch(url);
     const data = await res.json().catch(() => ({}));
     if (!res.ok) setError((data as { error?: string }).error ?? t("common.error"));
-    else         setTickets(data as WeightTicket[]);
+    else setTickets(data as WeightTicket[]);
     setLoading(false);
   }, [dateFrom, dateTo, t]);
 
   useEffect(() => { fetchTickets(); }, [fetchTickets]);
 
   const stats = useMemo(() => ({
-    total:     tickets.length,
-    drafts:    tickets.filter((ticket) => ticket.status === "draft").length,
+    total: tickets.length,
+    drafts: tickets.filter((ticket) => ticket.status === "draft").length,
     finalized: tickets.filter((ticket) => ticket.status === "finalized").length,
-    totalKg:   tickets.reduce((s, ticket) => s + (ticket.net_kg ?? 0), 0),
+    totalKg: tickets.reduce((s, ticket) => s + (ticket.net_kg ?? 0), 0),
   }), [tickets]);
 
   const filtered = useMemo(() => {
@@ -160,7 +160,7 @@ export default function WeightTicketsTable() {
         </div>
         <button
           onClick={() => exportCsv(filtered)}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-zinc-700 text-sm hover:bg-zinc-800/40 transition shrink-0"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-gray-800 text-sm hover:bg-gray-100 transition shrink-0 text-gray-700"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
@@ -172,8 +172,8 @@ export default function WeightTicketsTable() {
 
       <div className="flex flex-wrap gap-3 mb-6 items-end">
         <div className="flex gap-2">
-          <FilterBtn active={statusFilter === "all"}       onClick={() => setStatus("all")}       label={t("common.all")}                   count={stats.total} />
-          <FilterBtn active={statusFilter === "draft"}     onClick={() => setStatus("draft")}     label={t("weightTickets.filterDraft")}    count={stats.drafts} />
+          <FilterBtn active={statusFilter === "all"} onClick={() => setStatus("all")} label={t("common.all")} count={stats.total} />
+          <FilterBtn active={statusFilter === "draft"} onClick={() => setStatus("draft")} label={t("weightTickets.filterDraft")} count={stats.drafts} />
           <FilterBtn active={statusFilter === "finalized"} onClick={() => setStatus("finalized")} label={t("weightTickets.filterFinalized")} count={stats.finalized} />
         </div>
 
@@ -182,19 +182,19 @@ export default function WeightTicketsTable() {
             type="date"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
-            className="border border-zinc-700 bg-transparent rounded-lg px-3 py-1.5 text-sm outline-none focus:border-zinc-400 transition"
+            className="border border-gray-800 bg-white rounded-lg px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-gray-800 transition"
           />
-          <span className="text-zinc-600 text-sm">—</span>
+          <span className="text-gray-400 text-sm">—</span>
           <input
             type="date"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
-            className="border border-zinc-700 bg-transparent rounded-lg px-3 py-1.5 text-sm outline-none focus:border-zinc-400 transition"
+            className="border border-gray-800 bg-white rounded-lg px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-gray-800 transition"
           />
           {(dateFrom || dateTo) && (
             <button
               onClick={() => { setDateFrom(""); setDateTo(""); }}
-              className="text-xs text-zinc-500 hover:text-zinc-300 transition"
+              className="text-sm text-gray-400 hover:text-gray-700 transition"
             >✕</button>
           )}
         </div>
@@ -204,18 +204,18 @@ export default function WeightTicketsTable() {
           placeholder={t("weightTickets.searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="border border-zinc-700 bg-transparent rounded-lg px-3 py-1.5 text-sm outline-none focus:border-zinc-400 transition w-64"
+          className="border border-gray-800 bg-white rounded-lg px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-gray-800 transition w-64"
         />
       </div>
 
       <div className="grid grid-cols-2 acts:grid-cols-4 gap-4 mb-6">
-        <StatCard label={t("weightTickets.totalTickets")}  value={String(stats.total)} />
-        <StatCard label={t("weightTickets.totalDrafts")}   value={String(stats.drafts)} />
-        <StatCard label={t("weightTickets.totalFinalized")}value={String(stats.finalized)} />
-        <StatCard label={t("weightTickets.totalNetKg")}    value={fmtKgShort(stats.totalKg)} />
+        <StatCard label={t("weightTickets.totalTickets")} value={String(stats.total)} />
+        <StatCard label={t("weightTickets.totalDrafts")} value={String(stats.drafts)} />
+        <StatCard label={t("weightTickets.totalFinalized")} value={String(stats.finalized)} />
+        <StatCard label={t("weightTickets.totalNetKg")} value={fmtKgShort(stats.totalKg)} />
       </div>
 
-      <div className="border border-zinc-800 rounded-xl overflow-auto">
+      <div className="border border-gray-800 rounded-xl overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -225,7 +225,7 @@ export default function WeightTicketsTable() {
               <TableHead>{t("weightTickets.warehouse").toUpperCase()}</TableHead>
               <TableHead>{t("weightTickets.salesDoc").toUpperCase()}</TableHead>
               <TableHead>{t("weightTickets.cols.status").toUpperCase()}</TableHead>
-              <TableHead className="text-right">{t("weightTickets.cols.net").toUpperCase()}</TableHead>
+              <TableHead className="text-center">{t("weightTickets.cols.net").toUpperCase()}</TableHead>
               <TableHead className="text-center">{t("common.actions").toUpperCase()}</TableHead>
             </TableRow>
           </TableHeader>
@@ -238,19 +238,19 @@ export default function WeightTicketsTable() {
               <TableRow><TableCell colSpan={8} className="text-center text-gray-400 py-8">{t("weightTickets.noTickets")}</TableCell></TableRow>
             ) : (
               filtered.map((ticket) => (
-                <TableRow key={ticket.id} className="hover:bg-zinc-900/40 transition-colors">
+                <TableRow key={ticket.id} className="hover:bg-gray-50 transition-colors">
                   <TableCell className="font-mono text-sm">{ticket.ticket_number}</TableCell>
                   <TableCell className="tabular-nums">{fmtDate(ticket.ticket_date)}</TableCell>
                   <TableCell>{ticket.customer_name ?? "—"}</TableCell>
-                  <TableCell className="text-zinc-400">{ticket.warehouse_name ?? "—"}</TableCell>
+                  <TableCell>{ticket.warehouse_name ?? "—"}</TableCell>
                   <TableCell className="font-mono text-sm">{ticket.sales_doc_number ?? "—"}</TableCell>
                   <TableCell><StatusBadge status={ticket.status} /></TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">{fmtKg(ticket.net_kg)}</TableCell>
+                  <TableCell className="text-center font-mono tabular-nums">{fmtKg(ticket.net_kg)}</TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-1 flex-wrap">
                       <button
                         onClick={() => setOpenId(ticket.id)}
-                        className="px-3 py-1 text-xs rounded-md border border-zinc-700 hover:bg-zinc-800 transition"
+                        className="px-3 py-1 text-sm rounded-md border border-gray-800 hover:bg-gray-100 transition text-gray-700"
                       >
                         {t("weightTickets.open")}
                       </button>
@@ -260,14 +260,14 @@ export default function WeightTicketsTable() {
                             <button
                               key={lng}
                               onClick={() => sendToTelegram(ticket.id, lng)}
-                              className="px-2 py-1 text-xs rounded-md border border-sky-700 text-sky-300 hover:bg-sky-900/60 transition"
+                              className="px-2 py-1 text-sm rounded-md border border-sky-300 text-sky-300 hover:bg-sky-00 transition"
                             >
                               {lng.toUpperCase()}
                             </button>
                           ))}
                           <button
                             onClick={() => setLangPickId(null)}
-                            className="px-1.5 py-1 text-xs rounded-md border border-zinc-700 text-zinc-400 hover:bg-zinc-800 transition"
+                            className="px-1.5 py-1 text-sm rounded-md border border-gray-800 text-gray-500 hover:bg-gray-100 transition"
                           >
                             ✕
                           </button>
@@ -276,7 +276,7 @@ export default function WeightTicketsTable() {
                         <button
                           onClick={() => setLangPickId(ticket.id)}
                           disabled={sendingId === ticket.id}
-                          className="px-3 py-1 text-xs rounded-md border border-sky-700 text-sky-400 hover:bg-sky-950/50 transition disabled:opacity-40"
+                          className="px-3 py-1 text-sm rounded-md border border-gray-800 text-sky-400 hover:bg-gray-200 transition disabled:opacity-40"
                           title={t("weightTickets.sendTg")}
                         >
                           {sendingId === ticket.id ? "..." : "TG"}
@@ -292,7 +292,7 @@ export default function WeightTicketsTable() {
       </div>
 
       {filtered.length > 0 && !loading && (
-        <div className="mt-3 text-right text-xs text-zinc-500">
+        <div className="mt-3 text-center text-sm text-gray-400">
           {t("weightTickets.showing")}: {filtered.length} — {t("weightTickets.netto")}: {fmtKgShort(filtered.reduce((s, ticket) => s + ticket.net_kg, 0))} кг
         </div>
       )}
@@ -310,21 +310,20 @@ function FilterBtn({ active, onClick, label, count }: {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm transition ${
-        active ? "border-zinc-400 bg-zinc-800/40 text-white" : "border-zinc-800 text-zinc-400 hover:bg-zinc-800/20"
-      }`}
+      className={`flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm transition ${active ? "border-gray-800 bg-gray-900 text-white" : "border-gray-800 text-gray-500 hover:bg-gray-100"
+        }`}
     >
       <span>{label}</span>
-      <span className={`text-xs tabular-nums ${active ? "text-zinc-300" : "text-zinc-600"}`}>{count}</span>
+      <span className={`text-sm tabular-nums ${active ? "text-white" : "text-gray-400"}`}>{count}</span>
     </button>
   );
 }
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="border border-zinc-800 rounded-xl p-4 text-center">
+    <div className="border border-gray-800 rounded-xl p-4 text-center">
       <div className="text-2xl font-bold tabular-nums">{value}</div>
-      <div className="text-xs text-gray-400 mt-1">{label}</div>
+      <div className="text-sm text-gray-400 mt-1">{label}</div>
     </div>
   );
 }

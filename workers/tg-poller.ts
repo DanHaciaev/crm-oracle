@@ -109,6 +109,31 @@ async function touchAppUser(ctx: Context): Promise<AppUserInfo | null> {
     [chatId]
   );
   if (rows.length === 0) return null;
+
+  // Create a lead if none exists yet for this Telegram chat_id.
+  // Uses NOT EXISTS so it's safe to call on every /start (idempotent).
+  const nameParts = [u.first_name, u.last_name].filter(Boolean);
+  const leadName  = nameParts.join(" ") || (u.username ? `@${u.username}` : `TG:${chatId}`);
+  const notes     = [
+    u.username ? `@${u.username}` : null,
+    `Telegram ID: ${chatId}`,
+    `app_user_id: ${rows[0].ID}`,
+  ].filter(Boolean).join(" · ");
+  try {
+    await execute(
+      `INSERT INTO AGRO_CRM_LEADS (NAME, SOURCE, STATUS, NOTES, CREATED_BY)
+       SELECT :1, 'telegram', 'new', :2, 'bot' FROM DUAL
+       WHERE NOT EXISTS (
+         SELECT 1 FROM AGRO_CRM_LEADS
+         WHERE SOURCE = 'telegram'
+           AND INSTR(NOTES, 'Telegram ID: ' || :3) > 0
+       )`,
+      [leadName, notes, chatId]
+    );
+  } catch (err) {
+    console.error("[tg-poller] lead auto-create failed:", err);
+  }
+
   return {
     id:           rows[0].ID,
     status:       rows[0].STATUS,

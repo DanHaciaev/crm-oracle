@@ -53,14 +53,14 @@ export default function AppUserEventsModal({ appUserId, title, onClose }: {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-zinc-950 border border-zinc-800 text-zinc-100 rounded-2xl shadow-xl w-full max-w-xl max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex items-start justify-between p-6 border-b border-zinc-800">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="bg-white border border-gray-800 text-gray-900 rounded-2xl shadow-xl w-full max-w-xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="flex items-start justify-between p-6 border-b border-gray-800">
           <div>
             <h2 className="text-lg font-semibold">{t("appUsers.eventsTitle")}</h2>
-            <p className="text-sm text-gray-400 mt-0.5">{title}</p>
+            <p className="text-sm text-gray-500 mt-0.5">{title}</p>
           </div>
-          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-200 text-xl leading-none">×</button>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-xl leading-none">×</button>
         </div>
 
         <div className="p-6 overflow-auto">
@@ -73,13 +73,13 @@ export default function AppUserEventsModal({ appUserId, title, onClose }: {
           ) : (
             <ol className="space-y-2">
               {events.map((e) => (
-                <li key={e.id} className="border border-zinc-800 rounded-lg p-3 text-sm">
+                <li key={e.id} className="border border-gray-800 bg-gray-50 rounded-lg p-3 text-sm">
                   <div className="flex items-baseline justify-between gap-2">
-                    <span>{eventLabel(e.event_type)}</span>
-                    <span className="text-xs text-gray-500">{fmtDate(e.created_at)}</span>
+                    <span className="text-gray-900">{eventLabel(e.event_type)}</span>
+                    <span className="text-sm text-gray-400">{fmtDate(e.created_at)}</span>
                   </div>
-                  {e.payload && <div className="text-xs text-gray-500 mt-1 font-mono break-all">{e.payload}</div>}
-                  {e.actor_name && <div className="text-xs text-gray-500 mt-1">{t("appUsers.eventsFrom")} @{e.actor_name}</div>}
+                  {e.payload && <div className="text-sm text-gray-500 mt-1 font-mono break-all">{e.payload}</div>}
+                  {e.actor_name && <div className="text-sm text-gray-400 mt-1">{t("appUsers.eventsFrom")} @{e.actor_name}</div>}
                 </li>
               ))}
             </ol>

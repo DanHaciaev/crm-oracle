@@ -87,7 +87,7 @@ export default function PrintActPage() {
           </button>
         </div>
 
-        <div className="text-center text-xs uppercase tracking-wider text-gray-500 mb-1">
+        <div className="text-center text-sm uppercase tracking-wider text-gray-500 mb-1">
           AGRO Company SRL
         </div>
         <h1 className="text-center text-xl font-bold mb-6">
@@ -114,59 +114,59 @@ export default function PrintActPage() {
         <table className="w-full border-collapse text-sm mb-6">
           <thead>
             <tr className="bg-gray-50">
-              <th className="border border-gray-300 px-2 py-2 w-10">№</th>
-              <th className="border border-gray-300 px-2 py-2 text-left">Штрихкод / Cod</th>
-              <th className="border border-gray-300 px-2 py-2 text-left">Продукция / Produs</th>
-              <th className="border border-gray-300 px-2 py-2 text-left">Партия / Lot</th>
-              <th className="border border-gray-300 px-2 py-2 text-right">Брутто, кг</th>
-              <th className="border border-gray-300 px-2 py-2 text-right">Тара, кг</th>
-              <th className="border border-gray-300 px-2 py-2 text-right">Нетто, кг</th>
+              <th className="border border-gray-800 px-2 py-2 w-10">№</th>
+              <th className="border border-gray-800 px-2 py-2 text-left">Штрихкод / Cod</th>
+              <th className="border border-gray-800 px-2 py-2 text-left">Продукция / Produs</th>
+              <th className="border border-gray-800 px-2 py-2 text-left">Партия / Lot</th>
+              <th className="border border-gray-800 px-2 py-2 text-center">Брутто, кг</th>
+              <th className="border border-gray-800 px-2 py-2 text-center">Тара, кг</th>
+              <th className="border border-gray-800 px-2 py-2 text-center">Нетто, кг</th>
             </tr>
           </thead>
           <tbody>
             {data.lines.map((l, idx) => (
               <tr key={l.id}>
-                <td className="border border-gray-300 px-2 py-1.5 text-center">{l.line_no ?? idx + 1}</td>
-                <td className="border border-gray-300 px-2 py-1.5 font-mono">{l.crate_code ?? "—"}</td>
-                <td className="border border-gray-300 px-2 py-1.5">{l.item_name ?? "—"}</td>
-                <td className="border border-gray-300 px-2 py-1.5">{l.batch_number ?? "—"}</td>
-                <td className="border border-gray-300 px-2 py-1.5 text-right font-mono">{fmt(l.gross_kg)}</td>
-                <td className="border border-gray-300 px-2 py-1.5 text-right font-mono">{fmt(l.tare_kg)}</td>
-                <td className="border border-gray-300 px-2 py-1.5 text-right font-mono">{fmt(l.net_kg)}</td>
+                <td className="border border-gray-800 px-2 py-1.5 text-center">{l.line_no ?? idx + 1}</td>
+                <td className="border border-gray-800 px-2 py-1.5 font-mono">{l.crate_code ?? "—"}</td>
+                <td className="border border-gray-800 px-2 py-1.5">{l.item_name ?? "—"}</td>
+                <td className="border border-gray-800 px-2 py-1.5">{l.batch_number ?? "—"}</td>
+                <td className="border border-gray-800 px-2 py-1.5 text-center font-mono">{fmt(l.gross_kg)}</td>
+                <td className="border border-gray-800 px-2 py-1.5 text-center font-mono">{fmt(l.tare_kg)}</td>
+                <td className="border border-gray-800 px-2 py-1.5 text-center font-mono">{fmt(l.net_kg)}</td>
               </tr>
             ))}
             <tr className="font-semibold">
-              <td className="border border-gray-300 px-2 py-1.5 text-right" colSpan={4}>Итого / Total:</td>
-              <td className="border border-gray-300 px-2 py-1.5 text-right font-mono">{fmt(totalGross)}</td>
-              <td className="border border-gray-300 px-2 py-1.5 text-right font-mono">{fmt(totalTare)}</td>
-              <td className="border border-gray-300 px-2 py-1.5 text-right font-mono">{fmt(totalNet)}</td>
+              <td className="border border-gray-800 px-2 py-1.5 text-center" colSpan={4}>Итого / Total:</td>
+              <td className="border border-gray-800 px-2 py-1.5 text-center font-mono">{fmt(totalGross)}</td>
+              <td className="border border-gray-800 px-2 py-1.5 text-center font-mono">{fmt(totalTare)}</td>
+              <td className="border border-gray-800 px-2 py-1.5 text-center font-mono">{fmt(totalNet)}</td>
             </tr>
           </tbody>
         </table>
 
         <div className="grid grid-cols-3 gap-2 mb-10 text-center">
-          <div className="border border-gray-300 rounded p-3">
-            <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Брутто / Brut</div>
+          <div className="border border-gray-800 rounded p-3">
+            <div className="text-sm text-gray-500 uppercase tracking-wide mb-1">Брутто / Brut</div>
             <div className="text-2xl font-bold">{fmt(totalGross)} кг</div>
           </div>
-          <div className="border border-gray-300 rounded p-3">
-            <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Тара / Tara</div>
+          <div className="border border-gray-800 rounded p-3">
+            <div className="text-sm text-gray-500 uppercase tracking-wide mb-1">Тара / Tara</div>
             <div className="text-2xl font-bold">{fmt(totalTare)} кг</div>
           </div>
-          <div className="border border-gray-300 rounded p-3">
-            <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Нетто / Net</div>
+          <div className="border border-gray-800 rounded p-3">
+            <div className="text-sm text-gray-500 uppercase tracking-wide mb-1">Нетто / Net</div>
             <div className="text-2xl font-bold">{fmt(totalNet)} кг</div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-12 text-sm pt-8 border-t border-gray-200">
+        <div className="grid grid-cols-2 gap-12 text-sm pt-8 border-t border-gray-800">
           <div>
-            <div className="border-b border-gray-400 h-6 mb-1"></div>
-            <div className="text-gray-500 text-xs">Весовщик / Cantaragiu</div>
+            <div className="border-b border-gray-800 h-6 mb-1"></div>
+            <div className="text-gray-500 text-sm">Весовщик / Cantaragiu</div>
           </div>
           <div>
-            <div className="border-b border-gray-400 h-6 mb-1"></div>
-            <div className="text-gray-500 text-xs">Получатель / Primitor</div>
+            <div className="border-b border-gray-800 h-6 mb-1"></div>
+            <div className="text-gray-500 text-sm">Получатель / Primitor</div>
           </div>
         </div>
       </div>

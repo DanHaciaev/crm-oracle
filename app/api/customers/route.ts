@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { query, execute } from "@/lib/oracle";
+import oracledb from "oracledb";
+import { query, execute, getConnection } from "@/lib/oracle";
 import { verifyToken } from "@/lib/auth";
 
 interface CustomerRow {
@@ -45,20 +46,23 @@ export async function GET() {
     ORDER BY c.NAME
   `);
 
-  return NextResponse.json(rows.map((r) => ({
-    id:               r.ID,
-    code:             r.CODE,
-    name:             r.NAME,
-    country:          r.COUNTRY,
-    customer_type:    r.CUSTOMER_TYPE,
-    contact_phone:    r.CONTACT_PHONE,
-    contact_email:    r.CONTACT_EMAIL,
-    active:           r.ACTIVE === "Y",
-    tg_linked:        r.APP_USER_ID !== null,
-    tg_username:      r.TG_USERNAME,
-    tg_chat_id:       r.TG_CHAT_ID,
-    pending_invites:  Number(r.PENDING_INVITES ?? 0),
-  })));
+  return NextResponse.json(
+    rows.map((r) => ({
+      id:               r.ID,
+      code:             r.CODE,
+      name:             r.NAME,
+      country:          r.COUNTRY,
+      customer_type:    r.CUSTOMER_TYPE,
+      contact_phone:    r.CONTACT_PHONE,
+      contact_email:    r.CONTACT_EMAIL,
+      active:           r.ACTIVE === "Y",
+      tg_linked:        r.APP_USER_ID !== null,
+      tg_username:      r.TG_USERNAME,
+      tg_chat_id:       r.TG_CHAT_ID,
+      pending_invites:  Number(r.PENDING_INVITES ?? 0),
+    })),
+    { headers: { "Cache-Control": "private, max-age=30, stale-while-revalidate=30" } }
+  );
 }
 
 /**
@@ -88,26 +92,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: `Код "${code}" уже используется` }, { status: 400 });
   }
 
-  await execute(
-    `INSERT INTO AGRO_CUSTOMERS
-       (CODE, NAME, COUNTRY, TAX_ID, CONTACT_PHONE, CONTACT_EMAIL, ADDRESS, CUSTOMER_TYPE)
-     VALUES (:1, :2, :3, :4, :5, :6, :7, :8)`,
-    [
-      code,
-      name,
-      body.country       || null,
-      body.tax_id        || null,
-      body.contact_phone || null,
-      body.contact_email || null,
-      body.address       || null,
-      customerType,
-    ]
-  );
-
-  const created = await query<{ ID: number }>(
-    `SELECT ID FROM AGRO_CUSTOMERS WHERE CODE = :1`, [code]
-  );
-  const customerId = created[0]?.ID;
+  const conn = await getConnection();
+  let customerId: number | undefined;
+  try {
+    const ins = await conn.execute(
+      `INSERT INTO AGRO_CUSTOMERS
+         (CODE, NAME, COUNTRY, TAX_ID, CONTACT_PHONE, CONTACT_EMAIL, ADDRESS, CUSTOMER_TYPE)
+       VALUES (:1, :2, :3, :4, :5, :6, :7, :8)
+       RETURNING ID INTO :out_id`,
+      [
+        code,
+        name,
+        body.country       || null,
+        body.tax_id        || null,
+        body.contact_phone || null,
+        body.contact_email || null,
+        body.address       || null,
+        customerType,
+        { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
+      ],
+      { autoCommit: true }
+    );
+    customerId = (ins.outBinds as number[][])[0]?.[0];
+  } finally {
+    await conn.close();
+  }
 
   // Опциональная авто-привязка к APP_USER
   const linkAppUserId = Number(body.link_app_user_id);

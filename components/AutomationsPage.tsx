@@ -23,7 +23,7 @@ interface AutoData { rules: Rule[]; log: LogEntry[] }
 const RESULT_CLS: Record<string, string> = {
   success: "border-emerald-500/40 text-emerald-400",
   error:   "border-red-500/40 text-red-400",
-  skipped: "border-zinc-600 text-zinc-500",
+  skipped: "border-gray-800 text-gray-400",
 };
 
 export default function AutomationsPage() {
@@ -155,7 +155,7 @@ export default function AutomationsPage() {
     load();
   }
 
-  if (loading) return <div className="p-8 text-sm text-zinc-500">{t("common.loading")}</div>;
+  if (loading) return <div className="p-8 text-sm text-gray-400">{t("common.loading")}</div>;
   if (error)   return <div className="p-8 text-sm text-red-400">{error}</div>;
   if (!data)   return null;
 
@@ -166,18 +166,18 @@ export default function AutomationsPage() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold">{t("automations.title")}</h1>
-          <p className="text-sm text-zinc-500 mt-1">{t("automations.subtitle")}</p>
+          <p className="text-sm text-gray-500 mt-1">{t("automations.subtitle")}</p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => { setShowForm(true); setFormError(null); }}
-            className="px-4 py-2 text-sm rounded-lg border border-zinc-700 hover:bg-zinc-800 transition"
+            className="px-4 py-2 text-sm rounded-lg border border-gray-800 hover:bg-gray-100 transition text-gray-700"
           >
             + {t("automations.newRule")}
           </button>
           <button
             onClick={runNow} disabled={running}
-            className="px-4 py-2 text-sm rounded-lg bg-white text-black hover:bg-zinc-200 disabled:opacity-50 transition"
+            className="px-4 py-2 text-sm rounded-lg bg-gray-900 text-white hover:bg-gray-700 disabled:opacity-50 transition"
           >
             {running ? t("automations.running") : `▶ ${t("automations.runNow")}`}
           </button>
@@ -192,9 +192,9 @@ export default function AutomationsPage() {
       )}
 
       {/* Cron hint */}
-      <div className="border border-zinc-800 rounded-xl px-4 py-3 text-xs text-zinc-500 space-y-1">
-        <div className="text-zinc-400 font-medium mb-1">{t("automations.scheduleTitle")}</div>
-        <code className="text-zinc-300 block mt-1">
+      <div className="border border-gray-800 bg-gray-50 rounded-xl px-4 py-3 text-sm text-gray-500 space-y-1">
+        <div className="text-gray-600 font-medium mb-1">{t("automations.scheduleTitle")}</div>
+        <code className="text-gray-700 block mt-1">
           curl -X POST https://&lt;your-domain&gt;/api/cron/automations \<br/>
           &nbsp;&nbsp;-H &quot;Authorization: Bearer $CRON_SECRET&quot;
         </code>
@@ -202,10 +202,10 @@ export default function AutomationsPage() {
 
       {/* Rules table */}
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-zinc-300">{t("automations.cols.name")}</h2>
-        <div className="border border-zinc-800 rounded-xl overflow-hidden">
+        <h2 className="text-sm font-semibold text-gray-700">{t("automations.cols.name")}</h2>
+        <div className="border border-gray-800 rounded-xl overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-zinc-900/60 text-xs text-zinc-500 border-b border-zinc-800">
+            <thead className="bg-gray-50 text-sm text-gray-500 border-b border-gray-800">
               <tr>
                 <th className="text-left px-4 py-3">{t("automations.ruleName")}</th>
                 <th className="text-center px-3 py-3">{t("automations.cols.condition")}</th>
@@ -220,29 +220,29 @@ export default function AutomationsPage() {
             </thead>
             <tbody>
               {data.rules.map((r) => (
-                <tr key={r.id} className="border-b border-zinc-800/50 last:border-0 hover:bg-zinc-800/20 transition">
+                <tr key={r.id} className="border-b border-gray-800 last:border-0 hover:bg-gray-50 transition">
                   <td className="px-4 py-3">
-                    <div className="font-medium text-zinc-200">{r.name}</div>
-                    <div className="text-xs text-zinc-600 mt-0.5 truncate max-w-xs">
+                    <div className="font-medium text-gray-900">{r.name}</div>
+                    <div className="text-sm text-gray-400 mt-0.5 truncate max-w-xs">
                       {r.message_template ?? r.task_title ?? "—"}
                     </div>
                   </td>
-                  <td className="px-3 py-3 text-center text-zinc-400">{t("automations.noOrdersDays")} {r.condition_days} {t("common.days")}</td>
+                  <td className="px-3 py-3 text-center text-gray-500">{t("automations.noOrdersDays")} {r.condition_days} {t("common.days")}</td>
                   <td className="px-3 py-3 text-center">
-                    <span className="inline-flex px-2 py-0.5 rounded-full text-xs border border-zinc-700 text-zinc-400">
+                    <span className="inline-flex px-2 py-0.5 rounded-full text-sm border border-gray-800 text-gray-600">
                       {SEGMENT_LABELS[r.segment] ?? r.segment}
                     </span>
                   </td>
-                  <td className="px-3 py-3 text-center text-zinc-400 text-xs">{ACTION_LABELS[r.action_type] ?? r.action_type}</td>
-                  <td className="px-3 py-3 text-center text-zinc-500 text-xs">{r.cooldown_days} {t("common.days")}</td>
-                  <td className="px-3 py-3 text-center font-mono text-zinc-300">{r.fired_30d}</td>
-                  <td className="px-3 py-3 text-center text-xs text-zinc-500">{fmtDate(r.last_fired)}</td>
+                  <td className="px-3 py-3 text-center text-gray-500 text-sm">{ACTION_LABELS[r.action_type] ?? r.action_type}</td>
+                  <td className="px-3 py-3 text-center text-gray-400 text-sm">{r.cooldown_days} {t("common.days")}</td>
+                  <td className="px-3 py-3 text-center font-mono text-gray-700">{r.fired_30d}</td>
+                  <td className="px-3 py-3 text-center text-sm text-gray-400">{fmtDate(r.last_fired)}</td>
                   <td className="px-3 py-3 text-center">
                     <button
                       onClick={() => toggleRule(r.id, !r.active)}
                       disabled={toggling === r.id}
                       className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors disabled:opacity-50
-                        ${r.active ? "bg-emerald-500" : "bg-zinc-700"}`}
+                        ${r.active ? "bg-emerald-500" : "bg-gray-300"}`}
                     >
                       <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform
                         ${r.active ? "translate-x-4" : "translate-x-1"}`} />
@@ -252,7 +252,7 @@ export default function AutomationsPage() {
                     <button
                       onClick={() => deleteRule(r.id, r.name)}
                       disabled={deleting === r.id}
-                      className="text-zinc-600 hover:text-red-400 transition text-xs disabled:opacity-40"
+                      className="text-gray-400 hover:text-red-500 transition text-sm disabled:opacity-40"
                       title={t("automations.deleteConfirm")}
                     >
                       ✕
@@ -262,7 +262,7 @@ export default function AutomationsPage() {
               ))}
               {data.rules.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="text-center text-zinc-600 py-6 text-sm">
+                  <td colSpan={9} className="text-center text-gray-400 py-6 text-sm">
                     {t("automations.noRulesYet")}
                   </td>
                 </tr>
@@ -274,21 +274,21 @@ export default function AutomationsPage() {
 
       {/* Log */}
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-zinc-300">{t("automations.lastFirings")}</h2>
+        <h2 className="text-sm font-semibold text-gray-700">{t("automations.lastFirings")}</h2>
         {data.log.length === 0 ? (
-          <p className="text-sm text-zinc-600 py-4 text-center border border-zinc-800 rounded-xl">
+          <p className="text-sm text-gray-400 py-4 text-center border border-gray-800 rounded-xl">
             {t("automations.noFirings")}
           </p>
         ) : (
-          <div className="border border-zinc-800 rounded-xl overflow-hidden">
+          <div className="border border-gray-800 rounded-xl overflow-hidden">
             <table className="w-full text-sm">
-              <thead className="bg-zinc-900/60 text-xs text-zinc-500 border-b border-zinc-800">
+              <thead className="bg-gray-50 text-sm text-gray-500 border-b border-gray-800">
                 <tr>
                   <th className="text-left px-4 py-3">{t("automations.ruleName")}</th>
                   <th className="text-left px-3 py-3">{t("sales.customer")}</th>
                   <th className="text-center px-3 py-3">{t("automations.cols.action")}</th>
                   <th className="text-center px-3 py-3">{t("automations.result")}</th>
-                  <th className="text-right px-4 py-3">{t("automations.firedAt")}</th>
+                  <th className="text-center px-4 py-3">{t("automations.firedAt")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -296,10 +296,10 @@ export default function AutomationsPage() {
                   const cls = RESULT_CLS[l.result] ?? RESULT_CLS.error;
                   const label = RESULT_LABELS[l.result] ?? l.result;
                   return (
-                    <tr key={l.id} className="border-b border-zinc-800/50 last:border-0 hover:bg-zinc-800/20 transition">
-                      <td className="px-4 py-2.5 text-zinc-300">{l.rule_name}</td>
-                      <td className="px-3 py-2.5 text-zinc-400">{l.customer_name ?? `#${l.customer_id}`}</td>
-                      <td className="px-3 py-2.5 text-center text-xs text-zinc-500">
+                    <tr key={l.id} className="border-b border-gray-800 last:border-0 hover:bg-gray-50 transition">
+                      <td className="px-4 py-2.5 text-gray-800">{l.rule_name}</td>
+                      <td className="px-3 py-2.5 text-gray-600">{l.customer_name ?? `#${l.customer_id}`}</td>
+                      <td className="px-3 py-2.5 text-center text-sm text-gray-500">
                         {ACTION_LABELS[l.action_type ?? ""] ?? l.action_type ?? "—"}
                       </td>
                       <td className="px-3 py-2.5 text-center">
@@ -307,10 +307,10 @@ export default function AutomationsPage() {
                           {label}
                         </span>
                         {l.details && (
-                          <div className="text-[10px] text-red-400 mt-0.5 max-w-xs truncate">{l.details}</div>
+                          <div className="text-[10px] text-red-500 mt-0.5 max-w-xs truncate">{l.details}</div>
                         )}
                       </td>
-                      <td className="px-4 py-2.5 text-right text-xs text-zinc-600 whitespace-nowrap">
+                      <td className="px-4 py-2.5 text-center text-sm text-gray-400 whitespace-nowrap">
                         {fmtDate(l.fired_at)}
                       </td>
                     </tr>
@@ -324,35 +324,35 @@ export default function AutomationsPage() {
 
       {/* Create rule modal */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-semibold">{t("automations.newRuleTitle")}</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white border border-gray-800 rounded-2xl shadow-2xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-lg font-semibold text-gray-900">{t("automations.newRuleTitle")}</h2>
 
             <div className="space-y-1">
-              <label className="text-xs text-zinc-400">{t("automations.nameLabel")}</label>
+              <label className="text-sm text-gray-500">{t("automations.nameLabel")}</label>
               <input
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                className="w-full border border-zinc-700 bg-zinc-900 rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                className="w-full border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-800"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs text-zinc-400">{t("automations.conditionLabel")}</label>
+              <label className="text-sm text-gray-500">{t("automations.conditionLabel")}</label>
               <input
                 type="number" min={1} max={365}
                 value={form.condition_days}
                 onChange={(e) => setForm((f) => ({ ...f, condition_days: Number(e.target.value) }))}
-                className="w-full border border-zinc-700 bg-zinc-900 rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                className="w-full border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-800"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs text-zinc-400">{t("automations.segmentLabel")}</label>
+              <label className="text-sm text-gray-500">{t("automations.segmentLabel")}</label>
               <select
                 value={form.segment}
                 onChange={(e) => setForm((f) => ({ ...f, segment: e.target.value }))}
-                className="w-full border border-zinc-700 bg-zinc-900 rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                className="w-full border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-800"
               >
                 {Object.entries(SEGMENT_LABELS).map(([k, v]) => (
                   <option key={k} value={k}>{v}</option>
@@ -361,7 +361,7 @@ export default function AutomationsPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs text-zinc-400">{t("automations.cols.action")}</label>
+              <label className="text-sm text-gray-500">{t("automations.cols.action")}</label>
               <div className="flex gap-2">
                 {Object.entries(ACTION_LABELS).map(([k, v]) => (
                   <button
@@ -369,8 +369,8 @@ export default function AutomationsPage() {
                     onClick={() => setForm((f) => ({ ...f, action_type: k }))}
                     className={`flex-1 py-2 text-sm rounded-lg border transition
                       ${form.action_type === k
-                        ? "border-zinc-400 text-white bg-zinc-800"
-                        : "border-zinc-700 text-zinc-400 hover:bg-zinc-800/50"}`}
+                        ? "border-gray-800 text-white bg-gray-900"
+                        : "border-gray-800 text-gray-600 hover:bg-gray-100"}`}
                   >
                     {v}
                   </button>
@@ -380,36 +380,36 @@ export default function AutomationsPage() {
 
             {form.action_type === "tg_message" && (
               <div className="space-y-1">
-                <label className="text-xs text-zinc-400">
-                  {t("automations.messageTplLabel")} — <code className="text-zinc-300">{"{{customer_name}}"}</code> <code className="text-zinc-300">{"{{days_since}}"}</code>
+                <label className="text-sm text-gray-500">
+                  {t("automations.messageTplLabel")} — <code className="text-gray-700">{"{{customer_name}}"}</code> <code className="text-gray-700">{"{{days_since}}"}</code>
                 </label>
                 <textarea
                   rows={4}
                   value={form.message_template}
                   onChange={(e) => setForm((f) => ({ ...f, message_template: e.target.value }))}
-                  className="w-full border border-zinc-700 bg-zinc-900 rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-400 resize-none"
+                  className="w-full border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-800 resize-none"
                 />
               </div>
             )}
 
             {form.action_type === "manager_task" && (
               <div className="space-y-1">
-                <label className="text-xs text-zinc-400">{t("automations.taskTitleLabel")}</label>
+                <label className="text-sm text-gray-500">{t("automations.taskTitleLabel")}</label>
                 <input
                   value={form.task_title}
                   onChange={(e) => setForm((f) => ({ ...f, task_title: e.target.value }))}
-                  className="w-full border border-zinc-700 bg-zinc-900 rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                  className="w-full border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-800"
                 />
               </div>
             )}
 
             <div className="space-y-1">
-              <label className="text-xs text-zinc-400">{t("automations.cooldownLabel")}</label>
+              <label className="text-sm text-gray-500">{t("automations.cooldownLabel")}</label>
               <input
                 type="number" min={1} max={365}
                 value={form.cooldown_days}
                 onChange={(e) => setForm((f) => ({ ...f, cooldown_days: Number(e.target.value) }))}
-                className="w-full border border-zinc-700 bg-zinc-900 rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-400"
+                className="w-full border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-800"
               />
             </div>
 
@@ -417,28 +417,28 @@ export default function AutomationsPage() {
               <button
                 onClick={() => setForm((f) => ({ ...f, active: !f.active }))}
                 className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors
-                  ${form.active ? "bg-emerald-500" : "bg-zinc-700"}`}
+                  ${form.active ? "bg-emerald-500" : "bg-gray-300"}`}
               >
                 <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform
                   ${form.active ? "translate-x-4" : "translate-x-1"}`} />
               </button>
-              <span className="text-sm text-zinc-400">{t("automations.activeImmediately")}</span>
+              <span className="text-sm text-gray-600">{t("automations.activeImmediately")}</span>
             </div>
 
-            {formError && <p className="text-sm text-red-400">{formError}</p>}
+            {formError && <p className="text-sm text-red-500">{formError}</p>}
 
             <div className="flex justify-end gap-2 pt-2">
               <button
                 onClick={() => { setShowForm(false); setFormError(null); }}
                 disabled={saving}
-                className="px-4 py-2 text-sm rounded-lg border border-zinc-700 text-zinc-300 hover:bg-zinc-800 transition disabled:opacity-50"
+                className="px-4 py-2 text-sm rounded-lg border border-gray-800 text-gray-700 hover:bg-gray-100 transition disabled:opacity-50"
               >
                 {t("common.cancel")}
               </button>
               <button
                 onClick={createRule}
                 disabled={saving || !form.name}
-                className="px-4 py-2 text-sm rounded-lg bg-white text-black hover:bg-zinc-200 transition disabled:opacity-50"
+                className="px-4 py-2 text-sm rounded-lg bg-gray-900 text-white hover:bg-gray-700 transition disabled:opacity-50"
               >
                 {saving ? t("common.saving") : t("common.create")}
               </button>

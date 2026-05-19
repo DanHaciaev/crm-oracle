@@ -73,5 +73,5 @@ export async function GET() {
     last_sale_date:   r.LAST_SALE_DATE instanceof Date
                         ? r.LAST_SALE_DATE.toISOString()
                         : (r.LAST_SALE_DATE ?? null),
-  })));
+  })), { headers: { "Cache-Control": "private, max-age=300, stale-while-revalidate=60" } });
 }

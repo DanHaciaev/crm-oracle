@@ -6,6 +6,7 @@ import { verifyToken } from "@/lib/auth";
 interface TotalRow  { [key: string]: unknown; TOTAL_REV: number; TOTAL_KG: number; ORDER_COUNT: number; LAST_DATE: Date | string | null; FIRST_DATE: Date | string | null; }
 interface MonthRow  { [key: string]: unknown; MON: string; REV: number; ORD: number; }
 interface AvgRow    { [key: string]: unknown; AVG_DAYS: number | null; }
+interface ChurnRow  { [key: string]: unknown; CUR: number; PRV: number; }
 
 async function requireAuth() {
   const store = await cookies();
@@ -30,18 +31,57 @@ export async function GET(
   if (!Number.isFinite(customerId))
     return NextResponse.json({ error: "Bad id" }, { status: 400 });
 
-  // ── 1. Общие KPI ──────────────────────────────────────────────────────────
-  const totalRows = await query<TotalRow>(`
-    SELECT
-      NVL(SUM(NVL(TOTAL_AMOUNT_MDL, TOTAL_AMOUNT)), 0)  AS TOTAL_REV,
-      NVL(SUM(TOTAL_NET_KG), 0)                         AS TOTAL_KG,
-      COUNT(*)                                           AS ORDER_COUNT,
-      MAX(DOC_DATE)                                      AS LAST_DATE,
-      MIN(DOC_DATE)                                      AS FIRST_DATE
-    FROM AGRO_SALES_DOCS
-    WHERE CUSTOMER_ID = :1
-      AND STATUS NOT IN ('draft','cancelled')
-  `, [customerId]);
+  // All 4 queries run in parallel
+  const [totalRows, avgRows, monthRows, churnRows] = await Promise.all([
+
+    // 1. Overall KPIs
+    query<TotalRow>(`
+      SELECT
+        NVL(SUM(NVL(TOTAL_AMOUNT_MDL, TOTAL_AMOUNT)), 0)  AS TOTAL_REV,
+        NVL(SUM(TOTAL_NET_KG), 0)                         AS TOTAL_KG,
+        COUNT(*)                                           AS ORDER_COUNT,
+        MAX(DOC_DATE)                                      AS LAST_DATE,
+        MIN(DOC_DATE)                                      AS FIRST_DATE
+      FROM AGRO_SALES_DOCS
+      WHERE CUSTOMER_ID = :1
+        AND STATUS NOT IN ('draft','cancelled')
+    `, [customerId]),
+
+    // 2. Average days between orders
+    query<AvgRow>(`
+      SELECT ROUND(AVG(diff), 0) AS AVG_DAYS FROM (
+        SELECT DOC_DATE - LAG(DOC_DATE) OVER (ORDER BY DOC_DATE) AS diff
+        FROM AGRO_SALES_DOCS
+        WHERE CUSTOMER_ID = :1 AND STATUS NOT IN ('draft','cancelled')
+      ) WHERE diff IS NOT NULL
+    `, [customerId]),
+
+    // 3. Monthly revenue (last 18 months)
+    query<MonthRow>(`
+      SELECT TO_CHAR(TRUNC(DOC_DATE,'MM'),'YYYY-MM') MON,
+             NVL(SUM(NVL(TOTAL_AMOUNT_MDL, TOTAL_AMOUNT)), 0) REV,
+             COUNT(*) ORD
+      FROM AGRO_SALES_DOCS
+      WHERE CUSTOMER_ID = :1
+        AND STATUS NOT IN ('draft','cancelled')
+        AND DOC_DATE >= ADD_MONTHS(TRUNC(SYSDATE,'MM'), -17)
+      GROUP BY TRUNC(DOC_DATE,'MM')
+      ORDER BY TRUNC(DOC_DATE,'MM')
+    `, [customerId]),
+
+    // 4. Churn risk (current 30d vs previous 30d)
+    query<ChurnRow>(`
+      SELECT
+        NVL((SELECT SUM(NVL(TOTAL_AMOUNT_MDL, TOTAL_AMOUNT)) FROM AGRO_SALES_DOCS
+             WHERE CUSTOMER_ID = :1 AND STATUS NOT IN ('draft','cancelled')
+               AND DOC_DATE >= SYSDATE - 30), 0) AS CUR,
+        NVL((SELECT SUM(NVL(TOTAL_AMOUNT_MDL, TOTAL_AMOUNT)) FROM AGRO_SALES_DOCS
+             WHERE CUSTOMER_ID = :1 AND STATUS NOT IN ('draft','cancelled')
+               AND DOC_DATE >= SYSDATE - 60 AND DOC_DATE < SYSDATE - 30), 0) AS PRV
+      FROM DUAL
+    `, [customerId]),
+
+  ]);
 
   const t = totalRows[0] ?? {};
   const totalRev   = Number(t.TOTAL_REV   ?? 0);
@@ -51,46 +91,12 @@ export async function GET(
   const firstDate  = iso(t.FIRST_DATE as Date | string | null);
   const avgCheck   = orderCount > 0 ? totalRev / orderCount : 0;
 
-  // ── 2. Средний интервал между заказами ────────────────────────────────────
-  const avgRows = await query<AvgRow>(`
-    SELECT ROUND(AVG(diff), 0) AS AVG_DAYS FROM (
-      SELECT DOC_DATE - LAG(DOC_DATE) OVER (ORDER BY DOC_DATE) AS diff
-      FROM AGRO_SALES_DOCS
-      WHERE CUSTOMER_ID = :1 AND STATUS NOT IN ('draft','cancelled')
-    ) WHERE diff IS NOT NULL
-  `, [customerId]);
   const avgDaysBetween = avgRows[0]?.AVG_DAYS !== null ? Number(avgRows[0]?.AVG_DAYS ?? 0) : null;
-
-  // ── 3. Помесячная выручка (последние 18 месяцев) ──────────────────────────
-  const monthRows = await query<MonthRow>(`
-    SELECT TO_CHAR(TRUNC(DOC_DATE,'MM'),'YYYY-MM') MON,
-           NVL(SUM(NVL(TOTAL_AMOUNT_MDL, TOTAL_AMOUNT)), 0) REV,
-           COUNT(*) ORD
-    FROM AGRO_SALES_DOCS
-    WHERE CUSTOMER_ID = :1
-      AND STATUS NOT IN ('draft','cancelled')
-      AND DOC_DATE >= ADD_MONTHS(TRUNC(SYSDATE,'MM'), -17)
-    GROUP BY TRUNC(DOC_DATE,'MM')
-    ORDER BY TRUNC(DOC_DATE,'MM')
-  `, [customerId]);
-
-  // ── 4. Риск оттока (сравниваем текущие 30 дней vs предыдущие 30 дней) ─────
-  const churnRows = await query<{ [key: string]: unknown; CUR: number; PRV: number }>(`
-    SELECT
-      NVL((SELECT SUM(NVL(TOTAL_AMOUNT_MDL, TOTAL_AMOUNT)) FROM AGRO_SALES_DOCS
-           WHERE CUSTOMER_ID = :1 AND STATUS NOT IN ('draft','cancelled')
-             AND DOC_DATE >= SYSDATE - 30), 0) AS CUR,
-      NVL((SELECT SUM(NVL(TOTAL_AMOUNT_MDL, TOTAL_AMOUNT)) FROM AGRO_SALES_DOCS
-           WHERE CUSTOMER_ID = :1 AND STATUS NOT IN ('draft','cancelled')
-             AND DOC_DATE >= SYSDATE - 60 AND DOC_DATE < SYSDATE - 30), 0) AS PRV
-    FROM DUAL
-  `, [customerId]);
 
   const cur = Number(churnRows[0]?.CUR ?? 0);
   const prv = Number(churnRows[0]?.PRV ?? 0);
   const churnPct = prv > 0 ? Math.round((cur / prv - 1) * 100) : null;
 
-  // ── 5. Derived retention signals ─────────────────────────────────────────
   const daysSinceLast = lastDate
     ? Math.floor((Date.now() - new Date(lastDate).getTime()) / 86_400_000)
     : null;
@@ -99,29 +105,31 @@ export async function GET(
     ? new Date(new Date(lastDate).getTime() + avgDaysBetween * 86_400_000).toISOString()
     : null;
 
-  // days past the expected next order (null = no baseline yet)
   const overdueDays = daysSinceLast !== null && avgDaysBetween !== null
     ? Math.max(0, daysSinceLast - avgDaysBetween)
     : null;
 
-  return NextResponse.json({
-    total_revenue:       totalRev,
-    total_net_kg:        totalKg,
-    order_count:         orderCount,
-    avg_check:           Math.round(avgCheck),
-    last_order_date:     lastDate,
-    first_order_date:    firstDate,
-    avg_days_between:    avgDaysBetween,
-    days_since_last:     daysSinceLast,
-    next_order_expected: nextOrderExpected,
-    overdue_days:        overdueDays,
-    churn_pct:           churnPct,
-    churn_cur:           cur,
-    churn_prv:           prv,
-    monthly: monthRows.map((r) => ({
-      month:   String(r.MON ?? ""),
-      revenue: Number(r.REV ?? 0),
-      orders:  Number(r.ORD ?? 0),
-    })),
-  });
+  return NextResponse.json(
+    {
+      total_revenue:       totalRev,
+      total_net_kg:        totalKg,
+      order_count:         orderCount,
+      avg_check:           Math.round(avgCheck),
+      last_order_date:     lastDate,
+      first_order_date:    firstDate,
+      avg_days_between:    avgDaysBetween,
+      days_since_last:     daysSinceLast,
+      next_order_expected: nextOrderExpected,
+      overdue_days:        overdueDays,
+      churn_pct:           churnPct,
+      churn_cur:           cur,
+      churn_prv:           prv,
+      monthly: monthRows.map((r) => ({
+        month:   String(r.MON ?? ""),
+        revenue: Number(r.REV ?? 0),
+        orders:  Number(r.ORD ?? 0),
+      })),
+    },
+    { headers: { "Cache-Control": "private, max-age=60, stale-while-revalidate=30" } }
+  );
 }

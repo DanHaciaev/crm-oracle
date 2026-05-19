@@ -199,7 +199,7 @@ export default function Documents() {
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
-                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-center">{typeInfo.label}</span>
+                      <span className="text-sm bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-center">{typeInfo.label}</span>
                     </TableCell>
                     <TableCell className="text-sm text-gray-500 text-center">{formatSize(doc.size)}</TableCell>
                     <TableCell className="text-sm text-gray-500 max-w-32 truncate text-center">{getTaskTitle(doc.task_id)}</TableCell>
@@ -209,9 +209,9 @@ export default function Documents() {
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-center gap-2">
-                        <a href={url} target="_blank" rel="noopener noreferrer" className="px-3 py-1 text-xs rounded-md border hover:bg-gray-50 transition">{t("common.details")}</a>
-                        <a href={url} download={doc.name} className="px-3 py-1 text-xs rounded-md border border-black bg-black text-white hover:bg-gray-800 transition">{t("common.download")}</a>
-                        <button onClick={() => setDeleteTarget(doc)} className="px-3 py-1 text-xs rounded-md border border-red-200 text-red-500 hover:bg-red-50 transition">{t("common.delete")}</button>
+                        <a href={url} target="_blank" rel="noopener noreferrer" className="px-3 py-1 text-sm rounded-md border hover:bg-gray-50 transition">{t("common.details")}</a>
+                        <a href={url} download={doc.name} className="px-3 py-1 text-sm rounded-md border border-gray-800 text-gray-700 hover:bg-gray-100 transition">{t("common.download")}</a>
+                        <button onClick={() => setDeleteTarget(doc)} className="px-3 py-1 text-sm rounded-md border border-red-200 text-red-500 hover:bg-red-50 transition">{t("common.delete")}</button>
                       </div>
                     </TableCell>
                   </TableRow>

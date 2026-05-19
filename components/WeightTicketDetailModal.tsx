@@ -100,14 +100,14 @@ export default function WeightTicketDetailModal({ id, onClose }: { id: number; o
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-zinc-950 border border-zinc-800 text-zinc-100 rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="bg-white border border-gray-800 text-gray-900 rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-auto">
         <div className="p-6 space-y-4">
           <div className="flex items-start justify-between">
             <h2 className="text-lg font-semibold">{t("weightTickets.title")}</h2>
             <button
               onClick={onClose}
-              className="text-zinc-500 hover:text-zinc-200 text-xl leading-none"
+              className="text-gray-400 hover:text-gray-700 text-xl leading-none"
               aria-label={t("common.close")}
             >
               ×
@@ -121,28 +121,28 @@ export default function WeightTicketDetailModal({ id, onClose }: { id: number; o
           ) : !data ? null : (
             <>
               <div>
-                <div className="text-xl font-bold font-mono">{data.ticket_number}</div>
-                <div className="text-xs text-gray-400 mt-2 flex flex-wrap gap-x-2 gap-y-1">
-                  <span>{t("weightTickets.detail.customer")}: <strong className="text-zinc-200">{data.customer_name ?? "—"}</strong></span>
+                <div className="text-xl font-bold font-mono text-gray-900">{data.ticket_number}</div>
+                <div className="text-sm text-gray-500 mt-2 flex flex-wrap gap-x-2 gap-y-1">
+                  <span>{t("weightTickets.detail.customer")}: <strong className="text-gray-800">{data.customer_name ?? "—"}</strong></span>
                   <span>|</span>
-                  <span>{t("weightTickets.detail.warehouse")}: <strong className="text-zinc-200">{data.warehouse_name ?? "—"}</strong></span>
+                  <span>{t("weightTickets.detail.warehouse")}: <strong className="text-gray-800">{data.warehouse_name ?? "—"}</strong></span>
                   <span>|</span>
-                  <span>{t("weightTickets.detail.date")}: <strong className="text-zinc-200">{fmtDate(data.ticket_date)}</strong></span>
+                  <span>{t("weightTickets.detail.date")}: <strong className="text-gray-800">{fmtDate(data.ticket_date)}</strong></span>
                   <span>|</span>
-                  <span>{t("weightTickets.detail.status")}: <strong className="text-zinc-200">{data.status}</strong></span>
+                  <span>{t("weightTickets.detail.status")}: <strong className="text-gray-800">{data.status}</strong></span>
                 </div>
               </div>
 
-              <div className="border border-zinc-800 rounded-lg overflow-hidden">
+              <div className="border border-gray-800 rounded-lg overflow-hidden">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-10">#</TableHead>
                       <TableHead>{t("weightTickets.detail.barcode").toUpperCase()}</TableHead>
                       <TableHead>{t("weightTickets.detail.product").toUpperCase()}</TableHead>
-                      <TableHead className="text-right">{t("weightTickets.detail.gross").toUpperCase()}</TableHead>
-                      <TableHead className="text-right">{t("weightTickets.detail.tare").toUpperCase()}</TableHead>
-                      <TableHead className="text-right">{t("weightTickets.detail.net").toUpperCase()}</TableHead>
+                      <TableHead className="text-center">{t("weightTickets.detail.gross").toUpperCase()}</TableHead>
+                      <TableHead className="text-center">{t("weightTickets.detail.tare").toUpperCase()}</TableHead>
+                      <TableHead className="text-center">{t("weightTickets.detail.net").toUpperCase()}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -156,9 +156,9 @@ export default function WeightTicketDetailModal({ id, onClose }: { id: number; o
                           <TableCell>{l.line_no ?? idx + 1}</TableCell>
                           <TableCell className="font-mono">{l.crate_code ?? "—"}</TableCell>
                           <TableCell>{l.item_name ?? "—"}</TableCell>
-                          <TableCell className="text-right font-mono">{fmt(l.gross_kg)}</TableCell>
-                          <TableCell className="text-right font-mono">{fmt(l.tare_kg)}</TableCell>
-                          <TableCell className="text-right font-mono">{fmt(l.net_kg)}</TableCell>
+                          <TableCell className="text-center font-mono">{fmt(l.gross_kg)}</TableCell>
+                          <TableCell className="text-center font-mono">{fmt(l.tare_kg)}</TableCell>
+                          <TableCell className="text-center font-mono">{fmt(l.net_kg)}</TableCell>
                         </TableRow>
                       ))
                     )}
@@ -166,33 +166,33 @@ export default function WeightTicketDetailModal({ id, onClose }: { id: number; o
                 </Table>
               </div>
 
-              <div className="text-right text-sm">
-                {t("weightTickets.detail.totalNet")}: <span className="text-lg font-bold">{fmt(totalNet)} кг</span>
+              <div className="text-center text-sm text-gray-700">
+                {t("weightTickets.detail.totalNet")}: <span className="text-lg font-bold text-gray-900">{fmt(totalNet)} кг</span>
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   onClick={onClose}
-                  className="px-4 py-2 text-sm rounded-lg border border-zinc-700 hover:bg-zinc-800 transition"
+                  className="px-4 py-2 text-sm rounded-lg border border-gray-800 hover:bg-gray-100 transition text-gray-700"
                 >
                   {t("common.close")}
                 </button>
                 <button
                   onClick={handleSendTelegram}
                   disabled={sending}
-                  className="px-4 py-2 text-sm rounded-lg border border-sky-600 text-sky-400 hover:bg-sky-950/50 transition disabled:opacity-50"
+                  className="px-4 py-2 text-sm rounded-lg border border-gray-800 text-sky-600 hover:bg-sky-50 transition disabled:opacity-50"
                 >
                   {sending ? t("weightTickets.detail.sending") : t("weightTickets.detail.sendTg")}
                 </button>
                 <button
                   onClick={handlePrint}
-                  className="px-4 py-2 text-sm rounded-lg border border-zinc-300 bg-zinc-100 text-black hover:bg-white transition"
+                  className="px-4 py-2 text-sm rounded-lg border border-gray-800 text-gray-800 hover:bg-gray-100 transition"
                 >
                   {t("weightTickets.detail.print")}
                 </button>
               </div>
               {sendResult && (
-                <div className="text-xs text-center mt-2 text-zinc-400">{sendResult}</div>
+                <div className="text-sm text-center mt-2 text-gray-500">{sendResult}</div>
               )}
             </>
           )}
