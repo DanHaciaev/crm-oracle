@@ -71,16 +71,16 @@ export default function CreateCustomerModal({ appUser, onClose, onCreated }: {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-zinc-950 border border-zinc-800 text-zinc-100 rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-auto">
-        <div className="p-6 border-b border-zinc-800 flex items-start justify-between">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="bg-white border border-gray-800 text-gray-900 rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-auto">
+        <div className="p-6 border-b border-gray-800 flex items-start justify-between">
           <div>
             <h2 className="text-lg font-semibold">{t("customers.newCustomer")}</h2>
-            <p className="text-sm text-gray-400 mt-0.5">
+            <p className="text-sm text-gray-500 mt-0.5">
               {t("customers.bindingTo")}{appUser.telegram_username ? ` @${appUser.telegram_username}` : ""} {t("customers.bindingAuto")}.
             </p>
           </div>
-          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-200 text-xl leading-none">×</button>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-xl leading-none">×</button>
         </div>
 
         <div className="p-6 space-y-3">
@@ -97,10 +97,10 @@ export default function CreateCustomerModal({ appUser, onClose, onCreated }: {
               <select
                 value={form.customer_type}
                 onChange={(e) => update("customer_type", e.target.value as "domestic" | "export")}
-                className={`${inputCls} bg-transparent`}
+                className={inputCls}
               >
-                <option className="text-black" value="domestic">{t("sales.types.domestic")}</option>
-                <option className="text-black" value="export">{t("sales.types.export")}</option>
+                <option value="domestic">{t("sales.types.domestic")}</option>
+                <option value="export">{t("sales.types.export")}</option>
               </select>
             </Field>
             <Field label={t("common.country")}>
@@ -126,12 +126,12 @@ export default function CreateCustomerModal({ appUser, onClose, onCreated }: {
           </Field>
 
           {error && (
-            <div className="px-3 py-2 border border-red-500/30 bg-red-500/10 rounded-lg text-xs text-red-300">{error}</div>
+            <div className="px-3 py-2 border border-red-300 bg-red-50 rounded-lg text-sm text-red-600">{error}</div>
           )}
         </div>
 
-        <div className="flex justify-end gap-2 p-4 border-t border-zinc-800">
-          <button onClick={onClose} className="px-4 py-2 text-sm rounded-lg border border-zinc-700 hover:bg-zinc-800 transition">
+        <div className="flex justify-end gap-2 p-4 border-t border-gray-800">
+          <button onClick={onClose} className="px-4 py-2 text-sm rounded-lg border border-gray-800 hover:bg-gray-100 transition text-gray-700">
             {t("common.cancel")}
           </button>
           <button
@@ -147,12 +147,12 @@ export default function CreateCustomerModal({ appUser, onClose, onCreated }: {
   );
 }
 
-const inputCls = "w-full border border-zinc-700 bg-transparent rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-400 transition";
+const inputCls = "w-full border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-800 focus:ring-1 focus:ring-gray-200 transition";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="text-xs text-gray-400 block mb-1">{label}</span>
+      <span className="text-sm text-gray-500 block mb-1">{label}</span>
       {children}
     </label>
   );

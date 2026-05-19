@@ -10,7 +10,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <AppSidebar />
       <main className="flex-1 overflow-auto">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
           <SidebarTrigger />
           <div className="flex items-center gap-3">
             <LangSwitcher />

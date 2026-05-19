@@ -21,16 +21,16 @@ interface SegCustomer {
 function RfmCell({ r, f, m }: { r: number | null; f: number; m: number }) {
   const t = useT();
   if (r === null && f === 0 && m === 0)
-    return <span className="text-zinc-700 text-xs">—</span>;
-  const rCls = r === null ? "text-zinc-600"
-    : r <= 30  ? "text-emerald-400"
+    return <span className="text-gray-400 text-sm">—</span>;
+  const rCls = r === null ? "text-gray-400"
+    : r <= 30  ? "text-emerald-800"
     : r <= 90  ? "text-amber-400"
     : "text-red-400";
   return (
-    <div className="text-xs tabular-nums space-y-0.5">
+    <div className="text-sm tabular-nums space-y-0.5">
       <div className={rCls} title={t("rfm.r")}>R: {r ?? "—"}</div>
-      <div className="text-zinc-400" title={t("rfm.f")}>F: {f}</div>
-      <div className="text-zinc-400" title={t("rfm.m")}>
+      <div className="text-gray-400" title={t("rfm.f")}>F: {f}</div>
+      <div className="text-gray-400" title={t("rfm.m")}>
         M: {m > 0 ? `${(m / 1000).toFixed(0)}k` : "0"}
       </div>
     </div>
@@ -43,14 +43,14 @@ const SEG_CLS: Record<string, string> = {
   active:   "border-emerald-500/50 text-emerald-400 bg-emerald-500/10",
   sleeping: "border-orange-500/50 text-orange-400 bg-orange-500/10",
   churned:  "border-red-500/50 text-red-400 bg-red-500/10",
-  no_orders:"border-zinc-600 text-zinc-500 bg-zinc-300",
+  no_orders:"border-gray-800 text-gray-500 bg-gray-100",
 };
 
 function SegBadge({ seg }: { seg: string }) {
   const t   = useT();
-  const cls = SEG_CLS[seg] ?? "border-zinc-600 text-zinc-400";
+  const cls = SEG_CLS[seg] ?? "border-gray-800 text-gray-400";
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cls}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-sm font-medium border ${cls}`}>
       {t(`segments.${seg}`) || seg}
     </span>
   );
@@ -100,7 +100,7 @@ export default function SegmentsPage() {
   }, [customers, segment, search]);
 
   const SEG_BUTTONS = [
-    { v: "all",      cls: "text-zinc-400" },
+    { v: "all",      cls: "text-gray-500" },
     { v: "vip",      cls: "text-amber-400" },
     { v: "new",      cls: "text-sky-400" },
     { v: "active",   cls: "text-emerald-400" },
@@ -112,23 +112,23 @@ export default function SegmentsPage() {
     <div className="p-8">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">{t("segments.title")}</h1>
-        <p className="text-sm text-zinc-500 mt-1">{t("segments.subtitle")}</p>
+        <p className="text-sm text-gray-500 mt-1">{t("segments.subtitle")}</p>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
         {SEG_BUTTONS.map(s => (
           <button key={s.v} onClick={() => setSegment(s.v)}
             className={`border rounded-xl p-3 text-center transition ${
-              segment === s.v ? "border-zinc-500 bg-zinc-200" : "border-zinc-800 hover:border-zinc-700"
+              segment === s.v ? "border-gray-800 bg-gray-100" : "border-gray-800 hover:border-gray-800"
             }`}>
             <div className={`text-2xl font-bold tabular-nums ${s.cls}`}>{counts[s.v] ?? 0}</div>
-            <div className="text-xs text-zinc-500 mt-0.5">{t(`segments.${s.v}`)}</div>
+            <div className="text-sm text-gray-500 mt-0.5">{t(`segments.${s.v}`)}</div>
           </button>
         ))}
       </div>
 
       {segment !== "all" && (
-        <div className="text-xs text-zinc-500 mb-4">
+        <div className="text-sm text-gray-400 mb-4">
           {t(`segments.${segment}Desc`)}
         </div>
       )}
@@ -137,30 +137,30 @@ export default function SegmentsPage() {
         <input
           type="text" placeholder={t("common.search")}
           value={search} onChange={e => setSearch(e.target.value)}
-          className="border border-zinc-700 bg-transparent rounded-lg px-3 py-1.5 text-sm outline-none focus:border-zinc-400 transition w-56"
+          className="border border-gray-800 bg-white rounded-lg px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-gray-800 transition w-56"
         />
         {segment !== "all" && (
           <Link href={`/broadcasts?segment=${segment}`}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border border-sky-700 text-sky-400 hover:bg-sky-950/40 transition">
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md border border-sky-700 text-sky-400 hover:bg-sky-950/40 transition">
             ✉ {t("segments.broadcastLink")}
           </Link>
         )}
         {(search || segment !== "all") && (
           <button onClick={() => { setSearch(""); setSegment("all"); }}
-            className="text-xs text-zinc-500 hover:text-zinc-300 transition">
+            className="text-sm text-gray-400 hover:text-gray-700 transition">
             {t("common.reset")}
           </button>
         )}
       </div>
 
-      <div className="border border-zinc-800 rounded-xl overflow-auto">
+      <div className="border border-gray-800 rounded-xl overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>{t("segments.cols.customer")}</TableHead>
               <TableHead>{t("segments.cols.segment")}</TableHead>
               <TableHead>{t("segments.cols.countryType")}</TableHead>
-              <TableHead className="text-right">{t("segments.cols.revenue")}</TableHead>
+              <TableHead className="text-center">{t("segments.cols.revenue")}</TableHead>
               <TableHead className="text-center">{t("segments.cols.orders")}</TableHead>
               <TableHead>{t("segments.cols.lastOrder")}</TableHead>
               <TableHead className="text-center">{t("segments.cols.rfm")}</TableHead>
@@ -169,41 +169,41 @@ export default function SegmentsPage() {
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={8} className="text-center text-zinc-500 py-8">{t("common.loading")}</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center text-gray-400 py-8">{t("common.loading")}</TableCell></TableRow>
             ) : error ? (
-              <TableRow><TableCell colSpan={8} className="text-center text-red-400 py-8">{error}</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center text-red-500 py-8">{error}</TableCell></TableRow>
             ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={8} className="text-center text-zinc-600 py-8">{t("common.noResults")}</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center text-gray-400 py-8">{t("common.noResults")}</TableCell></TableRow>
             ) : filtered.map(c => (
-              <TableRow key={c.id} className="hover:bg-zinc-100 transition-colors">
+              <TableRow key={c.id} className="hover:bg-gray-50 transition-colors">
                 <TableCell className="font-medium">
                   <Link href={`/customers/${c.id}`}
-                    className="transition underline underline-offset-2 decoration-zinc-700">
+                    className="transition underline underline-offset-2 decoration-gray-300 hover:text-gray-900">
                     {c.name}
                   </Link>
-                  <div className="text-xs text-zinc-600 font-mono">{c.code}</div>
+                  <div className="text-sm text-gray-400 font-mono">{c.code}</div>
                 </TableCell>
                 <TableCell><SegBadge seg={c.segment} /></TableCell>
-                <TableCell className="text-xs text-zinc-400">
+                <TableCell className="text-sm text-gray-500">
                   {c.country && <div>{c.country}</div>}
                   {c.customer_type && <div>{c.customer_type}</div>}
                 </TableCell>
-                <TableCell className="text-right font-mono tabular-nums">
+                <TableCell className="text-center font-mono tabular-nums">
                   {c.total_revenue > 0 ? (
                     <>
                       {c.total_revenue_orig != null && c.currency_code !== "MDL" ? (
                         <>
                           <div>{fmtMoney(c.total_revenue_orig)} {c.currency_code}</div>
-                          <div className="text-xs text-zinc-500">≈ {fmtMoney(c.total_revenue)} MDL</div>
+                          <div className="text-sm text-gray-400">≈ {fmtMoney(c.total_revenue)} MDL</div>
                         </>
                       ) : (
                         <div>{fmtMoney(c.total_revenue)} MDL</div>
                       )}
                     </>
-                  ) : <span className="text-zinc-600">—</span>}
+                  ) : <span className="text-gray-400">—</span>}
                 </TableCell>
                 <TableCell className="text-center tabular-nums">
-                  {c.order_count > 0 ? c.order_count : <span className="text-zinc-600">0</span>}
+                  {c.order_count > 0 ? c.order_count : <span className="text-gray-400">0</span>}
                 </TableCell>
                 <TableCell className="text-sm tabular-nums">{fmtDate(c.last_order_date)}</TableCell>
                 <TableCell className="text-center">
@@ -211,8 +211,8 @@ export default function SegmentsPage() {
                 </TableCell>
                 <TableCell className="text-center">
                   {c.tg_linked
-                    ? <span className="text-emerald-400 text-sm">✓</span>
-                    : <span className="text-zinc-600 text-xs">—</span>}
+                    ? <span className="text-emerald-800 text-sm">✓</span>
+                    : <span className="text-gray-400 text-sm">—</span>}
                 </TableCell>
               </TableRow>
             ))}
@@ -221,7 +221,7 @@ export default function SegmentsPage() {
       </div>
 
       {filtered.length > 0 && !loading && (
-        <div className="mt-3 text-right text-xs text-zinc-500">
+        <div className="mt-3 text-center text-sm text-gray-400">
           {t("common.showing")}: {filtered.length} {t("common.of")} {customers.length}
         </div>
       )}

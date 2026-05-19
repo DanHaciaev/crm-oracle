@@ -71,7 +71,7 @@ export default function AuthPage() {
           </div>
 
           {error && (
-            <div className="px-4 py-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-500">
+            <div className="px-4 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-500">
               {error}
             </div>
           )}

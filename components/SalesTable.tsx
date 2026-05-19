@@ -25,7 +25,7 @@ export interface SaleDoc {
 }
 
 const STATUS_CLS: Record<string, string> = {
-  draft:     "border-zinc-600    text-zinc-400    bg-zinc-800/60",
+  draft:     "border-gray-800    text-gray-500    bg-gray-100",
   confirmed: "border-blue-500/40  text-blue-400   bg-blue-500/10",
   shipped:   "border-violet-500/40 text-violet-400 bg-violet-500/10",
   closed:    "border-emerald-500/40 text-emerald-400 bg-emerald-500/10",
@@ -39,16 +39,16 @@ const TYPE_CLS: Record<string, string> = {
 
 function StatusBadge({ status }: { status: string }) {
   const t   = useT();
-  const cls = STATUS_CLS[status] ?? "border-zinc-600 text-zinc-400";
-  return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cls}`}>
+  const cls = STATUS_CLS[status] ?? "border-gray-800 text-gray-500";
+  return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-sm font-medium border ${cls}`}>
     {t(`sales.statuses.${status}`) || status}
   </span>;
 }
 
 function TypeBadge({ type }: { type: string }) {
   const t   = useT();
-  const cls = TYPE_CLS[type] ?? "border-zinc-600 text-zinc-400";
-  return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cls}`}>
+  const cls = TYPE_CLS[type] ?? "border-gray-800 text-gray-500";
+  return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-sm font-medium border ${cls}`}>
     {t(`sales.types.${type}`) || type}
   </span>;
 }
@@ -164,7 +164,7 @@ export default function SalesTable({ customerId, compact = false }: Props) {
             <p className="text-sm text-gray-500 mt-1">{t("sales.subtitle")}</p>
           </div>
           <button onClick={() => exportCsv(filtered)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-zinc-700 text-sm hover:bg-zinc-800/40 transition shrink-0">
+            className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-gray-800 text-sm hover:bg-gray-100 transition shrink-0 text-gray-700">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                 d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -178,33 +178,33 @@ export default function SalesTable({ customerId, compact = false }: Props) {
         <div className="flex gap-1 flex-wrap">
           {STATUS_TABS.map((s) => (
             <button key={s.v} onClick={() => setStatus(s.v)}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs transition
-                ${status === s.v ? "border-zinc-400 bg-zinc-800/50 text-white" : "border-zinc-800 text-zinc-500 hover:bg-zinc-800/20"}`}>
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-sm transition
+                ${status === s.v ? "border-gray-800 bg-gray-900 text-white" : "border-gray-800 text-gray-500 hover:bg-gray-100"}`}>
               {s.label} <span className="tabular-nums">{s.count}</span>
             </button>
           ))}
         </div>
 
         <select value={saleType} onChange={(e) => setType(e.target.value)}
-          className="border border-zinc-700 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-zinc-400 transition">
+          className="border border-gray-800 bg-white rounded-lg px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-gray-800 transition">
           <option value="all">{t("sales.allTypes")}</option>
           <option value="domestic">{t("sales.types.domestic")}</option>
           <option value="export">{t("sales.types.export")}</option>
         </select>
 
         <input type="date" value={dateFrom} onChange={(e) => setFrom(e.target.value)}
-          className="border border-zinc-700 bg-transparent rounded-lg px-3 py-1.5 text-sm outline-none focus:border-zinc-400 transition" />
-        <span className="text-zinc-600 text-sm self-center">—</span>
+          className="border border-gray-800 bg-white rounded-lg px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-gray-800 transition" />
+        <span className="text-gray-400 text-sm self-center">—</span>
         <input type="date" value={dateTo} onChange={(e) => setTo(e.target.value)}
-          className="border border-zinc-700 bg-transparent rounded-lg px-3 py-1.5 text-sm outline-none focus:border-zinc-400 transition" />
+          className="border border-gray-800 bg-white rounded-lg px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-gray-800 transition" />
         {(dateFrom || dateTo) && (
-          <button onClick={() => { setFrom(""); setTo(""); }} className="text-xs text-zinc-500 hover:text-zinc-300">✕</button>
+          <button onClick={() => { setFrom(""); setTo(""); }} className="text-sm text-gray-400 hover:text-gray-700">✕</button>
         )}
 
         {!customerId && (
           <input type="text" placeholder={t("sales.searchPlaceholder")} value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="border border-zinc-700 bg-transparent rounded-lg px-3 py-1.5 text-sm outline-none focus:border-zinc-400 transition w-56" />
+            className="border border-gray-800 bg-white rounded-lg px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-gray-800 transition w-56" />
         )}
       </div>
 
@@ -216,7 +216,7 @@ export default function SalesTable({ customerId, compact = false }: Props) {
         </div>
       )}
 
-      <div className="border border-zinc-800 rounded-xl overflow-auto">
+      <div className="border border-gray-800 rounded-xl overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -225,8 +225,8 @@ export default function SalesTable({ customerId, compact = false }: Props) {
               {!customerId && <TableHead>{t("sales.customer").toUpperCase()}</TableHead>}
               <TableHead>{t("common.type").toUpperCase()}</TableHead>
               <TableHead>{t("common.status").toUpperCase()}</TableHead>
-              <TableHead className="text-right">{t("common.amount").toUpperCase()}</TableHead>
-              <TableHead className="text-right">{t("sales.netKg").toUpperCase()}</TableHead>
+              <TableHead className="text-center">{t("common.amount").toUpperCase()}</TableHead>
+              <TableHead className="text-center">{t("sales.netKg").toUpperCase()}</TableHead>
               <TableHead>{t("sales.invoice").toUpperCase()}</TableHead>
             </TableRow>
           </TableHeader>
@@ -238,26 +238,26 @@ export default function SalesTable({ customerId, compact = false }: Props) {
             ) : filtered.length === 0 ? (
               <TableRow><TableCell colSpan={colSpan} className="text-center text-gray-400 py-8">{t("sales.noSales")}</TableCell></TableRow>
             ) : filtered.map((d) => (
-              <TableRow key={d.id} className="hover:bg-zinc-200 transition-colors">
+              <TableRow key={d.id} className="hover:bg-gray-50 transition-colors">
                 <TableCell className="font-mono text-sm">{d.doc_number}</TableCell>
                 <TableCell className="tabular-nums">{fmtDate(d.doc_date)}</TableCell>
                 {!customerId && (
                   <TableCell>
                     {d.customer_id
-                      ? <Link href={`/customers/${d.customer_id}`} className="transition underline underline-offset-2 decoration-zinc-700">{d.customer_name}</Link>
+                      ? <Link href={`/customers/${d.customer_id}`} className="transition underline underline-offset-2 decoration-gray-300 hover:text-gray-900">{d.customer_name}</Link>
                       : d.customer_name || "—"}
                   </TableCell>
                 )}
                 <TableCell><TypeBadge type={d.sale_type} /></TableCell>
                 <TableCell><StatusBadge status={d.status} /></TableCell>
-                <TableCell className="text-right font-mono tabular-nums">
+                <TableCell className="text-center font-mono tabular-nums">
                   <div>{fmtMoney(d.total_amount)} {d.currency_code || "MDL"}</div>
                   {d.currency_code && d.currency_code !== "MDL" && (
-                    <div className="text-xs text-zinc-500">≈ {fmtMoney(d.total_amount_mdl)} MDL</div>
+                    <div className="text-sm text-gray-400">≈ {fmtMoney(d.total_amount_mdl)} MDL</div>
                   )}
                 </TableCell>
-                <TableCell className="text-right font-mono tabular-nums">{fmtKg(d.total_net_kg)}</TableCell>
-                <TableCell className="font-mono text-xs text-zinc-400">{d.invoice_number || "—"}</TableCell>
+                <TableCell className="text-center font-mono tabular-nums">{fmtKg(d.total_net_kg)}</TableCell>
+                <TableCell className="font-mono text-sm text-gray-400">{d.invoice_number || "—"}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -265,7 +265,7 @@ export default function SalesTable({ customerId, compact = false }: Props) {
       </div>
 
       {filtered.length > 0 && !loading && (
-        <div className="mt-3 text-right text-xs text-zinc-500">
+        <div className="mt-3 text-center text-sm text-gray-400">
           {t("common.showing")}: {filtered.length} — {t("common.amount")}: {fmtMoney(stats.amount_mdl)} MDL — {fmtKg(stats.kg)} кг
         </div>
       )}
@@ -275,11 +275,11 @@ export default function SalesTable({ customerId, compact = false }: Props) {
 
 function StatCard({ label, value, suffix }: { label: string; value: string; suffix?: string }) {
   return (
-    <div className="border border-zinc-800 rounded-xl p-4 text-center">
+    <div className="border border-gray-800 rounded-xl p-4 text-center">
       <div className="text-2xl font-bold tabular-nums">
-        {value}{suffix && <span className="text-sm text-zinc-400 ml-1">{suffix}</span>}
+        {value}{suffix && <span className="text-sm text-gray-400 ml-1">{suffix}</span>}
       </div>
-      <div className="text-xs text-gray-400 mt-1">{label}</div>
+      <div className="text-sm text-gray-400 mt-1">{label}</div>
     </div>
   );
 }

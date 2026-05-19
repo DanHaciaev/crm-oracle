@@ -65,12 +65,12 @@ export default function BroadcastPage() {
                 onClick={() => setSegment(s.v)}
                 className={`text-left p-3 rounded-xl border text-sm transition ${
                   segment === s.v
-                    ? "border-zinc-300 bg-white/10 text-zinc-400"
+                    ? "border-gray-800 bg-white/10 text-zinc-400"
                     : "border-zinc-800 text-zinc-400 hover:bg-zinc-200"
                 }`}
               >
                 <div className="font-medium">{s.label}</div>
-                <div className="text-xs text-zinc-500 mt-0.5">{s.desc}</div>
+                <div className="text-sm text-zinc-500 mt-0.5">{s.desc}</div>
               </button>
             ))}
           </div>
@@ -84,12 +84,12 @@ export default function BroadcastPage() {
             onChange={(e) => setMessage(e.target.value)}
             rows={5}
             placeholder={t("broadcasts.messagePlaceholder")}
-            className="w-full border border-zinc-700 rounded-xl px-4 py-3 text-sm outline-none focus:border-zinc-400 transition resize-none"
+            className="w-full border border-zinc-700 rounded-xl px-4 py-3 text-sm outline-none focus:border-gray-800 transition resize-none"
           />
           <div className="flex justify-between items-center mt-1">
-            <span className="text-xs text-zinc-600">{message.length} {t("broadcasts.chars")}</span>
+            <span className="text-sm text-zinc-600">{message.length} {t("broadcasts.chars")}</span>
             {message.length > 4096 && (
-              <span className="text-xs text-red-400">{t("broadcasts.limitExceeded")}</span>
+              <span className="text-sm text-red-400">{t("broadcasts.limitExceeded")}</span>
             )}
           </div>
         </div>
@@ -97,7 +97,7 @@ export default function BroadcastPage() {
         {/* Preview */}
         {message.trim() && (
           <div className="border border-zinc-800 rounded-xl p-4">
-            <div className="text-xs text-zinc-500 mb-2">{t("broadcasts.preview")} → {seg?.label}</div>
+            <div className="text-sm text-zinc-500 mb-2">{t("broadcasts.preview")} → {seg?.label}</div>
             <div className="bg-blue-200 border border-blue-700/30 rounded-xl px-4 py-3 text-sm text-zinc-800 whitespace-pre-wrap w-full wrap-break-word">
               {message}
             </div>
@@ -125,9 +125,9 @@ export default function BroadcastPage() {
             </div>
             {result.errors.length > 0 && (
               <div className="space-y-1 mt-2">
-                <div className="text-xs font-medium text-amber-400">{t("broadcasts.errors")}:</div>
+                <div className="text-sm font-medium text-amber-400">{t("broadcasts.errors")}:</div>
                 {result.errors.map((e, i) => (
-                  <div key={i} className="text-xs text-amber-300/70">{e}</div>
+                  <div key={i} className="text-sm text-amber-300/70">{e}</div>
                 ))}
               </div>
             )}

@@ -34,20 +34,20 @@ function GroupBadge({ group }: { group: string }) {
     vegetable: "border-green-500/40 text-green-400 bg-green-500/10",
     berry:     "border-pink-500/40 text-pink-400 bg-pink-500/10",
   };
-  const cls = cfg[group] ?? "border-zinc-600 text-zinc-400 bg-zinc-800";
+  const cls = cfg[group] ?? "border-gray-800 text-gray-500 bg-gray-100";
   const key = `items.groups.${group}`;
   const label = t(key);
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cls}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-sm font-medium border ${cls}`}>
       {label === key ? group : label}
     </span>
   );
 }
 
 function TempBadge({ min, max }: { min: number | null; max: number | null }) {
-  if (min === null && max === null) return <span className="text-zinc-600">—</span>;
+  if (min === null && max === null) return <span className="text-gray-400">—</span>;
   return (
-    <span className="font-mono text-xs text-zinc-300">
+    <span className="font-mono text-sm text-gray-600">
       {min ?? "?"}…{max ?? "?"}°C
     </span>
   );
@@ -171,8 +171,8 @@ export default function ItemsTable() {
   }, [items, search, group, sortKey, sortDir]);
 
   function sortIcon(col: SortKey) {
-    if (sortKey !== col) return <span className="text-zinc-700 ml-1">⇅</span>;
-    return <span className="text-zinc-300 ml-1">{sortDir === "asc" ? "↑" : "↓"}</span>;
+    if (sortKey !== col) return <span className="text-gray-400 ml-1">⇅</span>;
+    return <span className="text-gray-600 ml-1">{sortDir === "asc" ? "↑" : "↓"}</span>;
   }
 
   return (
@@ -184,7 +184,7 @@ export default function ItemsTable() {
         </div>
         <button
           onClick={() => exportCsv(filtered)}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-zinc-700 text-sm hover:bg-zinc-800/40 transition shrink-0"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-gray-800 text-sm hover:bg-gray-100 transition shrink-0 text-gray-700"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
@@ -200,12 +200,12 @@ export default function ItemsTable() {
           placeholder={t("items.searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="border border-zinc-700 bg-transparent rounded-lg px-3 py-1.5 text-sm outline-none focus:border-zinc-400 transition w-60"
+          className="border border-gray-800 bg-white rounded-lg px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-gray-800 transition w-60"
         />
         <select
           value={group}
           onChange={(e) => setGroup(e.target.value)}
-          className="border border-zinc-700 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-zinc-400 transition"
+          className="border border-gray-800 bg-white rounded-lg px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-gray-800 transition"
         >
           <option value="all">{t("items.allGroups")}</option>
           {groups.map((g) => (
@@ -215,7 +215,7 @@ export default function ItemsTable() {
         {(search || group !== "all") && (
           <button
             onClick={() => { setSearch(""); setGroup("all"); }}
-            className="text-xs text-zinc-500 hover:text-zinc-300 px-2 py-1.5 transition"
+            className="text-sm text-gray-400 hover:text-gray-700 px-2 py-1.5 transition"
           >
             {t("common.reset")}
           </button>
@@ -229,7 +229,7 @@ export default function ItemsTable() {
         <StatCard label={t("items.statsNetKg")}    value={fmtKg(stats.net_kg)} />
       </div>
 
-      <div className="border border-zinc-800 rounded-xl overflow-auto">
+      <div className="border border-gray-800 rounded-xl overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -261,14 +261,14 @@ export default function ItemsTable() {
               <TableRow><TableCell colSpan={9} className="text-center text-gray-400 py-8">{t("items.noItems")}</TableCell></TableRow>
             ) : (
               filtered.map((item) => (
-                <TableRow key={item.id} className="hover:bg-zinc-900/40 transition-colors">
+                <TableRow key={item.id} className="hover:bg-gray-50 transition-colors">
                   <TableCell>
                     <div className="font-medium">{item.name_ru || "—"}</div>
-                    {item.name_ro && <div className="text-xs text-zinc-500">{item.name_ro}</div>}
+                    {item.name_ro && <div className="text-sm text-gray-400">{item.name_ro}</div>}
                   </TableCell>
                   <TableCell><GroupBadge group={item.item_group} /></TableCell>
-                  <TableCell className="text-zinc-400 text-sm">{item.unit || "—"}</TableCell>
-                  <TableCell className="text-zinc-400 text-xs">
+                  <TableCell className="text-gray-400 text-sm">{item.unit || "—"}</TableCell>
+                  <TableCell className="text-gray-400 text-sm">
                     {item.default_tare_kg !== null ? `${item.default_tare_kg} ${t("items.tare")}` : "—"}
                     {item.shelf_life_days !== null && (
                       <div>{item.shelf_life_days} {t("items.daysAbbr")}</div>
@@ -276,15 +276,15 @@ export default function ItemsTable() {
                   </TableCell>
                   <TableCell><TempBadge min={item.optimal_temp_min} max={item.optimal_temp_max} /></TableCell>
                   <TableCell className="text-center font-mono tabular-nums">
-                    {item.total_revenue > 0 ? fmtMoney(item.total_revenue) : <span className="text-zinc-600">—</span>}
+                    {item.total_revenue > 0 ? fmtMoney(item.total_revenue) : <span className="text-gray-400">—</span>}
                   </TableCell>
                   <TableCell className="text-center font-mono tabular-nums">
-                    {item.total_net_kg > 0 ? fmtKg(item.total_net_kg) : <span className="text-zinc-600">—</span>}
+                    {item.total_net_kg > 0 ? fmtKg(item.total_net_kg) : <span className="text-gray-400">—</span>}
                   </TableCell>
                   <TableCell className="text-center tabular-nums">
                     {item.orders_count > 0
                       ? <span className="font-medium">{item.orders_count}</span>
-                      : <span className="text-zinc-600">0</span>}
+                      : <span className="text-gray-400">0</span>}
                   </TableCell>
                   <TableCell className="text-sm tabular-nums">{fmtDate(item.last_sale_date)}</TableCell>
                 </TableRow>
@@ -295,7 +295,7 @@ export default function ItemsTable() {
       </div>
 
       {filtered.length > 0 && !loading && (
-        <div className="mt-3 text-center text-xs text-zinc-500">
+        <div className="mt-3 text-center text-sm text-gray-400">
           {t("weightTickets.showing")}: {filtered.length} {t("common.of")} {items.length}
         </div>
       )}
@@ -305,11 +305,11 @@ export default function ItemsTable() {
 
 function StatCard({ label, value, suffix }: { label: string; value: string; suffix?: string }) {
   return (
-    <div className="border border-zinc-800 rounded-xl p-4 text-center">
+    <div className="border border-gray-800 rounded-xl p-4 text-center">
       <div className="text-2xl font-bold tabular-nums">
-        {value}{suffix && <span className="text-sm text-zinc-400 ml-1">{suffix}</span>}
+        {value}{suffix && <span className="text-sm text-gray-400 ml-1">{suffix}</span>}
       </div>
-      <div className="text-xs text-gray-400 mt-1">{label}</div>
+      <div className="text-sm text-gray-400 mt-1">{label}</div>
     </div>
   );
 }

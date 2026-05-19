@@ -39,19 +39,19 @@ function TgStatusCell({ c }: { c: Customer }) {
   const t = useT();
   if (c.tg_linked) {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border border-emerald-500/30 text-emerald-300">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-sm border border-emerald-800 text-green-800">
         ✓ {c.tg_username ? `@${c.tg_username}` : t("customers.tgLinked")}
       </span>
     );
   }
   if (c.pending_invites > 0) {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border border-zinc-600 text-zinc-300">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-sm border border-gray-800 text-gray-600">
         {c.pending_invites} pending
       </span>
     );
   }
-  return <span className="text-zinc-600 text-xs">—</span>;
+  return <span className="text-gray-400 text-sm">—</span>;
 }
 
 type ModalStep = "confirm" | "has_deps";
@@ -148,11 +148,11 @@ export default function CustomersTable() {
             placeholder={t("customers.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="border border-zinc-700 bg-transparent rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-400 transition w-72"
+            className="border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-800 transition w-72"
           />
           <button
             onClick={exportCustomersCsv}
-            className="flex items-center gap-2 px-3 py-2 rounded-md border border-zinc-700 text-sm hover:bg-zinc-800/40 transition shrink-0"
+            className="flex items-center gap-2 px-3 py-2 rounded-md border border-gray-800 text-sm hover:bg-gray-100 transition shrink-0 text-gray-700"
             title={t("common.export")}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -164,7 +164,7 @@ export default function CustomersTable() {
         </div>
       </div>
 
-      <div className="border border-zinc-800 rounded-xl overflow-auto">
+      <div className="border border-gray-800 rounded-xl overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -174,7 +174,7 @@ export default function CustomersTable() {
               <TableHead>{t("common.type").toUpperCase()}</TableHead>
               <TableHead>{t("common.phone").toUpperCase()}</TableHead>
               <TableHead>TELEGRAM</TableHead>
-              <TableHead className="text-right">{t("common.actions").toUpperCase()}</TableHead>
+              <TableHead className="text-center">{t("common.actions").toUpperCase()}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -190,23 +190,23 @@ export default function CustomersTable() {
                   <TableCell className="font-mono">{c.code}</TableCell>
                   <TableCell className="font-medium">
                     {c.name}
-                    {!c.active && <span className="ml-2 text-xs text-zinc-500">({t("customers.deactivated")})</span>}
+                    {!c.active && <span className="ml-2 text-sm text-gray-400">({t("customers.deactivated")})</span>}
                   </TableCell>
                   <TableCell>{c.country ?? "—"}</TableCell>
-                  <TableCell className="text-xs text-gray-400">{c.customer_type ?? "—"}</TableCell>
+                  <TableCell className="text-sm text-gray-400">{c.customer_type ?? "—"}</TableCell>
                   <TableCell>{c.contact_phone ?? "—"}</TableCell>
                   <TableCell><TgStatusCell c={c} /></TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-1">
                       <Link
                         href={`/customers/${c.id}`}
-                        className="inline-block px-3 py-1 text-xs rounded-md border border-zinc-700 hover:bg-zinc-300 transition"
+                        className="inline-block px-3 py-1 text-sm rounded-md border border-gray-800 text-gray-700 hover:bg-gray-100 transition"
                       >
                         {t("customers.open")}
                       </Link>
                       <button
                         onClick={() => openDelete(c)}
-                        className="px-3 py-1 text-xs rounded-md border border-red-800/60 text-red-400 hover:bg-red-950/40 transition"
+                        className="px-3 py-1 text-sm rounded-md border border-red-800/60 text-red-400 hover:bg-red-950/40 transition"
                       >
                         {t("common.delete")}
                       </button>
@@ -220,17 +220,17 @@ export default function CustomersTable() {
       </div>
 
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white border border-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
             {modalStep === "confirm" ? (
               <>
-                <h2 className="text-lg font-semibold text-white">{t("customers.deleteConfirmTitle")}</h2>
-                <p className="text-sm text-zinc-400">
-                  <span className="font-semibold text-white">{deleteTarget.name}</span>
+                <h2 className="text-lg font-semibold text-gray-900">{t("customers.deleteConfirmTitle")}</h2>
+                <p className="text-sm text-gray-500">
+                  <span className="font-semibold text-gray-900">{deleteTarget.name}</span>
                 </p>
                 <div className="flex justify-end gap-2 pt-2">
                   <button onClick={closeModal} disabled={working}
-                    className="px-4 py-2 text-sm text-white rounded-lg border border-zinc-700 hover:bg-zinc-800 transition disabled:opacity-50">
+                    className="px-4 py-2 text-sm rounded-lg border border-gray-800 hover:bg-gray-100 transition disabled:opacity-50 text-gray-700">
                     {t("common.cancel")}
                   </button>
                   <button onClick={handleHardDelete} disabled={working}
@@ -241,11 +241,11 @@ export default function CustomersTable() {
               </>
             ) : (
               <>
-                <h2 className="text-lg font-semibold text-white">{t("customers.hasDepsTitle")}</h2>
-                <p className="text-sm text-zinc-400">
-                  <span className="font-semibold text-white">{deleteTarget.name}</span>
+                <h2 className="text-lg font-semibold text-gray-900">{t("customers.hasDepsTitle")}</h2>
+                <p className="text-sm text-gray-500">
+                  <span className="font-semibold text-gray-900">{deleteTarget.name}</span>
                   {depCounts && (
-                    <span className="text-white">
+                    <span className="text-gray-700">
                       {": "}
                       {depCounts.sales > 0 && `${depCounts.sales} ${t("sales.title").toLowerCase()}`}
                       {depCounts.sales > 0 && depCounts.weight_tickets > 0 && ", "}
@@ -253,12 +253,12 @@ export default function CustomersTable() {
                     </span>
                   )}
                 </p>
-                <div className="rounded-lg border border-red-900/40 bg-red-950/20 p-3 text-xs text-red-400">
+                <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
                   {t("customers.hasDepsWarning")}
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
                   <button onClick={closeModal} disabled={working}
-                    className="px-4 py-2 text-sm rounded-lg text-white border border-zinc-700 hover:bg-zinc-800 transition disabled:opacity-50">
+                    className="px-4 py-2 text-sm rounded-lg border border-gray-800 hover:bg-gray-100 transition disabled:opacity-50 text-gray-700">
                     {t("common.cancel")}
                   </button>
                   <button onClick={handleSoftDelete} disabled={working}

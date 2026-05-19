@@ -64,10 +64,10 @@ function Delta({ curr, prev }: { curr: number; prev: number }) {
   if (!prev) return null;
   const pct = ((curr - prev) / prev) * 100;
   if (Math.abs(pct) < 0.5)
-    return <span className="text-xs text-zinc-100 flex items-center gap-1"><Minus className="w-3 h-3" />0%</span>;
+    return <span className="text-sm text-gray-500 flex items-center gap-1"><Minus className="w-3 h-3" />0%</span>;
   const up = pct > 0;
   return (
-    <span className={`text-xs flex items-center gap-1 ${up ? "text-emerald-400" : "text-red-400"}`}>
+    <span className={`text-sm flex items-center gap-1 ${up ? "text-emerald-400" : "text-red-400"}`}>
       {up ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
       {up ? "+" : ""}{pct.toFixed(1)}%
     </span>
@@ -79,11 +79,11 @@ function KpiCard({ label, value, sub, prev, curr, accent }: {
   prev?: number; curr?: number; accent?: string;
 }) {
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 flex flex-col gap-1">
-      <div className="text-xs text-zinc-100 uppercase tracking-wide">{label}</div>
-      <div className={`text-2xl font-bold ${accent ?? "text-zinc-100"}`}>{value}</div>
+    <div className="rounded-xl border border-gray-800 bg-gray-50 p-4 flex flex-col gap-1">
+      <div className="text-sm text-gray-400 uppercase tracking-wide">{label}</div>
+      <div className={`text-2xl font-bold ${accent ?? "text-gray-700"}`}>{value}</div>
       <div className="flex items-center justify-between mt-1">
-        {sub && <span className="text-xs text-zinc-100">{sub}</span>}
+        {sub && <span className="text-sm text-gray-400">{sub}</span>}
         {curr !== undefined && prev !== undefined && <Delta curr={curr} prev={prev} />}
       </div>
     </div>
@@ -92,7 +92,7 @@ function KpiCard({ label, value, sub, prev, curr, accent }: {
 
 function Empty() {
   const t = useT();
-  return <p className="text-sm text-zinc-600 py-6 text-center">{t("dashboard.noDataPeriod")}</p>;
+  return <p className="text-sm text-gray-400 py-6 text-center">{t("dashboard.noDataPeriod")}</p>;
 }
 
 function RevenueTrendChart({ data }: { data: Stats["revenue_by_day"] }) {
@@ -102,8 +102,8 @@ function RevenueTrendChart({ data }: { data: Stats["revenue_by_day"] }) {
     <ResponsiveContainer width="100%" height={220}>
       <BarChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-        <XAxis dataKey="date" tick={{ fill: "#71717a", fontSize: 11 }} tickLine={false} />
-        <YAxis tickFormatter={fmtNum} tick={{ fill: "#71717a", fontSize: 11 }} width={70} tickLine={false} axisLine={false} />
+        <XAxis dataKey="date" tick={{ fill: "black", fontSize: 11 }} tickLine={false} />
+        <YAxis tickFormatter={fmtNum} tick={{ fill: "black", fontSize: 11 }} width={70} tickLine={false} axisLine={false} />
         <Tooltip {...ttStyle} formatter={(v: unknown) => [`${fmtNum(Number(v ?? 0))} MDL`, t("dashboard.revenueLabel")]} />
         <Bar dataKey="revenue" fill="#10b981" radius={[3, 3, 0, 0]} maxBarSize={40} />
       </BarChart>
@@ -118,12 +118,12 @@ function TopCustomersChart({ data }: { data: Stats["top_customers"] }) {
   return (
     <ResponsiveContainer width="100%" height={Math.max(200, items.length * 36)}>
       <BarChart data={items} layout="vertical" margin={{ top: 4, right: 60, left: 4, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#27272a" horizontal={false} />
-        <XAxis type="number" tickFormatter={fmtNum} tick={{ fill: "#71717a", fontSize: 11 }} tickLine={false} axisLine={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="black" horizontal={false} />
+        <XAxis type="number" tickFormatter={fmtNum} tick={{ fill: "black", fontSize: 11 }} tickLine={false} axisLine={false} />
         <YAxis
           type="category" dataKey="name" width={130}
           tickFormatter={(v: string) => v.length > 18 ? v.slice(0, 18) + "…" : v}
-          tick={{ fill: "#a1a1aa", fontSize: 11 }} tickLine={false} axisLine={false}
+          tick={{ fill: "black", fontSize: 11 }} tickLine={false} axisLine={false}
         />
         <Tooltip
           {...ttStyle}
@@ -136,12 +136,12 @@ function TopCustomersChart({ data }: { data: Stats["top_customers"] }) {
                 {d.revenue_orig != null && d.currency !== "MDL" ? (
                   <>
                     <div style={ttStyle.itemStyle}>{fmtNum(d.revenue_orig)} {d.currency}</div>
-                    <div style={{ color: "#71717a" }}>≈ {fmtNum(d.revenue)} MDL</div>
+                    <div style={{ color: "#d4d4d8" }}>≈ {fmtNum(d.revenue)} MDL</div>
                   </>
                 ) : (
                   <div style={ttStyle.itemStyle}>{fmtNum(d.revenue)} MDL</div>
                 )}
-                <div style={{ color: "#71717a" }}>{d.orders} {t("dashboard.ordersCount")}</div>
+                <div style={{ color: "#d4d4d8" }}>{d.orders} {t("dashboard.ordersCount")}</div>
               </div>
             );
           }}
@@ -162,11 +162,11 @@ function TopItemsChart({ data }: { data: Stats["top_items"] }) {
     <ResponsiveContainer width="100%" height={Math.max(200, items.length * 36)}>
       <BarChart data={items} layout="vertical" margin={{ top: 4, right: 60, left: 4, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#27272a" horizontal={false} />
-        <XAxis type="number" tickFormatter={fmtKg} tick={{ fill: "#71717a", fontSize: 11 }} tickLine={false} axisLine={false} />
+        <XAxis type="number" tickFormatter={fmtKg} tick={{ fill: "black", fontSize: 11 }} tickLine={false} axisLine={false} />
         <YAxis
           type="category" dataKey="name" width={130}
           tickFormatter={(v: string) => v.length > 18 ? v.slice(0, 18) + "…" : v}
-          tick={{ fill: "#a1a1aa", fontSize: 11 }} tickLine={false} axisLine={false}
+          tick={{ fill: "black", fontSize: 11 }} tickLine={false} axisLine={false}
         />
         <Tooltip {...ttStyle} formatter={(v: unknown) => [fmtKg(Number(v ?? 0)), t("dashboard.weightNet")]} />
         <Bar dataKey="weight_kg" radius={[0, 3, 3, 0]} maxBarSize={20}>
@@ -207,8 +207,8 @@ function StatusPieChart({ data }: { data: Stats["order_statuses"] }) {
         {data.map((d, i) => (
           <div key={i} className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full shrink-0" style={{ background: STATUS_COLORS[d.status] ?? CHART_COLORS[i % CHART_COLORS.length] }} />
-            <span className="text-zinc-300">{label(d.status)}</span>
-            <span className="ml-auto font-mono text-zinc-400">{d.count}</span>
+            <span className="text-gray-700">{label(d.status)}</span>
+            <span className="ml-auto font-mono text-gray-500">{d.count}</span>
           </div>
         ))}
       </div>
@@ -219,25 +219,25 @@ function StatusPieChart({ data }: { data: Stats["order_statuses"] }) {
 function ChurnRiskTable({ data }: { data: Stats["churn_risk"] }) {
   const t = useT();
   if (!data.length)
-    return <p className="text-sm text-zinc-100 py-4">{t("dashboard.noChurnRisk")}</p>;
+    return <p className="text-sm text-gray-400 py-4">{t("dashboard.noChurnRisk")}</p>;
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-left text-zinc-100 text-xs border-b border-zinc-800">
+          <tr className="text-left text-gray-600 text-sm border-b border-gray-800">
             <th className="pb-2 font-medium">{t("dashboard.client")}</th>
-            <th className="pb-2 font-medium text-right">{t("dashboard.prevPeriod")}</th>
-            <th className="pb-2 font-medium text-right">{t("dashboard.currPeriod")}</th>
-            <th className="pb-2 font-medium text-right">{t("dashboard.change")}</th>
+            <th className="pb-2 font-medium text-center">{t("dashboard.prevPeriod")}</th>
+            <th className="pb-2 font-medium text-center">{t("dashboard.currPeriod")}</th>
+            <th className="pb-2 font-medium text-center">{t("dashboard.change")}</th>
           </tr>
         </thead>
         <tbody>
           {data.map((r, i) => (
-            <tr key={i} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition">
-              <td className="py-2.5 pr-4 font-medium text-zinc-200">{r.name}</td>
-              <td className="py-2.5 pr-4 text-right text-zinc-400 font-mono">{fmtNum(r.prev)}</td>
-              <td className="py-2.5 pr-4 text-right text-zinc-300 font-mono">{fmtNum(r.curr)}</td>
-              <td className="py-2.5 text-right font-mono text-red-400">{r.pct.toFixed(1)}%</td>
+            <tr key={i} className="border-b border-gray-800 hover:bg-gray-50 transition">
+              <td className="py-2.5 pr-4 font-medium text-gray-800">{r.name}</td>
+              <td className="py-2.5 pr-4 text-center text-gray-500 font-mono">{fmtNum(r.prev)}</td>
+              <td className="py-2.5 pr-4 text-center text-gray-700 font-mono">{fmtNum(r.curr)}</td>
+              <td className="py-2.5 text-center font-mono text-red-400">{r.pct.toFixed(1)}%</td>
             </tr>
           ))}
         </tbody>
@@ -254,7 +254,7 @@ function RecentOrdersTable({ data }: { data: Stats["recent_orders"] }) {
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-center text-zinc-100 text-xs border-b border-zinc-800">
+          <tr className="text-center text-gray-800 text-sm border-b border-gray-800">
             <th className="pb-2 font-medium">{t("dashboard.number")}</th>
             <th className="pb-2 font-medium">{t("common.date")}</th>
             <th className="pb-2 font-medium">{t("dashboard.client")}</th>
@@ -265,15 +265,15 @@ function RecentOrdersTable({ data }: { data: Stats["recent_orders"] }) {
         </thead>
         <tbody>
           {data.map((r, i) => (
-            <tr key={i} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition text-center">
-              <td className="py-2.5 pr-4 font-mono text-zinc-300 text-xs">{r.doc_number}</td>
-              <td className="py-2.5 pr-4 text-zinc-400 text-xs whitespace-nowrap">{r.doc_date}</td>
-              <td className="py-2.5 pr-4 text-zinc-200">{r.customer_name}</td>
-              <td className="py-2.5 pr-4 font-mono text-zinc-300 text-right">
+            <tr key={i} className="border-b border-gray-800 hover:bg-gray-200 transition text-center">
+              <td className="py-2.5 pr-4 font-mono text-gray-600 text-sm">{r.doc_number}</td>
+              <td className="py-2.5 pr-4 text-gray-500 text-sm whitespace-nowrap">{r.doc_date}</td>
+              <td className="py-2.5 pr-4 text-gray-800">{r.customer_name}</td>
+              <td className="py-2.5 pr-4 font-mono text-gray-700 text-center">
                 {r.currency !== "MDL" ? (
                   <>
                     <div>{fmtNum(r.amount_orig)} {r.currency}</div>
-                    <div className="text-xs text-zinc-500">≈ {fmtNum(r.amount)} MDL</div>
+                    <div className="text-sm text-gray-400">≈ {fmtNum(r.amount)} MDL</div>
                   </>
                 ) : (
                   <div>{fmtNum(r.amount)} MDL</div>
@@ -300,7 +300,7 @@ function RecentOrdersTable({ data }: { data: Stats["recent_orders"] }) {
 }
 
 function BlockContent({ id, stats }: { id: BlockId; stats: Stats | null }) {
-  if (!stats) return <div className="h-40 animate-pulse bg-zinc-800/40 rounded-lg" />;
+  if (!stats) return <div className="h-40 animate-pulse bg-gray-100 rounded-lg" />;
   switch (id) {
     case "revenue_trend": return <RevenueTrendChart data={stats.revenue_by_day} />;
     case "top_customers": return <TopCustomersChart data={stats.top_customers} />;
@@ -320,7 +320,7 @@ function SortableBlock({ id, stats, overlay }: { id: BlockId; stats: Stats | nul
     <div
       ref={setNodeRef}
       style={style}
-      className={`rounded-xl border border-zinc-800 bg-zinc-900/60 flex flex-col
+      className={`rounded-xl border border-zinc-800 bg-zinc-300 flex flex-col
         ${isDragging && !overlay ? "opacity-40" : ""}
         ${overlay ? "shadow-2xl shadow-black/60" : ""}
       `}
@@ -329,12 +329,12 @@ function SortableBlock({ id, stats, overlay }: { id: BlockId; stats: Stats | nul
         <button
           {...attributes}
           {...listeners}
-          className="cursor-grab active:cursor-grabbing text-zinc-600 hover:text-zinc-400 transition p-0.5 rounded"
+          className="cursor-grab active:cursor-grabbing text-zinc-800 hover:text-zinc-800 transition p-0.5 rounded"
           tabIndex={-1}
         >
           <GripVertical className="w-4 h-4" />
         </button>
-        <span className="text-sm font-semibold text-zinc-200">{t(`dashboard.blocks.${id}`)}</span>
+        <span className="text-sm font-semibold text-zinc-800">{t(`dashboard.blocks.${id}`)}</span>
       </div>
       <div className="p-4">
         <BlockContent id={id} stats={stats} />
@@ -347,10 +347,10 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
   return (
     <button
       onClick={onClick}
-      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition border
+      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition border
         ${active
-          ? "bg-zinc-700 border-zinc-500 text-zinc-100"
-          : "border-zinc-800 text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200"
+          ? "bg-gray-900 border-gray-700 text-white"
+          : "border-gray-800 text-gray-700 hover:bg-gray-100"
         }`}
     >
       {label}
@@ -433,19 +433,19 @@ export default function Dashboard() {
     <div className="p-4 sm:p-6 space-y-5 mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-zinc-800 mr-1">{t("dashboard.period")}:</span>
+          <span className="text-sm text-zinc-800 mr-1">{t("dashboard.period")}:</span>
           {(["7d", "30d", "90d", "ytd"] as Period[]).map(p => (
             <FilterChip key={p} label={PERIOD_LABELS[p]} active={period === p} onClick={() => setPeriod(p)} />
           ))}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-zinc-100 mr-1">{t("dashboard.type")}:</span>
+          <span className="text-sm text-zinc-800 mr-1">{t("dashboard.type")}:</span>
           {(["all", "domestic", "export"] as SaleType[]).map(s => (
             <FilterChip key={s} label={SALETYPE_LABELS[s]} active={saleType === s} onClick={() => setSaleType(s)} />
           ))}
           <button
             onClick={fetchStats}
-            className="ml-2 p-1.5 rounded-lg border border-zinc-800 text-zinc-800 hover:text-zinc-300 hover:bg-zinc-800 transition"
+            className="ml-2 p-1.5 rounded-lg border border-zinc-800 text-zinc-800 hover:bg-zinc-200 transition"
             title={t("common.refresh")}
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />

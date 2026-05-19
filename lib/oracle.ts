@@ -1,11 +1,10 @@
 import oracledb from "oracledb";
 
-// Oracle 11g requires Thick mode via Instant Client.
-// initOracleClient must be called exactly once per Node process.
-// In Next.js dev, modules can re-execute on HMR — guard via globalThis.
 declare global {
   var _oracledbInited: boolean | undefined;
+  var _oraclePool: oracledb.Pool | undefined;
 }
+
 if (!globalThis._oracledbInited) {
   const libDir = process.env.ORACLE_CLIENT_DIR;
   oracledb.initOracleClient(libDir ? { libDir } : undefined);
@@ -20,8 +19,22 @@ const dbConfig = {
   connectString: process.env.CONNECT_STRING!,
 };
 
+async function getPool(): Promise<oracledb.Pool> {
+  if (!globalThis._oraclePool) {
+    globalThis._oraclePool = await oracledb.createPool({
+      ...dbConfig,
+      poolMin:       2,
+      poolMax:       10,
+      poolIncrement: 1,
+      poolTimeout:   60,
+    });
+  }
+  return globalThis._oraclePool;
+}
+
 export async function getConnection(): Promise<oracledb.Connection> {
-  return await oracledb.getConnection(dbConfig);
+  const pool = await getPool();
+  return pool.getConnection();
 }
 
 export async function query<T extends Record<string, unknown> = Record<string, unknown>>(
@@ -46,6 +59,22 @@ export async function execute(
   const conn = await getConnection();
   try {
     await conn.execute(sql, binds, { autoCommit: true });
+  } finally {
+    await conn.close();
+  }
+}
+
+export async function executeReturning<T = number>(
+  sql: string,
+  binds: oracledb.BindParameters
+): Promise<T | undefined> {
+  const conn = await getConnection();
+  try {
+    const result = await conn.execute(sql, binds, { autoCommit: true });
+    const out = result.outBinds as Record<string, T[]> | undefined;
+    if (!out) return undefined;
+    const vals = Object.values(out)[0];
+    return vals?.[0];
   } finally {
     await conn.close();
   }

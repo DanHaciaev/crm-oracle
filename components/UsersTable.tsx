@@ -97,7 +97,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
         </div>
 
         {error && (
-          <div className="px-4 py-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-500">
+          <div className="px-4 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-500">
             {error}
           </div>
         )}
@@ -212,7 +212,7 @@ function EditModal({ user, onClose, onSaved }: { user: User; onClose: () => void
         </div>
 
         {error && (
-          <div className="px-4 py-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-500">
+          <div className="px-4 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-500">
             {error}
           </div>
         )}
@@ -266,7 +266,7 @@ function ConfirmModal({ name, onClose, onConfirm, loading }: {
 
 function RoleBadge({ role }: { role: Role }) {
   return (
-    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${role === "admin" ? "bg-black text-white" : "bg-gray-100 text-gray-600"}`}>
+    <span className={`px-2 py-0.5 rounded-full text-sm font-medium ${role === "admin" ? "bg-black text-white" : "bg-gray-100 text-gray-600"}`}>
       {role}
     </span>
   );
@@ -357,7 +357,7 @@ export default function UsersTable({ currentUserId }: { currentUserId: number })
                     <div className="flex items-center justify-center gap-2">
                       <button
                         onClick={() => setEditTarget(u)}
-                        className="px-3 py-1 text-xs rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 transition"
+                        className="px-3 py-1 text-sm rounded-md border border-gray-800 text-gray-700 hover:bg-gray-50 transition"
                       >
                         {t("users.changing")}
                       </button>
@@ -365,7 +365,7 @@ export default function UsersTable({ currentUserId }: { currentUserId: number })
                         onClick={() => setDeleteTarget(u)}
                         disabled={u.id === currentUserId}
                         title={u.id === currentUserId ? t("users.cannotDeleteSelf") : ""}
-                        className="px-3 py-1 text-xs rounded-md border border-gray-300 text-red-500 hover:bg-red-50 disabled:opacity-40 disabled:hover:bg-transparent transition"
+                        className="px-3 py-1 text-sm rounded-md border border-gray-800 text-red-500 hover:bg-red-50 disabled:opacity-40 disabled:hover:bg-transparent transition"
                       >
                         {t("common.delete")}
                       </button>

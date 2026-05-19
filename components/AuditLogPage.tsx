@@ -28,12 +28,12 @@ function DiffBlock({ label, raw }: { label: string; raw: string | null }) {
   if (!entries.length) return null;
   return (
     <div className="mt-2">
-      <div className="text-[10px] text-zinc-600 uppercase mb-1">{label}</div>
-      <div className="bg-zinc-900 rounded-lg px-3 py-2 space-y-0.5">
+      <div className="text-[10px] text-gray-400 uppercase mb-1">{label}</div>
+      <div className="bg-gray-50 border border-gray-800 rounded-lg px-3 py-2 space-y-0.5">
         {entries.map(([k, v]) => (
-          <div key={k} className="flex gap-2 text-xs">
-            <span className="text-zinc-500 shrink-0 w-28 truncate">{k}:</span>
-            <span className="text-zinc-300 break-all">{String(v)}</span>
+          <div key={k} className="flex gap-2 text-sm">
+            <span className="text-gray-500 shrink-0 w-28 truncate">{k}:</span>
+            <span className="text-gray-800 break-all">{String(v)}</span>
           </div>
         ))}
       </div>
@@ -78,60 +78,60 @@ export default function AuditLogPage() {
     <div className="p-8">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">{t("auditLog.title")}</h1>
-        <p className="text-sm text-zinc-500 mt-1">{t("auditLog.subtitle")}</p>
+        <p className="text-sm text-gray-500 mt-1">{t("auditLog.subtitle")}</p>
       </div>
 
       <div className="flex items-center gap-2 mb-6 flex-wrap">
         {FILTERS.map(f => (
           <button key={f.v} onClick={() => setEntityType(f.v)}
-            className={`px-3 py-1.5 rounded-lg text-xs border transition ${
+            className={`px-3 py-1.5 rounded-lg text-sm border transition ${
               entityType === f.v
-                ? "border-zinc-500 bg-zinc-800 text-zinc-100"
-                : "border-zinc-800 text-zinc-400 hover:border-zinc-700"
+                ? "border-gray-800 bg-gray-900 text-white"
+                : "border-gray-800 text-gray-500 hover:bg-gray-100"
             }`}>
             {f.label}
           </button>
         ))}
       </div>
 
-      {loading && <div className="text-zinc-500 py-8">{t("common.loading")}</div>}
-      {error   && <div className="text-red-400 py-8">{error}</div>}
+      {loading && <div className="text-gray-400 py-8">{t("common.loading")}</div>}
+      {error   && <div className="text-red-500 py-8">{error}</div>}
 
       {!loading && !error && (
         <div className="space-y-2">
           {entries.length === 0 && (
-            <div className="text-center text-zinc-600 py-16">{t("auditLog.empty")}</div>
+            <div className="text-center text-gray-400 py-16">{t("auditLog.empty")}</div>
           )}
           {entries.map(e => {
-            const cls    = ACTION_CLS[e.action] ?? "text-zinc-400 border-zinc-700";
+            const cls    = ACTION_CLS[e.action] ?? "text-gray-600 border-gray-800";
             const isOpen = expanded === e.id;
             return (
-              <div key={e.id} className="border border-zinc-800 rounded-xl overflow-hidden">
+              <div key={e.id} className="border border-gray-800 rounded-xl overflow-hidden">
                 <button
-                  className="w-full text-left px-4 py-3 hover:bg-zinc-900/40 transition flex items-start gap-3"
+                  className="w-full text-left px-4 py-3 hover:bg-gray-50 transition flex items-start gap-3"
                   onClick={() => setExpanded(isOpen ? null : e.id)}>
                   <span className={`shrink-0 mt-0.5 text-[10px] px-2 py-0.5 rounded-full border ${cls}`}>
                     {t(`auditLog.actions.${e.action}`) || e.action}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm text-zinc-200 flex items-center gap-2 flex-wrap">
-                      <span className="text-zinc-500 text-xs">
+                    <div className="text-sm text-gray-800 flex items-center gap-2 flex-wrap">
+                      <span className="text-gray-500 text-sm">
                         {t(`auditLog.entities.${e.entity_type}`) || e.entity_type} #{e.entity_id}
                       </span>
                       {e.entity_name && <span className="font-medium">{e.entity_name}</span>}
                     </div>
-                    <div className="text-xs text-zinc-500 mt-0.5">
+                    <div className="text-sm text-gray-500 mt-0.5">
                       {e.changed_by ?? "—"} · {fmtDate(e.changed_at)}
                     </div>
                   </div>
-                  <span className="text-zinc-600 text-xs shrink-0 mt-1">{isOpen ? "▲" : "▼"}</span>
+                  <span className="text-gray-400 text-sm shrink-0 mt-1">{isOpen ? "▲" : "▼"}</span>
                 </button>
                 {isOpen && (
-                  <div className="px-4 pb-4 border-t border-zinc-800/60">
+                  <div className="px-4 pb-4 border-t border-gray-800">
                     <DiffBlock label={t("auditLog.was")}    raw={e.old_values} />
                     <DiffBlock label={t("auditLog.became")} raw={e.new_values} />
                     {!e.old_values && !e.new_values && (
-                      <div className="text-xs text-zinc-600 mt-2">{t("auditLog.noDetails")}</div>
+                      <div className="text-sm text-gray-400 mt-2">{t("auditLog.noDetails")}</div>
                     )}
                   </div>
                 )}
@@ -142,7 +142,7 @@ export default function AuditLogPage() {
       )}
 
       {!loading && entries.length > 0 && (
-        <div className="mt-4 text-right text-xs text-zinc-600">
+        <div className="mt-4 text-center text-sm text-gray-400">
           {t("auditLog.showing")}: {entries.length} {t("auditLog.records")}
         </div>
       )}
