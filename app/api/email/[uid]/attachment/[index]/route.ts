@@ -29,7 +29,7 @@ export async function GET(
     if (!att) return NextResponse.json({ error: "Вложение не найдено" }, { status: 404 });
 
     const safeName = encodeURIComponent(att.filename);
-    return new Response(att.content, {
+    return new Response(new Uint8Array(att.content), {
       headers: {
         "Content-Type":        att.contentType,
         "Content-Disposition": `attachment; filename*=UTF-8''${safeName}`,
