@@ -24,6 +24,7 @@ export function AppSidebar() {
   const links = [
     { name: t("nav.dashboard"),     href: "/dashboard",       adminOnly: false },
     { name: t("nav.inbox"),         href: "/inbox",           adminOnly: false },
+    { name: t("nav.email"),         href: "/email",           adminOnly: false },
     { name: t("nav.customers"),     href: "/customers",       adminOnly: false },
     { name: t("nav.segments"),      href: "/segments",        adminOnly: false },
     { name: t("nav.sales"),         href: "/sales",           adminOnly: false },
