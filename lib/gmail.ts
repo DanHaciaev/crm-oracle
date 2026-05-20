@@ -81,7 +81,7 @@ async function fetchSource(uid: number): Promise<Buffer | null> {
   const lock = await client.getMailboxLock("INBOX");
   try {
     const msg = await client.fetchOne(String(uid), { source: true }, { uid: true });
-    if (!msg?.source) return null;
+    if (msg === false || !msg.source) return null;
     srcSet(uid, msg.source);
     return msg.source;
   } finally {
