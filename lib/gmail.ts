@@ -144,14 +144,14 @@ async function _fetchInbox(limit: number): Promise<EmailSummary[]> {
       flags:    true,
       uid:      true,
     })) {
-      const from = msg.envelope.from?.[0];
+      const from = msg.envelope?.from?.[0];
       results.push({
         uid:         msg.uid,
-        subject:     msg.envelope.subject ?? "(без темы)",
+        subject:     msg.envelope?.subject ?? "(без темы)",
         fromAddress: from?.address ?? "",
         fromName:    from?.name ?? from?.address ?? "",
-        date:        msg.envelope.date?.toISOString() ?? "",
-        unread:      !msg.flags.has("\\Seen"),
+        date:        msg.envelope?.date?.toISOString() ?? "",
+        unread:      !(msg.flags?.has("\\Seen") ?? false),
         preview:     "",
       });
     }
@@ -239,7 +239,7 @@ export async function deleteEmail(uid: number): Promise<void> {
   await client.connect();
 
   // find the Trash folder by special-use attribute (works for any Gmail language)
-  const folders  = await client.list("", "*");
+  const folders  = await client.list();
   const trashDir = folders.find((f) => f.specialUse === "\\Trash")?.path ?? "[Gmail]/Trash";
 
   const lock = await client.getMailboxLock("INBOX");
