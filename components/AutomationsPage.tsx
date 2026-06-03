@@ -1,6 +1,11 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import {
+  Table, TableBody, TableCell,
+  TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
 import { useT, useLocale } from "@/lib/locale";
 
 interface Rule {
@@ -160,7 +165,7 @@ export default function AutomationsPage() {
   if (!data)   return null;
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-8 space-y-6">
 
       {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -203,41 +208,41 @@ export default function AutomationsPage() {
       {/* Rules table */}
       <section className="space-y-3">
         <h2 className="text-sm font-semibold text-gray-700">{t("automations.cols.name")}</h2>
-        <div className="border border-gray-800 rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-sm text-gray-500 border-b border-gray-800">
-              <tr>
-                <th className="text-left px-4 py-3">{t("automations.ruleName")}</th>
-                <th className="text-center px-3 py-3">{t("automations.cols.condition")}</th>
-                <th className="text-center px-3 py-3">{t("automations.cols.segment")}</th>
-                <th className="text-center px-3 py-3">{t("automations.cols.action")}</th>
-                <th className="text-center px-3 py-3">{t("automations.cols.cooldown")}</th>
-                <th className="text-center px-3 py-3">{t("automations.last30days")}</th>
-                <th className="text-center px-3 py-3">{t("automations.lastRun")}</th>
-                <th className="text-center px-3 py-3">{t("automations.cols.status")}</th>
-                <th className="text-center px-3 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
+        <div className="border border-gray-800 rounded-xl overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("automations.ruleName").toUpperCase()}</TableHead>
+                <TableHead className="hidden sm:table-cell text-center">{t("automations.cols.condition").toUpperCase()}</TableHead>
+                <TableHead className="text-center">{t("automations.cols.segment").toUpperCase()}</TableHead>
+                <TableHead className="text-center">{t("automations.cols.action").toUpperCase()}</TableHead>
+                <TableHead className="hidden md:table-cell text-center">{t("automations.cols.cooldown").toUpperCase()}</TableHead>
+                <TableHead className="hidden md:table-cell text-center">{t("automations.last30days").toUpperCase()}</TableHead>
+                <TableHead className="hidden lg:table-cell text-center">{t("automations.lastRun").toUpperCase()}</TableHead>
+                <TableHead className="text-center">{t("automations.cols.status").toUpperCase()}</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {data.rules.map((r) => (
-                <tr key={r.id} className="border-b border-gray-800 last:border-0 hover:bg-gray-50 transition">
-                  <td className="px-4 py-3">
+                <TableRow key={r.id}>
+                  <TableCell>
                     <div className="font-medium text-gray-900">{r.name}</div>
                     <div className="text-sm text-gray-400 mt-0.5 truncate max-w-xs">
                       {r.message_template ?? r.task_title ?? "—"}
                     </div>
-                  </td>
-                  <td className="px-3 py-3 text-center text-gray-500">{t("automations.noOrdersDays")} {r.condition_days} {t("common.days")}</td>
-                  <td className="px-3 py-3 text-center">
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell text-center text-gray-500">{t("automations.noOrdersDays")} {r.condition_days} {t("common.days")}</TableCell>
+                  <TableCell className="text-center">
                     <span className="inline-flex px-2 py-0.5 rounded-full text-sm border border-gray-800 text-gray-600">
                       {SEGMENT_LABELS[r.segment] ?? r.segment}
                     </span>
-                  </td>
-                  <td className="px-3 py-3 text-center text-gray-500 text-sm">{ACTION_LABELS[r.action_type] ?? r.action_type}</td>
-                  <td className="px-3 py-3 text-center text-gray-400 text-sm">{r.cooldown_days} {t("common.days")}</td>
-                  <td className="px-3 py-3 text-center font-mono text-gray-700">{r.fired_30d}</td>
-                  <td className="px-3 py-3 text-center text-sm text-gray-400">{fmtDate(r.last_fired)}</td>
-                  <td className="px-3 py-3 text-center">
+                  </TableCell>
+                  <TableCell className="text-center text-gray-500 text-sm">{ACTION_LABELS[r.action_type] ?? r.action_type}</TableCell>
+                  <TableCell className="hidden md:table-cell text-center text-gray-400 text-sm">{r.cooldown_days} {t("common.days")}</TableCell>
+                  <TableCell className="hidden md:table-cell text-center font-mono text-gray-700">{r.fired_30d}</TableCell>
+                  <TableCell className="hidden lg:table-cell text-center text-sm text-gray-400">{fmtDate(r.last_fired)}</TableCell>
+                  <TableCell className="text-center">
                     <button
                       onClick={() => toggleRule(r.id, !r.active)}
                       disabled={toggling === r.id}
@@ -247,28 +252,26 @@ export default function AutomationsPage() {
                       <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform
                         ${r.active ? "translate-x-4" : "translate-x-1"}`} />
                     </button>
-                  </td>
-                  <td className="px-3 py-3 text-center">
+                  </TableCell>
+                  <TableCell className="text-center">
                     <button
                       onClick={() => deleteRule(r.id, r.name)}
                       disabled={deleting === r.id}
                       className="text-gray-400 hover:text-red-500 transition text-sm disabled:opacity-40"
                       title={t("automations.deleteConfirm")}
-                    >
-                      ✕
-                    </button>
-                  </td>
-                </tr>
+                    >✕</button>
+                  </TableCell>
+                </TableRow>
               ))}
               {data.rules.length === 0 && (
-                <tr>
-                  <td colSpan={9} className="text-center text-gray-400 py-6 text-sm">
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center text-gray-400 py-6 text-sm">
                     {t("automations.noRulesYet")}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </section>
 
@@ -280,44 +283,44 @@ export default function AutomationsPage() {
             {t("automations.noFirings")}
           </p>
         ) : (
-          <div className="border border-gray-800 rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-sm text-gray-500 border-b border-gray-800">
-                <tr>
-                  <th className="text-left px-4 py-3">{t("automations.ruleName")}</th>
-                  <th className="text-left px-3 py-3">{t("sales.customer")}</th>
-                  <th className="text-center px-3 py-3">{t("automations.cols.action")}</th>
-                  <th className="text-center px-3 py-3">{t("automations.result")}</th>
-                  <th className="text-center px-4 py-3">{t("automations.firedAt")}</th>
-                </tr>
-              </thead>
-              <tbody>
+          <div className="border border-gray-800 rounded-xl overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("automations.ruleName").toUpperCase()}</TableHead>
+                  <TableHead>{t("sales.customer").toUpperCase()}</TableHead>
+                  <TableHead className="hidden sm:table-cell text-center">{t("automations.cols.action").toUpperCase()}</TableHead>
+                  <TableHead className="text-center">{t("automations.result").toUpperCase()}</TableHead>
+                  <TableHead className="text-center">{t("automations.firedAt").toUpperCase()}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {data.log.map((l) => {
                   const cls = RESULT_CLS[l.result] ?? RESULT_CLS.error;
                   const label = RESULT_LABELS[l.result] ?? l.result;
                   return (
-                    <tr key={l.id} className="border-b border-gray-800 last:border-0 hover:bg-gray-50 transition">
-                      <td className="px-4 py-2.5 text-gray-800">{l.rule_name}</td>
-                      <td className="px-3 py-2.5 text-gray-600">{l.customer_name ?? `#${l.customer_id}`}</td>
-                      <td className="px-3 py-2.5 text-center text-sm text-gray-500">
+                    <TableRow key={l.id}>
+                      <TableCell className="text-gray-800">{l.rule_name}</TableCell>
+                      <TableCell className="text-gray-600">{l.customer_name ?? `#${l.customer_id}`}</TableCell>
+                      <TableCell className="hidden sm:table-cell text-center text-sm text-gray-500">
                         {ACTION_LABELS[l.action_type ?? ""] ?? l.action_type ?? "—"}
-                      </td>
-                      <td className="px-3 py-2.5 text-center">
+                      </TableCell>
+                      <TableCell className="text-center">
                         <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] border ${cls}`}>
                           {label}
                         </span>
                         {l.details && (
                           <div className="text-[10px] text-red-500 mt-0.5 max-w-xs truncate">{l.details}</div>
                         )}
-                      </td>
-                      <td className="px-4 py-2.5 text-center text-sm text-gray-400 whitespace-nowrap">
+                      </TableCell>
+                      <TableCell className="text-center text-sm text-gray-400 whitespace-nowrap">
                         {fmtDate(l.fired_at)}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
       </section>

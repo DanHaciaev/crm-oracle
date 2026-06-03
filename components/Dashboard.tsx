@@ -15,7 +15,8 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
 } from "recharts";
-import { GripVertical, TrendingUp, TrendingDown, Minus, RefreshCw } from "lucide-react";
+import { GripVertical, TrendingUp, TrendingDown, Minus, RefreshCw, Phone } from "lucide-react";
+import Link from "next/link";
 import { useT } from "@/lib/locale";
 
 type Period   = "7d" | "30d" | "90d" | "ytd";
@@ -358,6 +359,85 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
   );
 }
 
+interface Recommendation {
+  id: number; name: string;
+  days_since_last: number; avg_cycle: number; overdue_days: number;
+  ltv: number; order_count: number; last_activity: string | null;
+  urgency: "high" | "medium" | "low";
+}
+
+const URGENCY_DOT: Record<string, string> = {
+  high:   "bg-red-500",
+  medium: "bg-amber-400",
+  low:    "bg-sky-400",
+};
+
+function CallTodayWidget() {
+  const t = useT();
+  const [items, setItems]     = useState<Recommendation[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/recommendations")
+      .then(r => r.json())
+      .then((d: unknown) => { if (Array.isArray(d)) setItems(d as Recommendation[]); })
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <div className="rounded-xl border border-gray-800 bg-gray-50 overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
+        <div className="flex items-center gap-2">
+          <Phone className="w-4 h-4 text-gray-600" />
+          <span className="text-sm font-semibold text-gray-800">{t("dashboard.callToday")}</span>
+        </div>
+        {!loading && items.length > 0 && (
+          <span className="text-xs px-2 py-0.5 rounded-full border border-gray-800 text-gray-500">
+            {items.length}
+          </span>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="p-4 space-y-2">
+          {[1,2,3].map(i => <div key={i} className="h-10 animate-pulse bg-gray-200 rounded-lg" />)}
+        </div>
+      ) : items.length === 0 ? (
+        <p className="text-sm text-gray-400 text-center py-6">{t("dashboard.callTodayEmpty")}</p>
+      ) : (
+        <div className="divide-y divide-gray-200">
+          {items.map((r) => {
+            const isOverdue = r.overdue_days > 0;
+            return (
+              <div key={r.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition">
+                <div className={`w-2 h-2 rounded-full shrink-0 ${URGENCY_DOT[r.urgency]}`} />
+                <div className="flex-1 min-w-0">
+                  <Link
+                    href={`/customers/${r.id}`}
+                    className="text-sm font-medium text-gray-800 hover:text-gray-900 truncate block"
+                  >
+                    {r.name}
+                  </Link>
+                  <div className="text-xs text-gray-400 mt-0.5">
+                    {isOverdue
+                      ? `${t("dashboard.callTodayOverdue")} ${r.overdue_days} ${t("dashboard.callTodayDays")} · ${t("dashboard.callTodayCycle")} ${r.avg_cycle} ${t("dashboard.callTodayDays")}`
+                      : `${t("dashboard.callTodaySoon")} ${Math.abs(r.overdue_days)} ${t("dashboard.callTodayDays")} · ${t("dashboard.callTodayCycle")} ${r.avg_cycle} ${t("dashboard.callTodayDays")}`
+                    }
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="text-xs font-mono text-gray-700">{fmtNum(r.ltv)} MDL</div>
+                  <div className="text-xs text-gray-400">{r.order_count} {t("dashboard.callTodayOrders")}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const t = useT();
   const [period,    setPeriod]    = useState<Period>("30d");
@@ -430,7 +510,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-5 mx-auto">
+    <div className="p-4 sm:p-8 space-y-5 mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm text-zinc-800 mr-1">{t("dashboard.period")}:</span>
@@ -486,6 +566,8 @@ export default function Dashboard() {
           accent={kpi && kpi.unread > 0 ? "text-amber-400" : undefined}
         />
       </div>
+
+      <CallTodayWidget />
 
       <DndContext
         sensors={sensors}

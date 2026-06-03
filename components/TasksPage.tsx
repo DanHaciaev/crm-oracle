@@ -131,7 +131,7 @@ export default function TasksPage({ customerId, compact = false }: Props) {
   tasks.forEach(tk => { if (tk.status in counts) counts[tk.status as keyof typeof counts]++; });
 
   return (
-    <div className={compact ? "" : "p-8"}>
+    <div className={compact ? "" : "p-4 sm:p-8"}>
       {!compact && (
         <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
           <div>

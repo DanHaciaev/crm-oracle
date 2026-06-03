@@ -145,7 +145,7 @@ function KanbanColumn({ status, leads, onEdit, onDelete, onAdd, t }: {
   const col = COLUMN_STYLE[status] ?? { area: "bg-gray-50", ring: "ring-gray-300" };
 
   return (
-    <div className="flex flex-col min-w-52.5 w-52.5 shrink-0">
+    <div className="flex flex-col flex-1 min-w-50">
       <div className="flex items-center justify-between mb-2 px-0.5">
         <div className="flex items-center gap-1.5">
           <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold border ${STATUS_CLS[status] ?? ""}`}>
@@ -209,7 +209,7 @@ function KanbanBoard({ leads, onEdit, onDelete, onAdd, onStatusChange, t }: {
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="flex gap-3 overflow-x-auto pb-4 pt-1 -mx-1 px-1">
+      <div className="flex flex-wrap gap-3 pb-4 pt-1">
         {STATUS_ORDER.map(status => (
           <KanbanColumn
             key={status}
@@ -325,14 +325,14 @@ export default function LeadsPage() {
   function set(k: keyof Lead, v: string) { setForm(f => ({ ...f, [k]: v })); }
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold">{t("leads.title")}</h1>
           <p className="text-sm text-gray-500 mt-1">{t("leads.subtitle")}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <div className="flex border border-gray-300 rounded-lg overflow-hidden text-sm">
             <button
               onClick={() => setView("table")}
@@ -479,7 +479,7 @@ export default function LeadsPage() {
               <Field label={t("common.company")} value={form.company ?? ""} onChange={v => set("company", v)} />
               <Field label={t("common.phone")}   value={form.phone   ?? ""} onChange={v => set("phone",   v)} />
               <Field label={t("common.email")}   value={form.email   ?? ""} onChange={v => set("email",   v)} />
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm text-gray-500 block mb-1">{t("common.source")}</label>
                   <select

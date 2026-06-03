@@ -156,7 +156,7 @@ export default function SalesTable({ customerId, compact = false }: Props) {
   const colSpan = customerId ? 7 : 8;
 
   return (
-    <div className={compact ? "" : "p-8"}>
+    <div className={compact ? "" : "p-4 sm:p-8"}>
       {!compact && (
         <div className="flex items-start justify-between mb-6 gap-4 flex-col acts:flex-row">
           <div>
@@ -204,12 +204,12 @@ export default function SalesTable({ customerId, compact = false }: Props) {
         {!customerId && (
           <input type="text" placeholder={t("sales.searchPlaceholder")} value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="border border-gray-800 bg-white rounded-lg px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-gray-800 transition w-56" />
+            className="border border-gray-800 bg-white rounded-lg px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-gray-800 transition w-full sm:w-56" />
         )}
       </div>
 
       {!compact && (
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <StatCard label={t("sales.docs")}        value={String(stats.count)} />
           <StatCard label={`${t("common.amount")} (MDL)`} value={fmtMoney(stats.amount_mdl)} suffix="MDL" />
           <StatCard label={t("sales.netKg")}        value={fmtKg(stats.kg)} />
@@ -223,11 +223,11 @@ export default function SalesTable({ customerId, compact = false }: Props) {
               <TableHead>№ {t("sales.docNum").toUpperCase()}</TableHead>
               <TableHead>{t("sales.docDate").toUpperCase()}</TableHead>
               {!customerId && <TableHead>{t("sales.customer").toUpperCase()}</TableHead>}
-              <TableHead>{t("common.type").toUpperCase()}</TableHead>
+              <TableHead className="hidden md:table-cell">{t("common.type").toUpperCase()}</TableHead>
               <TableHead>{t("common.status").toUpperCase()}</TableHead>
               <TableHead className="text-center">{t("common.amount").toUpperCase()}</TableHead>
-              <TableHead className="text-center">{t("sales.netKg").toUpperCase()}</TableHead>
-              <TableHead>{t("sales.invoice").toUpperCase()}</TableHead>
+              <TableHead className="hidden sm:table-cell text-center">{t("sales.netKg").toUpperCase()}</TableHead>
+              <TableHead className="hidden lg:table-cell">{t("sales.invoice").toUpperCase()}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -248,7 +248,7 @@ export default function SalesTable({ customerId, compact = false }: Props) {
                       : d.customer_name || "—"}
                   </TableCell>
                 )}
-                <TableCell><TypeBadge type={d.sale_type} /></TableCell>
+                <TableCell className="hidden md:table-cell"><TypeBadge type={d.sale_type} /></TableCell>
                 <TableCell><StatusBadge status={d.status} /></TableCell>
                 <TableCell className="text-center font-mono tabular-nums">
                   <div>{fmtMoney(d.total_amount)} {d.currency_code || "MDL"}</div>
@@ -256,8 +256,8 @@ export default function SalesTable({ customerId, compact = false }: Props) {
                     <div className="text-sm text-gray-400">≈ {fmtMoney(d.total_amount_mdl)} MDL</div>
                   )}
                 </TableCell>
-                <TableCell className="text-center font-mono tabular-nums">{fmtKg(d.total_net_kg)}</TableCell>
-                <TableCell className="font-mono text-sm text-gray-400">{d.invoice_number || "—"}</TableCell>
+                <TableCell className="hidden sm:table-cell text-center font-mono tabular-nums">{fmtKg(d.total_net_kg)}</TableCell>
+                <TableCell className="hidden lg:table-cell font-mono text-sm text-gray-400">{d.invoice_number || "—"}</TableCell>
               </TableRow>
             ))}
           </TableBody>

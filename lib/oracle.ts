@@ -10,6 +10,7 @@ if (!globalThis._oracledbInited) {
   oracledb.initOracleClient(libDir ? { libDir } : undefined);
   // CLOB columns come back as plain strings (no streaming needed for short chat bodies).
   oracledb.fetchAsString = [oracledb.CLOB];
+  oracledb.fetchAsBuffer = [oracledb.BLOB];
   globalThis._oracledbInited = true;
 }
 

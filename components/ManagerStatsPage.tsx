@@ -55,7 +55,7 @@ export default function ManagerStatsPage() {
   if (error)   return <div className="p-8 text-red-500">{error}</div>;
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">{t("managers.title")}</h1>
         <p className="text-sm text-gray-500 mt-1">{t("managers.subtitle")}</p>
