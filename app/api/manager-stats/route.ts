@@ -35,7 +35,7 @@ export async function GET() {
       NVL(a.CALLS,         0) AS CALLS,
       NVL(a.MEETINGS,      0) AS MEETINGS,
       NVL(a.NOTES,         0) AS NOTES
-    FROM AGRO_USERS u
+    FROM AGRO_CRM_USERS u
     LEFT JOIN (
       SELECT
         ASSIGNED_TO,

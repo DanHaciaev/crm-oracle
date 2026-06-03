@@ -29,7 +29,7 @@ export async function GET() {
 
   const rows = await query<UserRow>(
     `SELECT id, username, first_name, last_name, role, active, created_at
-       FROM AGRO_USERS
+       FROM AGRO_CRM_USERS
       ORDER BY created_at DESC`
   );
 
@@ -58,14 +58,14 @@ export async function POST(request: Request) {
   }
 
   const existing = await query<{ ID: number }>(
-    `SELECT id FROM AGRO_USERS WHERE username = :1`, [username]
+    `SELECT id FROM AGRO_CRM_USERS WHERE username = :1`, [username]
   );
   if (existing.length > 0) {
     return NextResponse.json({ error: "Пользователь с таким логином уже существует" }, { status: 400 });
   }
 
   await execute(
-    `INSERT INTO AGRO_USERS (username, password_hash, first_name, last_name, role)
+    `INSERT INTO AGRO_CRM_USERS (username, password_hash, first_name, last_name, role)
      VALUES (:1, :2, :3, :4, :5)`,
     [username, hashPassword(password), first_name || null, last_name || null, role ?? "manager"]
   );
@@ -83,7 +83,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Нельзя удалить самого себя" }, { status: 400 });
   }
 
-  await execute(`DELETE FROM AGRO_USERS WHERE id = :1`, [id]);
+  await execute(`DELETE FROM AGRO_CRM_USERS WHERE id = :1`, [id]);
   return NextResponse.json({ success: true });
 }
 
@@ -101,7 +101,7 @@ export async function PATCH(request: Request) {
 
   if (password) {
     await execute(
-      `UPDATE AGRO_USERS
+      `UPDATE AGRO_CRM_USERS
           SET first_name     = :1,
               last_name      = :2,
               role           = :3,
@@ -111,7 +111,7 @@ export async function PATCH(request: Request) {
     );
   } else {
     await execute(
-      `UPDATE AGRO_USERS
+      `UPDATE AGRO_CRM_USERS
           SET first_name = :1,
               last_name  = :2,
               role       = :3

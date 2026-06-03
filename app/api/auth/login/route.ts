@@ -20,7 +20,7 @@ export async function POST(request: Request) {
 
   const users = await query<UserRow>(
     `SELECT id, username, password_hash, role, active
-       FROM AGRO_USERS
+       FROM AGRO_CRM_USERS
       WHERE username = :1`,
     [username]
   );
