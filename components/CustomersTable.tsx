@@ -136,8 +136,8 @@ export default function CustomersTable() {
   }
 
   return (
-    <div className="p-8">
-      <div className="flex items-start justify-between mb-10 gap-4 flex-col acts:flex-row acts:mb-6">
+    <div className="p-4 sm:p-8">
+      <div className="flex items-start justify-between mb-6 gap-4 flex-col sm:flex-row">
         <div>
           <h1 className="text-2xl font-bold">{t("customers.title")}</h1>
           <p className="text-sm text-gray-500 mt-1">{t("customers.subtitle")}</p>
@@ -148,7 +148,7 @@ export default function CustomersTable() {
             placeholder={t("customers.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-800 transition w-72"
+            className="border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-800 transition w-full sm:w-72"
           />
           <button
             onClick={exportCustomersCsv}
@@ -170,10 +170,10 @@ export default function CustomersTable() {
             <TableRow>
               <TableHead>{t("customers.code").toUpperCase()}</TableHead>
               <TableHead>{t("common.name").toUpperCase()}</TableHead>
-              <TableHead>{t("common.country").toUpperCase()}</TableHead>
-              <TableHead>{t("common.type").toUpperCase()}</TableHead>
-              <TableHead>{t("common.phone").toUpperCase()}</TableHead>
-              <TableHead>TELEGRAM</TableHead>
+              <TableHead className="hidden sm:table-cell">{t("common.country").toUpperCase()}</TableHead>
+              <TableHead className="hidden md:table-cell">{t("common.type").toUpperCase()}</TableHead>
+              <TableHead className="hidden md:table-cell">{t("common.phone").toUpperCase()}</TableHead>
+              <TableHead className="hidden lg:table-cell">TELEGRAM</TableHead>
               <TableHead className="text-center">{t("common.actions").toUpperCase()}</TableHead>
             </TableRow>
           </TableHeader>
@@ -192,10 +192,10 @@ export default function CustomersTable() {
                     {c.name}
                     {!c.active && <span className="ml-2 text-sm text-gray-400">({t("customers.deactivated")})</span>}
                   </TableCell>
-                  <TableCell>{c.country ?? "—"}</TableCell>
-                  <TableCell className="text-sm text-gray-400">{c.customer_type ?? "—"}</TableCell>
-                  <TableCell>{c.contact_phone ?? "—"}</TableCell>
-                  <TableCell><TgStatusCell c={c} /></TableCell>
+                  <TableCell className="hidden sm:table-cell">{c.country ?? "—"}</TableCell>
+                  <TableCell className="hidden md:table-cell text-sm text-gray-400">{c.customer_type ?? "—"}</TableCell>
+                  <TableCell className="hidden md:table-cell">{c.contact_phone ?? "—"}</TableCell>
+                  <TableCell className="hidden lg:table-cell"><TgStatusCell c={c} /></TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-1">
                       <Link

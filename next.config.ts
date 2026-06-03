@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  basePath: process.env.NEXT_PUBLIC_BASE_PATH ?? "",
   // Эти пакеты не должен бандлить Webpack:
   //   oracledb — native bindings (.node) + зависит от Oracle Instant Client;
   //   pdfkit   — читает свои .afm-метрики через __dirname, а Webpack

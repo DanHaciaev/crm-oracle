@@ -4,6 +4,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { I18nProvider } from "@/lib/locale";
+import { FetchInterceptor } from "@/components/FetchInterceptor";
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -14,7 +15,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "CRM Oracle",
-  manifest: "/manifest.json",
+  manifest: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/manifest.json`,
   appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "CRM Oracle" },
   other: { "mobile-web-app-capable": "yes" },
 };
@@ -30,6 +31,7 @@ export default function RootLayout({
       className={cn("antialiased", inter.className, "font-sans", geist.variable)}
     >
       <body className="min-h-full flex flex-col">
+        <FetchInterceptor />
         <TooltipProvider><I18nProvider>{children}</I18nProvider></TooltipProvider>
       </body>
     </html>

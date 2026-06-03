@@ -192,6 +192,8 @@ export default function CustomerDetail({ id }: { id: string }) {
   const [newLink, setNewLink]         = useState<string | null>(null);
   const [generating, setGenerating]   = useState(false);
   const [deleting, setDeleting]       = useState(false);
+  const [aiSummary, setAiSummary]     = useState<string | null>(null);
+  const [aiLoading, setAiLoading]     = useState(false);
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [isAdmin, setIsAdmin]         = useState(false);
   const router                        = useRouter();
@@ -224,6 +226,18 @@ export default function CustomerDetail({ id }: { id: string }) {
       })
       .catch(() => {});
   }, []);
+
+  async function analyzeCustomer() {
+    setAiLoading(true); setAiSummary(null);
+    const res  = await fetch("/api/ai/customer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ customerId: Number(id) }),
+    });
+    const json = await res.json().catch(() => ({})) as { summary?: string; error?: string };
+    setAiLoading(false);
+    setAiSummary(json.summary ?? json.error ?? t("common.error"));
+  }
 
   async function generateLink() {
     setGenerating(true); setNewLink(null);
@@ -290,7 +304,7 @@ export default function CustomerDetail({ id }: { id: string }) {
   ];
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-4 sm:p-8 space-y-6">
       <Link href="/customers" className="text-sm text-gray-400 hover:text-gray-700 transition">
         {t("customers.backToList")}
       </Link>
@@ -322,10 +336,22 @@ export default function CustomerDetail({ id }: { id: string }) {
         )}
       </div>
 
-      <div className="flex gap-1 border-b border-gray-800 pb-0">
+      {/* Mobile: dropdown */}
+      <select
+        className="sm:hidden w-full border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none"
+        value={tab}
+        onChange={(e) => setTab(e.target.value as Tab)}
+      >
+        {TABS.map((tb) => (
+          <option key={tb.key} value={tb.key}>{tb.label}</option>
+        ))}
+      </select>
+
+      {/* Desktop: tab bar */}
+      <div className="hidden sm:flex gap-1 border-b border-gray-800 pb-0">
         {TABS.map((tb) => (
           <button key={tb.key} onClick={() => setTab(tb.key)}
-            className={`px-4 py-2 text-sm transition border-b-2 -mb-px ${
+            className={`px-4 py-2 text-sm transition border-b-2 -mb-px whitespace-nowrap ${
               tab === tb.key ? "border-gray-800 text-gray-900" : "border-transparent text-gray-400 hover:text-gray-700"
             }`}>
             {tb.label}
@@ -346,6 +372,25 @@ export default function CustomerDetail({ id }: { id: string }) {
           </section>
 
           {stats && stats.order_count > 0 && <RetentionBlock stats={stats} />}
+
+          <section className="border border-gray-800 rounded-xl p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-gray-700">✨ {t("customers.aiAnalysis")}</h2>
+              <button
+                onClick={analyzeCustomer}
+                disabled={aiLoading}
+                className="px-3 py-1.5 text-sm rounded-lg bg-gray-900 text-white hover:bg-gray-700 disabled:opacity-40 transition"
+              >
+                {aiLoading ? t("customers.aiAnalyzing") : t("customers.aiAnalyze")}
+              </button>
+            </div>
+            {aiSummary && (
+              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{aiSummary}</p>
+            )}
+            {!aiSummary && !aiLoading && (
+              <p className="text-sm text-gray-400">{t("customers.aiAnalysis")} — нажмите кнопку для анализа</p>
+            )}
+          </section>
 
           <section className="border border-red-500/30 rounded-xl p-5">
             <h2 className="text-base font-semibold text-red-300 mb-1">{t("customers.dangerZone")}</h2>

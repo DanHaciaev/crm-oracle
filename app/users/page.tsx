@@ -26,7 +26,7 @@ export default function UsersPage() {
 
   return (
     <Layout>
-      <div className="p-8">
+      <div className="p-4 sm:p-8">
         <h1 className="text-2xl font-bold mb-1">Пользователи</h1>
         <p className="text-sm text-gray-500 mb-6">Управление учётными записями</p>
         <UsersTable currentUserId={user.id} />

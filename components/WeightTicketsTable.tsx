@@ -152,8 +152,8 @@ export default function WeightTicketsTable() {
   }
 
   return (
-    <div className="p-8">
-      <div className="flex items-start justify-between mb-6 gap-4 flex-col acts:flex-row">
+    <div className="p-4 sm:p-8">
+      <div className="flex items-start justify-between mb-6 gap-4 flex-col sm:flex-row">
         <div>
           <h1 className="text-2xl font-bold">{t("weightTickets.title")}</h1>
           <p className="text-sm text-gray-500 mt-1">{t("weightTickets.journalSubtitle")}</p>
@@ -171,13 +171,13 @@ export default function WeightTicketsTable() {
       </div>
 
       <div className="flex flex-wrap gap-3 mb-6 items-end">
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <FilterBtn active={statusFilter === "all"} onClick={() => setStatus("all")} label={t("common.all")} count={stats.total} />
           <FilterBtn active={statusFilter === "draft"} onClick={() => setStatus("draft")} label={t("weightTickets.filterDraft")} count={stats.drafts} />
           <FilterBtn active={statusFilter === "finalized"} onClick={() => setStatus("finalized")} label={t("weightTickets.filterFinalized")} count={stats.finalized} />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <input
             type="date"
             value={dateFrom}
@@ -204,11 +204,11 @@ export default function WeightTicketsTable() {
           placeholder={t("weightTickets.searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="border border-gray-800 bg-white rounded-lg px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-gray-800 transition w-64"
+          className="border border-gray-800 bg-white rounded-lg px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-gray-800 transition w-full sm:w-64"
         />
       </div>
 
-      <div className="grid grid-cols-2 acts:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         <StatCard label={t("weightTickets.totalTickets")} value={String(stats.total)} />
         <StatCard label={t("weightTickets.totalDrafts")} value={String(stats.drafts)} />
         <StatCard label={t("weightTickets.totalFinalized")} value={String(stats.finalized)} />
@@ -220,11 +220,11 @@ export default function WeightTicketsTable() {
           <TableHeader>
             <TableRow>
               <TableHead>{t("weightTickets.cols.num").toUpperCase()}</TableHead>
-              <TableHead>{t("weightTickets.cols.date").toUpperCase()}</TableHead>
+              <TableHead className="hidden sm:table-cell">{t("weightTickets.cols.date").toUpperCase()}</TableHead>
               <TableHead>{t("weightTickets.cols.customer").toUpperCase()}</TableHead>
-              <TableHead>{t("weightTickets.warehouse").toUpperCase()}</TableHead>
-              <TableHead>{t("weightTickets.salesDoc").toUpperCase()}</TableHead>
-              <TableHead>{t("weightTickets.cols.status").toUpperCase()}</TableHead>
+              <TableHead className="hidden md:table-cell">{t("weightTickets.warehouse").toUpperCase()}</TableHead>
+              <TableHead className="hidden lg:table-cell">{t("weightTickets.salesDoc").toUpperCase()}</TableHead>
+              <TableHead className="hidden sm:table-cell">{t("weightTickets.cols.status").toUpperCase()}</TableHead>
               <TableHead className="text-center">{t("weightTickets.cols.net").toUpperCase()}</TableHead>
               <TableHead className="text-center">{t("common.actions").toUpperCase()}</TableHead>
             </TableRow>
@@ -240,14 +240,14 @@ export default function WeightTicketsTable() {
               filtered.map((ticket) => (
                 <TableRow key={ticket.id} className="hover:bg-gray-50 transition-colors">
                   <TableCell className="font-mono text-sm">{ticket.ticket_number}</TableCell>
-                  <TableCell className="tabular-nums">{fmtDate(ticket.ticket_date)}</TableCell>
+                  <TableCell className="hidden sm:table-cell tabular-nums">{fmtDate(ticket.ticket_date)}</TableCell>
                   <TableCell>{ticket.customer_name ?? "—"}</TableCell>
-                  <TableCell>{ticket.warehouse_name ?? "—"}</TableCell>
-                  <TableCell className="font-mono text-sm">{ticket.sales_doc_number ?? "—"}</TableCell>
-                  <TableCell><StatusBadge status={ticket.status} /></TableCell>
+                  <TableCell className="hidden md:table-cell">{ticket.warehouse_name ?? "—"}</TableCell>
+                  <TableCell className="hidden lg:table-cell font-mono text-sm">{ticket.sales_doc_number ?? "—"}</TableCell>
+                  <TableCell className="hidden sm:table-cell"><StatusBadge status={ticket.status} /></TableCell>
                   <TableCell className="text-center font-mono tabular-nums">{fmtKg(ticket.net_kg)}</TableCell>
                   <TableCell className="text-center">
-                    <div className="flex items-center justify-center gap-1 flex-wrap">
+                    <div className="flex items-center justify-center gap-1">
                       <button
                         onClick={() => setOpenId(ticket.id)}
                         className="px-3 py-1 text-sm rounded-md border border-gray-800 hover:bg-gray-100 transition text-gray-700"

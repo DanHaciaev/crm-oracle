@@ -85,7 +85,7 @@ export default function ChurnPage() {
   ];
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       <div className="flex items-start justify-between mb-6 gap-4 flex-col acts:flex-row">
         <div>
           <h1 className="text-2xl font-bold">{t("churn.title")}</h1>

@@ -1,0 +1,5 @@
+-- 67_attachments_blob.sql
+-- Migrate attachments from S3 to Oracle BLOB storage.
+
+ALTER TABLE AGRO_CRM_ATTACHMENTS ADD CONTENT BLOB;
+ALTER TABLE AGRO_CRM_ATTACHMENTS MODIFY S3_KEY VARCHAR2(500) NULL;
