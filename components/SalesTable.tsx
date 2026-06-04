@@ -7,6 +7,7 @@ import {
   Table, TableBody, TableCell,
   TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { LayoutList, Columns3, FileDown } from "lucide-react";
 import { useT } from "@/lib/locale";
 
 export interface SaleDoc {
@@ -65,6 +66,54 @@ function fmtKg(n: number) {
   return n.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+const KANBAN_STATUSES = ["draft", "confirmed", "shipped", "closed", "cancelled"] as const;
+
+const KANBAN_COLORS: Record<string, string> = {
+  draft:     "border-gray-300 bg-gray-50",
+  confirmed: "border-blue-300 bg-blue-50",
+  shipped:   "border-violet-300 bg-violet-50",
+  closed:    "border-emerald-300 bg-emerald-50",
+  cancelled: "border-red-300 bg-red-50",
+};
+
+function KanbanCard({ doc, onStatusChange }: { doc: SaleDoc; onStatusChange: (id: number, s: string) => void }) {
+  const t = useT();
+  const [updating, setUpdating] = useState(false);
+
+  async function changeStatus(newStatus: string) {
+    setUpdating(true);
+    await fetch(`/api/sales/${doc.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    setUpdating(false);
+    onStatusChange(doc.id, newStatus);
+  }
+
+  return (
+    <div className={`rounded-lg border p-3 text-sm space-y-1.5 bg-white shadow-sm ${updating ? "opacity-50" : ""}`}>
+      <div className="font-mono text-xs text-gray-400">{doc.doc_number}</div>
+      {doc.customer_id
+        ? <Link href={`/customers/${doc.customer_id}`} className="font-medium text-gray-800 hover:underline block truncate">{doc.customer_name}</Link>
+        : <div className="font-medium text-gray-800 truncate">{doc.customer_name}</div>
+      }
+      <div className="font-mono text-gray-700">{fmtMoney(doc.total_amount_mdl)} MDL</div>
+      <div className="text-xs text-gray-400">{fmtDate(doc.doc_date)}</div>
+      <select
+        value={doc.status}
+        onChange={(e) => changeStatus(e.target.value)}
+        disabled={updating}
+        className="w-full text-xs border border-gray-200 rounded px-1.5 py-1 bg-white text-gray-700 mt-1"
+      >
+        {KANBAN_STATUSES.map(s => (
+          <option key={s} value={s}>{t(`sales.statuses.${s}`)}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 interface Props { customerId?: number; compact?: boolean; }
 
 export default function SalesTable({ customerId, compact = false }: Props) {
@@ -77,6 +126,7 @@ export default function SalesTable({ customerId, compact = false }: Props) {
   const [dateTo, setTo]       = useState("");
   const [status, setStatus]   = useState("all");
   const [saleType, setType]   = useState("all");
+  const [view, setView]       = useState<"list" | "kanban">("list");
 
   const fetchDocs = useCallback(async () => {
     setLoading(true); setError(null);
@@ -94,6 +144,10 @@ export default function SalesTable({ customerId, compact = false }: Props) {
   }, [dateFrom, dateTo, customerId, status, saleType, t]);
 
   useEffect(() => { fetchDocs(); }, [fetchDocs]);
+
+  function handleStatusChange(id: number, newStatus: string) {
+    setDocs(prev => prev.map(d => d.id === id ? { ...d, status: newStatus } : d));
+  }
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -153,7 +207,7 @@ export default function SalesTable({ customerId, compact = false }: Props) {
     { v: "cancelled", label: t("sales.statuses.cancelled"),        count: statusCounts.cancelled ?? 0 },
   ];
 
-  const colSpan = customerId ? 7 : 8;
+  const colSpan = customerId ? 8 : 9;
 
   return (
     <div className={compact ? "" : "p-4 sm:p-8"}>
@@ -163,14 +217,24 @@ export default function SalesTable({ customerId, compact = false }: Props) {
             <h1 className="text-2xl font-bold">{t("sales.title")}</h1>
             <p className="text-sm text-gray-500 mt-1">{t("sales.subtitle")}</p>
           </div>
-          <button onClick={() => exportCsv(filtered)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-gray-800 text-sm hover:bg-gray-100 transition shrink-0 text-gray-700">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            {t("common.export")} CSV
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-lg border border-gray-800 overflow-hidden">
+              <button onClick={() => setView("list")}
+                className={`p-1.5 transition ${view === "list" ? "bg-gray-900 text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                title={t("sales.viewList")}><LayoutList className="w-4 h-4" /></button>
+              <button onClick={() => setView("kanban")}
+                className={`p-1.5 transition ${view === "kanban" ? "bg-gray-900 text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                title={t("sales.viewKanban")}><Columns3 className="w-4 h-4" /></button>
+            </div>
+            <button onClick={() => exportCsv(filtered)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-gray-800 text-sm hover:bg-gray-100 transition shrink-0 text-gray-700">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              {t("common.export")} CSV
+            </button>
+          </div>
         </div>
       )}
 
@@ -216,53 +280,87 @@ export default function SalesTable({ customerId, compact = false }: Props) {
         </div>
       )}
 
-      <div className="border border-gray-800 rounded-xl overflow-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>№ {t("sales.docNum").toUpperCase()}</TableHead>
-              <TableHead>{t("sales.docDate").toUpperCase()}</TableHead>
-              {!customerId && <TableHead>{t("sales.customer").toUpperCase()}</TableHead>}
-              <TableHead className="hidden md:table-cell">{t("common.type").toUpperCase()}</TableHead>
-              <TableHead>{t("common.status").toUpperCase()}</TableHead>
-              <TableHead className="text-center">{t("common.amount").toUpperCase()}</TableHead>
-              <TableHead className="hidden sm:table-cell text-center">{t("sales.netKg").toUpperCase()}</TableHead>
-              <TableHead className="hidden lg:table-cell">{t("sales.invoice").toUpperCase()}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow><TableCell colSpan={colSpan} className="text-center text-gray-400 py-8">{t("common.loading")}</TableCell></TableRow>
-            ) : error ? (
-              <TableRow><TableCell colSpan={colSpan} className="text-center text-red-500 py-8">{error}</TableCell></TableRow>
-            ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={colSpan} className="text-center text-gray-400 py-8">{t("sales.noSales")}</TableCell></TableRow>
-            ) : filtered.map((d) => (
-              <TableRow key={d.id} className="hover:bg-gray-50 transition-colors">
-                <TableCell className="font-mono text-sm">{d.doc_number}</TableCell>
-                <TableCell className="tabular-nums">{fmtDate(d.doc_date)}</TableCell>
-                {!customerId && (
-                  <TableCell>
-                    {d.customer_id
-                      ? <Link href={`/customers/${d.customer_id}`} className="transition underline underline-offset-2 decoration-gray-300 hover:text-gray-900">{d.customer_name}</Link>
-                      : d.customer_name || "—"}
-                  </TableCell>
-                )}
-                <TableCell className="hidden md:table-cell"><TypeBadge type={d.sale_type} /></TableCell>
-                <TableCell><StatusBadge status={d.status} /></TableCell>
-                <TableCell className="text-center font-mono tabular-nums">
-                  <div>{fmtMoney(d.total_amount)} {d.currency_code || "MDL"}</div>
-                  {d.currency_code && d.currency_code !== "MDL" && (
-                    <div className="text-sm text-gray-400">≈ {fmtMoney(d.total_amount_mdl)} MDL</div>
+      {view === "kanban" && !loading ? (
+        <div className="flex gap-3 overflow-x-auto pb-4">
+          {KANBAN_STATUSES.map(col => {
+            const cards = filtered.filter(d => d.status === col);
+            const total = cards.reduce((s, d) => s + d.total_amount_mdl, 0);
+            return (
+              <div key={col} className="shrink-0 w-64">
+                <div className={`rounded-t-lg border-x border-t px-3 py-2 flex items-center justify-between ${KANBAN_COLORS[col]}`}>
+                  <span className="text-sm font-semibold text-gray-700">{t(`sales.statuses.${col}`)}</span>
+                  <span className="text-xs text-gray-500 font-mono">{cards.length}</span>
+                </div>
+                <div className={`rounded-b-lg border px-2 py-2 space-y-2 min-h-24 ${KANBAN_COLORS[col]}`}>
+                  {cards.length === 0
+                    ? <p className="text-xs text-gray-400 text-center py-4">—</p>
+                    : cards.map(d => <KanbanCard key={d.id} doc={d} onStatusChange={handleStatusChange} />)
+                  }
+                  {cards.length > 0 && (
+                    <div className="text-xs text-gray-400 text-right pt-1 font-mono">{fmtMoney(total)} MDL</div>
                   )}
-                </TableCell>
-                <TableCell className="hidden sm:table-cell text-center font-mono tabular-nums">{fmtKg(d.total_net_kg)}</TableCell>
-                <TableCell className="hidden lg:table-cell font-mono text-sm text-gray-400">{d.invoice_number || "—"}</TableCell>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="border border-gray-800 rounded-xl overflow-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>№ {t("sales.docNum").toUpperCase()}</TableHead>
+                <TableHead>{t("sales.docDate").toUpperCase()}</TableHead>
+                {!customerId && <TableHead>{t("sales.customer").toUpperCase()}</TableHead>}
+                <TableHead className="hidden md:table-cell">{t("common.type").toUpperCase()}</TableHead>
+                <TableHead>{t("common.status").toUpperCase()}</TableHead>
+                <TableHead className="text-center">{t("common.amount").toUpperCase()}</TableHead>
+                <TableHead className="hidden sm:table-cell text-center">{t("sales.netKg").toUpperCase()}</TableHead>
+                <TableHead className="hidden lg:table-cell">{t("sales.invoice").toUpperCase()}</TableHead>
+                <TableHead className="w-10"></TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow><TableCell colSpan={colSpan} className="text-center text-gray-400 py-8">{t("common.loading")}</TableCell></TableRow>
+              ) : error ? (
+                <TableRow><TableCell colSpan={colSpan} className="text-center text-red-500 py-8">{error}</TableCell></TableRow>
+              ) : filtered.length === 0 ? (
+                <TableRow><TableCell colSpan={colSpan} className="text-center text-gray-400 py-8">{t("sales.noSales")}</TableCell></TableRow>
+              ) : filtered.map((d) => (
+                <TableRow key={d.id} className="hover:bg-gray-50 transition-colors">
+                  <TableCell className="font-mono text-sm">{d.doc_number}</TableCell>
+                  <TableCell className="tabular-nums">{fmtDate(d.doc_date)}</TableCell>
+                  {!customerId && (
+                    <TableCell>
+                      {d.customer_id
+                        ? <Link href={`/customers/${d.customer_id}`} className="transition underline underline-offset-2 decoration-gray-300 hover:text-gray-900">{d.customer_name}</Link>
+                        : d.customer_name || "—"}
+                    </TableCell>
+                  )}
+                  <TableCell className="hidden md:table-cell"><TypeBadge type={d.sale_type} /></TableCell>
+                  <TableCell><StatusBadge status={d.status} /></TableCell>
+                  <TableCell className="text-center font-mono tabular-nums">
+                    <div>{fmtMoney(d.total_amount)} {d.currency_code || "MDL"}</div>
+                    {d.currency_code && d.currency_code !== "MDL" && (
+                      <div className="text-sm text-gray-400">≈ {fmtMoney(d.total_amount_mdl)} MDL</div>
+                    )}
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell text-center font-mono tabular-nums">{fmtKg(d.total_net_kg)}</TableCell>
+                  <TableCell className="hidden lg:table-cell font-mono text-sm text-gray-400">{d.invoice_number || "—"}</TableCell>
+                  <TableCell>
+                    <a href={`/api/sales/${d.id}/pdf`} target="_blank" rel="noopener noreferrer"
+                      title="PDF"
+                      className="inline-flex items-center justify-center w-7 h-7 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition">
+                      <FileDown className="w-4 h-4" />
+                    </a>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       {filtered.length > 0 && !loading && (
         <div className="mt-3 text-center text-sm text-gray-400">

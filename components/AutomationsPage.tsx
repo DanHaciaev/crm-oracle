@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Table, TableBody, TableCell,
   TableHead, TableHeader, TableRow,
@@ -55,9 +55,30 @@ export default function AutomationsPage() {
   const [saving, setSaving]     = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  const msgRef     = useRef<HTMLTextAreaElement>(null);
+  const subjectRef = useRef<HTMLInputElement>(null);
+  const taskRef    = useRef<HTMLInputElement>(null);
+
+  function insertVar(variable: string, field: "message_template" | "task_title") {
+    const el = field === "message_template" ? msgRef.current : (field === "task_title" && form.action_type === "email_send" ? subjectRef.current : taskRef.current);
+    if (!el) {
+      setForm((f) => ({ ...f, [field]: (f[field as keyof typeof f] as string ?? "") + variable }));
+      return;
+    }
+    const start = el.selectionStart ?? el.value.length;
+    const end   = el.selectionEnd   ?? el.value.length;
+    const next  = el.value.slice(0, start) + variable + el.value.slice(end);
+    setForm((f) => ({ ...f, [field]: next }));
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + variable.length, start + variable.length);
+    });
+  }
+
   const ACTION_LABELS: Record<string, string> = {
     tg_message:   t("automationActions.tg_message"),
     manager_task: t("automationActions.manager_task"),
+    email_send:   t("automationActions.email_send"),
   };
   const SEGMENT_LABELS: Record<string, string> = {
     all:      t("segments.all"),
@@ -145,8 +166,11 @@ export default function AutomationsPage() {
         name:             form.name,
         condition_days:   form.condition_days,
         action_type:      form.action_type,
-        message_template: form.action_type === "tg_message" ? form.message_template : null,
-        task_title:       form.action_type === "manager_task" ? form.task_title : null,
+        // tg_message: MESSAGE_TEMPLATE=text
+        // manager_task: TASK_TITLE=title
+        // email_send: TASK_TITLE=subject, MESSAGE_TEMPLATE=body
+        message_template: ["tg_message", "email_send"].includes(form.action_type) ? form.message_template : null,
+        task_title:       ["manager_task", "email_send"].includes(form.action_type) ? form.task_title : null,
         cooldown_days:    form.cooldown_days,
         segment:          form.segment,
         active:           form.active,
@@ -383,10 +407,20 @@ export default function AutomationsPage() {
 
             {form.action_type === "tg_message" && (
               <div className="space-y-1">
-                <label className="text-sm text-gray-500">
-                  {t("automations.messageTplLabel")} — <code className="text-gray-700">{"{{customer_name}}"}</code> <code className="text-gray-700">{"{{days_since}}"}</code>
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm text-gray-500">{t("automations.messageTplLabel")}</label>
+                  <div className="flex gap-1">
+                    {["{{customer_name}}", "{{days_since}}"].map((v) => (
+                      <button key={v} type="button"
+                        onClick={() => insertVar(v, "message_template")}
+                        className="px-2 py-0.5 text-xs rounded border border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-500 transition font-mono">
+                        {v}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <textarea
+                  ref={msgRef}
                   rows={4}
                   value={form.message_template}
                   onChange={(e) => setForm((f) => ({ ...f, message_template: e.target.value }))}
@@ -397,13 +431,67 @@ export default function AutomationsPage() {
 
             {form.action_type === "manager_task" && (
               <div className="space-y-1">
-                <label className="text-sm text-gray-500">{t("automations.taskTitleLabel")}</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm text-gray-500">{t("automations.taskTitleLabel")}</label>
+                  <div className="flex gap-1">
+                    {["{{customer_name}}", "{{days_since}}"].map((v) => (
+                      <button key={v} type="button"
+                        onClick={() => insertVar(v, "task_title")}
+                        className="px-2 py-0.5 text-xs rounded border border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-500 transition font-mono">
+                        {v}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <input
+                  ref={taskRef}
                   value={form.task_title}
                   onChange={(e) => setForm((f) => ({ ...f, task_title: e.target.value }))}
                   className="w-full border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-800"
                 />
               </div>
+            )}
+
+            {form.action_type === "email_send" && (
+              <>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm text-gray-500">{t("automations.emailSubjectLabel")}</label>
+                    <button type="button"
+                      onClick={() => insertVar("{{customer_name}}", "task_title")}
+                      className="px-2 py-0.5 text-xs rounded border border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-500 transition font-mono">
+                      {"{{customer_name}}"}
+                    </button>
+                  </div>
+                  <input
+                    ref={subjectRef}
+                    value={form.task_title}
+                    onChange={(e) => setForm((f) => ({ ...f, task_title: e.target.value }))}
+                    className="w-full border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-800"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm text-gray-500">{t("automations.emailBodyLabel")}</label>
+                    <div className="flex gap-1">
+                      {["{{customer_name}}", "{{days_since}}"].map((v) => (
+                        <button key={v} type="button"
+                          onClick={() => insertVar(v, "message_template")}
+                          className="px-2 py-0.5 text-xs rounded border border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-500 transition font-mono">
+                          {v}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <textarea
+                    ref={msgRef}
+                    rows={4}
+                    value={form.message_template}
+                    onChange={(e) => setForm((f) => ({ ...f, message_template: e.target.value }))}
+                    className="w-full border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-800 resize-none"
+                  />
+                </div>
+              </>
             )}
 
             <div className="space-y-1">

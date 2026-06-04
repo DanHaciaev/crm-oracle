@@ -7,24 +7,29 @@ import { useT } from "@/lib/locale";
 
 const SEGMENT_KEYS = ["all", "vip", "active", "new", "sleeping", "churned"] as const;
 type SegmentKey = typeof SEGMENT_KEYS[number];
+type Channel = "telegram" | "email";
 
 interface SendResult { sent: number; total: number; errors: string[]; }
 
 export default function BroadcastPage() {
   const t = useT();
   const searchParams = useSearchParams();
-  const [segment, setSegment]     = useState<SegmentKey>("all");
-  const [message, setMessage]     = useState("");
-  const [sending, setSending]     = useState(false);
-  const [result, setResult]       = useState<SendResult | null>(null);
-  const [error, setError]         = useState<string | null>(null);
-  const [aiHint, setAiHint]       = useState("");
+  const [segment,   setSegment]   = useState<SegmentKey>("all");
+  const [channel,   setChannel]   = useState<Channel>("telegram");
+  const [subject,   setSubject]   = useState("");
+  const [message,   setMessage]   = useState("");
+  const [sending,   setSending]   = useState(false);
+  const [result,    setResult]    = useState<SendResult | null>(null);
+  const [error,     setError]     = useState<string | null>(null);
+  const [aiHint,    setAiHint]    = useState("");
   const [aiLoading, setAiLoading] = useState(false);
 
   const SEGMENTS = SEGMENT_KEYS.map((v) => ({
     v,
     label: v === "all" ? t("broadcasts.allCustomers") : t(`segments.${v}`),
-    desc:  v === "all" ? t("segments.allDesc") : t(`segments.${v}Desc`),
+    desc:  v === "all"
+      ? (channel === "email" ? t("segments.allDescEmail") : t("segments.allDesc"))
+      : t(`segments.${v}Desc`),
   }));
 
   useEffect(() => {
@@ -47,17 +52,25 @@ export default function BroadcastPage() {
 
   async function send() {
     if (!message.trim()) return;
+    if (channel === "email" && !subject.trim()) return;
     setSending(true); setResult(null); setError(null);
-    const res  = await fetch("/api/broadcasts", {
+
+    const url  = channel === "email" ? "/api/broadcasts/email" : "/api/broadcasts";
+    const body = channel === "email"
+      ? { segment, subject: subject.trim(), message: message.trim() }
+      : { segment, message: message.trim() };
+
+    const res  = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ segment, message: message.trim() }),
+      body: JSON.stringify(body),
     });
     const json = await res.json().catch(() => ({})) as SendResult & { error?: string };
     setSending(false);
     if (!res.ok) { setError(json.error ?? t("common.error")); return; }
     setResult(json);
     setMessage("");
+    if (channel === "email") setSubject("");
   }
 
   const seg = SEGMENTS.find(s => s.v === segment);
@@ -70,6 +83,18 @@ export default function BroadcastPage() {
       </div>
 
       <div className="space-y-5">
+        {/* Channel toggle */}
+        <div className="flex gap-2">
+          {(["telegram", "email"] as Channel[]).map(ch => (
+            <button key={ch} onClick={() => { setChannel(ch); setResult(null); setError(null); }}
+              className={`px-4 py-1.5 rounded-lg border text-sm font-medium transition ${
+                channel === ch ? "bg-gray-900 border-gray-700 text-white" : "border-zinc-800 text-zinc-400 hover:bg-zinc-200"
+              }`}>
+              {ch === "telegram" ? "Telegram" : "Email"}
+            </button>
+          ))}
+        </div>
+
         {/* Segment picker */}
         <div>
           <label className="block text-sm font-medium mb-2">{t("broadcasts.segmentRecipients")}</label>
@@ -94,7 +119,7 @@ export default function BroadcastPage() {
         {/* AI generation */}
         <div className="border border-zinc-800 rounded-xl p-4 space-y-3">
           <div className="text-sm font-medium">✨ {t("broadcasts.aiGenerate")}</div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <input
               value={aiHint}
               onChange={(e) => setAiHint(e.target.value)}
@@ -110,6 +135,19 @@ export default function BroadcastPage() {
             </button>
           </div>
         </div>
+
+        {/* Email subject */}
+        {channel === "email" && (
+          <div>
+            <label className="block text-sm font-medium mb-2">{t("automations.emailSubjectLabel")}</label>
+            <input
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder={t("broadcasts.emailSubjectPlaceholder")}
+              className="w-full border border-zinc-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-gray-800 transition"
+            />
+          </div>
+        )}
 
         {/* Message */}
         <div>
@@ -142,10 +180,13 @@ export default function BroadcastPage() {
         {/* Send button */}
         <button
           onClick={send}
-          disabled={sending || !message.trim() || message.length > 4096}
+          disabled={sending || !message.trim() || message.length > 4096 || (channel === "email" && !subject.trim())}
           className="w-full py-3 rounded-xl bg-white text-black border border-zinc-800 font-medium text-sm hover:bg-zinc-200 disabled:opacity-40 transition"
         >
-          {sending ? t("broadcasts.sending") : `${t("broadcasts.sendToSegment")} «${seg?.label}»`}
+          {sending
+            ? t("broadcasts.sending")
+            : `${t("broadcasts.sendToSegment")} «${seg?.label}» (${channel === "email" ? "Email" : "Telegram"})`
+          }
         </button>
 
         {/* Result */}

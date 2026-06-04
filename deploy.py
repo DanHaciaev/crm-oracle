@@ -13,7 +13,7 @@ REMOTE   = '/home/unisim/crm-oracle'
 ZIP_PATH = '/tmp/crm-oracle-deploy.zip'
 
 SKIP_DIRS  = {'node_modules', '.next', '.git', '__pycache__', '.turbo', 'out'}
-SKIP_FILES = {'.env', 'deploy.py'}
+SKIP_FILES = {'.env', 'deploy.py', '_deploy_tmp.zip'}
 
 def pack():
     local = os.path.dirname(os.path.abspath(__file__))

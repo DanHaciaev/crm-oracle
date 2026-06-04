@@ -33,7 +33,7 @@ function iso(v: Date | string | null) {
   return v instanceof Date ? v.toISOString() : v;
 }
 
-const VALID_ACTIONS   = new Set(["tg_message", "manager_task"]);
+const VALID_ACTIONS   = new Set(["tg_message", "manager_task", "email_send"]);
 const VALID_SEGMENTS  = new Set(["all", "vip", "active", "sleeping", "churned"]);
 
 export async function POST(req: NextRequest) {
@@ -46,10 +46,13 @@ export async function POST(req: NextRequest) {
 
   if (!name) return NextResponse.json({ error: "name обязателен" }, { status: 400 });
   if (!VALID_ACTIONS.has(String(action_type)))
-    return NextResponse.json({ error: "action_type: tg_message или manager_task" }, { status: 400 });
+    return NextResponse.json({ error: "action_type: tg_message, manager_task или email_send" }, { status: 400 });
   if (!VALID_SEGMENTS.has(String(segment)))
     return NextResponse.json({ error: "Неверный segment" }, { status: 400 });
 
+  // email_send: TASK_TITLE = subject, MESSAGE_TEMPLATE = body
+  // tg_message: MESSAGE_TEMPLATE = text
+  // manager_task: TASK_TITLE = task title
   await execute(`
     INSERT INTO AGRO_CRM_AUTOMATION_RULES
       (NAME, TRIGGER_TYPE, CONDITION_DAYS, ACTION_TYPE, MESSAGE_TEMPLATE, TASK_TITLE, COOLDOWN_DAYS, SEGMENT, ACTIVE)
@@ -58,8 +61,8 @@ export async function POST(req: NextRequest) {
     String(name),
     Number(condition_days ?? 30),
     String(action_type),
-    action_type === "tg_message" && message_template ? String(message_template) : null,
-    action_type === "manager_task" && task_title     ? String(task_title)       : null,
+    message_template ? String(message_template) : null,
+    task_title       ? String(task_title)       : null,
     Number(cooldown_days ?? 14),
     String(segment ?? "all"),
     active === false ? "N" : "Y",

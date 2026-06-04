@@ -33,7 +33,7 @@ export function AppSidebar() {
         { name: t("nav.leads"),     href: "/leads" },
         { name: t("nav.sales"),     href: "/sales" },
         { name: t("nav.segments"),  href: "/segments" },
-        { name: t("nav.churn"),     href: "/churn" },
+        { name: t("nav.churn"),    href: "/churn" },
       ],
     },
     {

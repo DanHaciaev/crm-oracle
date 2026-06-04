@@ -198,6 +198,45 @@ export default function CustomerDetail({ id }: { id: string }) {
   const [isAdmin, setIsAdmin]         = useState(false);
   const router                        = useRouter();
 
+  const [editing, setEditing]   = useState(false);
+  const [editForm, setEditForm] = useState<{
+    name: string; country: string; tax_id: string;
+    contact_phone: string; contact_email: string;
+    address: string; customer_type: string;
+  } | null>(null);
+  const [saving, setSaving]     = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  function startEdit() {
+    if (!data) return;
+    setEditForm({
+      name:          data.name          ?? "",
+      country:       data.country       ?? "",
+      tax_id:        data.tax_id        ?? "",
+      contact_phone: data.contact_phone ?? "",
+      contact_email: data.contact_email ?? "",
+      address:       data.address       ?? "",
+      customer_type: data.customer_type ?? "domestic",
+    });
+    setSaveError(null);
+    setEditing(true);
+  }
+
+  async function saveEdit() {
+    if (!editForm) return;
+    setSaving(true); setSaveError(null);
+    const res  = await fetch(`/api/customers/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editForm),
+    });
+    const json = await res.json().catch(() => ({})) as { error?: string };
+    setSaving(false);
+    if (!res.ok) { setSaveError(json.error ?? t("common.error")); return; }
+    setEditing(false);
+    fetchData();
+  }
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     const [res, sRes] = await Promise.all([
@@ -361,14 +400,95 @@ export default function CustomerDetail({ id }: { id: string }) {
 
       {tab === "info" && (
         <div className="space-y-6">
-          <section className="border border-gray-800 rounded-xl p-5 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm">
-            <Field label={t("common.type")}             value={data.customer_type} />
-            <Field label={t("common.country")}          value={data.country} />
-            <Field label="Tax ID"                       value={data.tax_id} />
-            <Field label={t("customers.contactPhone")}  value={data.contact_phone} />
-            <Field label={t("customers.contactEmail")}  value={data.contact_email} />
-            <Field label={t("customers.active")}        value={data.active ? t("common.yes") : t("common.no")} />
-            <div className="md:col-span-2"><Field label={t("customers.address")} value={data.address} /></div>
+          <section className="border border-gray-800 rounded-xl p-5 text-sm space-y-4">
+
+            {/* Header row */}
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{t("customers.details")}</span>
+              {!editing ? (
+                <button onClick={startEdit}
+                  className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 transition">
+                  ✏️ {t("common.edit")}
+                </button>
+              ) : (
+                <div className="flex gap-2">
+                  <button onClick={() => setEditing(false)} disabled={saving}
+                    className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 transition disabled:opacity-50">
+                    {t("common.cancel")}
+                  </button>
+                  <button onClick={saveEdit} disabled={saving}
+                    className="px-3 py-1.5 text-sm rounded-lg bg-gray-900 text-white hover:bg-gray-700 transition disabled:opacity-50">
+                    {saving ? t("common.saving") : t("common.save")}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {saveError && <p className="text-sm text-red-500">{saveError}</p>}
+
+            {/* View mode */}
+            {!editing && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
+                <Field label={t("common.type")}             value={data.customer_type} />
+                <Field label={t("common.country")}          value={data.country} />
+                <Field label="Tax ID"                       value={data.tax_id} />
+                <Field label={t("customers.contactPhone")}  value={data.contact_phone} />
+                <Field label={t("customers.contactEmail")}  value={data.contact_email} />
+                <Field label={t("customers.active")}        value={data.active ? t("common.yes") : t("common.no")} />
+                <div className="md:col-span-2"><Field label={t("customers.address")} value={data.address} /></div>
+              </div>
+            )}
+
+            {/* Edit mode */}
+            {editing && editForm && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                <div className="md:col-span-2 space-y-1">
+                  <label className="text-xs text-gray-500">{t("customers.name")}</label>
+                  <input value={editForm.name}
+                    onChange={(e) => setEditForm((f) => f && ({ ...f, name: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-600" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-gray-500">{t("common.type")}</label>
+                  <select value={editForm.customer_type}
+                    onChange={(e) => setEditForm((f) => f && ({ ...f, customer_type: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-600 bg-white">
+                    <option value="domestic">domestic</option>
+                    <option value="export">export</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-gray-500">{t("common.country")}</label>
+                  <input value={editForm.country}
+                    onChange={(e) => setEditForm((f) => f && ({ ...f, country: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-600" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-gray-500">Tax ID</label>
+                  <input value={editForm.tax_id}
+                    onChange={(e) => setEditForm((f) => f && ({ ...f, tax_id: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-600" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-gray-500">{t("customers.contactPhone")}</label>
+                  <input value={editForm.contact_phone}
+                    onChange={(e) => setEditForm((f) => f && ({ ...f, contact_phone: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-600" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-gray-500">{t("customers.contactEmail")}</label>
+                  <input value={editForm.contact_email}
+                    onChange={(e) => setEditForm((f) => f && ({ ...f, contact_email: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-600" />
+                </div>
+                <div className="md:col-span-2 space-y-1">
+                  <label className="text-xs text-gray-500">{t("customers.address")}</label>
+                  <input value={editForm.address}
+                    onChange={(e) => setEditForm((f) => f && ({ ...f, address: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-600" />
+                </div>
+              </div>
+            )}
           </section>
 
           {stats && stats.order_count > 0 && <RetentionBlock stats={stats} />}

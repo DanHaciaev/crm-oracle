@@ -13,7 +13,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell,
+  PieChart, Pie, Cell, AreaChart, Area, LineChart, Line, ReferenceLine,
 } from "recharts";
 import { GripVertical, TrendingUp, TrendingDown, Minus, RefreshCw, Phone } from "lucide-react";
 import Link from "next/link";
@@ -21,7 +21,7 @@ import { useT } from "@/lib/locale";
 
 type Period   = "7d" | "30d" | "90d" | "ytd";
 type SaleType = "all" | "domestic" | "export";
-type BlockId  = "revenue_trend" | "top_customers" | "top_items" | "status_pie" | "churn_risk" | "recent_orders";
+type BlockId  = "revenue_trend" | "top_customers" | "top_items" | "status_pie" | "churn_risk" | "recent_orders" | "monthly_revenue" | "forecast";
 
 interface Kpi {
   revenue: number; orders: number; active_customers: number; unread: number;
@@ -38,7 +38,7 @@ interface Stats {
 }
 
 const DEFAULT_BLOCKS: BlockId[] = [
-  "revenue_trend", "top_customers", "top_items", "status_pie", "churn_risk", "recent_orders",
+  "monthly_revenue", "forecast", "revenue_trend", "top_customers", "top_items", "status_pie", "churn_risk", "recent_orders",
 ];
 
 const CHART_COLORS = ["#10b981", "#818cf8", "#fbbf24", "#fb7185", "#38bdf8", "#a78bfa", "#34d399", "#f97316"];
@@ -300,7 +300,110 @@ function RecentOrdersTable({ data }: { data: Stats["recent_orders"] }) {
   );
 }
 
+interface MonthlyPoint { month: string; label: string; revenue: number; orders: number; }
+interface ForecastData {
+  actuals: MonthlyPoint[];
+  predicted: { month: string; label: string; revenue: number; forecast: true }[];
+  r2: number; trend: "up" | "down"; trend_pct: number;
+  forecast_30d: number; forecast_60d: number; forecast_90d: number;
+}
+
+function MonthlyRevenueChart() {
+  const t = useT();
+  const [data, setData] = useState<MonthlyPoint[] | null>(null);
+  useEffect(() => {
+    fetch("/api/dashboard/monthly")
+      .then(r => r.json())
+      .then((d: unknown) => { if (Array.isArray(d)) setData(d as MonthlyPoint[]); });
+  }, []);
+
+  if (!data) return <div className="h-40 animate-pulse bg-gray-100 rounded-lg" />;
+  if (!data.length) return <Empty />;
+
+  return (
+    <ResponsiveContainer width="100%" height={220}>
+      <AreaChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+        <defs>
+          <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%"  stopColor="#10b981" stopOpacity={0.25} />
+            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+        <XAxis dataKey="label" tick={{ fill: "black", fontSize: 11 }} tickLine={false} />
+        <YAxis tickFormatter={fmtNum} tick={{ fill: "black", fontSize: 11 }} width={72} tickLine={false} axisLine={false} />
+        <Tooltip {...ttStyle} formatter={(v: unknown) => [`${fmtNum(Number(v ?? 0))} MDL`, t("dashboard.revenueLabel")]} />
+        <Area type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} fill="url(#revGrad)" dot={false} />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+}
+
+function ForecastWidget() {
+  const t = useT();
+  const [data, setData] = useState<ForecastData | null>(null);
+  useEffect(() => {
+    fetch("/api/forecast")
+      .then(r => r.json())
+      .then((d: unknown) => setData(d as ForecastData));
+  }, []);
+
+  if (!data) return <div className="h-48 animate-pulse bg-gray-100 rounded-lg" />;
+
+  const chartData: { label: string; revenue: number; forecast?: number }[] = [
+    ...data.actuals.map(a => ({ label: a.label, revenue: a.revenue })),
+    ...data.predicted.map(p => ({ label: p.label + "*", revenue: 0, forecast: p.revenue })),
+  ];
+
+  const splitIdx = data.actuals.length - 1;
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label: t("dashboard.forecast30d"), val: data.forecast_30d },
+          { label: t("dashboard.forecast60d"), val: data.forecast_60d },
+          { label: t("dashboard.forecast90d"), val: data.forecast_90d },
+        ].map(({ label, val }) => (
+          <div key={label} className="rounded-lg border border-gray-800 bg-gray-50 p-3 text-center">
+            <div className="text-[11px] text-gray-400 uppercase tracking-wide mb-1">{label}</div>
+            <div className="text-lg font-bold text-emerald-400">{fmtNum(val)}</div>
+            <div className="text-[10px] text-gray-400">MDL</div>
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-3 text-xs text-gray-400">
+        {data.trend === "up"
+          ? <TrendingUp className="w-4 h-4 text-emerald-400" />
+          : <TrendingDown className="w-4 h-4 text-red-400" />
+        }
+        <span>{t("dashboard.forecastTrend")}: {data.trend === "up" ? "+" : ""}{data.trend_pct}% {t("dashboard.forecastOverYear")}</span>
+        <span className="ml-auto text-gray-500">R²={data.r2}%</span>
+      </div>
+      <ResponsiveContainer width="100%" height={180}>
+        <LineChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+          <XAxis dataKey="label" tick={{ fill: "black", fontSize: 10 }} tickLine={false} />
+          <YAxis tickFormatter={fmtNum} tick={{ fill: "black", fontSize: 10 }} width={72} tickLine={false} axisLine={false} />
+          <Tooltip {...ttStyle} formatter={(v: unknown, name: unknown) => {
+            const label = name === "forecast" ? t("dashboard.forecastLabel") : t("dashboard.revenueLabel");
+            return [`${fmtNum(Number(v ?? 0))} MDL`, label];
+          }} />
+          <ReferenceLine x={chartData[splitIdx]?.label} stroke="#4b5563" strokeDasharray="4 2" />
+          <Line type="monotone" dataKey="revenue"  stroke="#10b981" strokeWidth={2} dot={false} connectNulls />
+          <Line type="monotone" dataKey="forecast" stroke="#818cf8" strokeWidth={2} strokeDasharray="5 3" dot={false} connectNulls />
+        </LineChart>
+      </ResponsiveContainer>
+      <p className="text-[10px] text-gray-400">* {t("dashboard.forecastNote")}</p>
+    </div>
+  );
+}
+
 function BlockContent({ id, stats }: { id: BlockId; stats: Stats | null }) {
+  // These blocks fetch their own data independently
+  if (id === "monthly_revenue") return <MonthlyRevenueChart />;
+  if (id === "forecast")        return <ForecastWidget />;
+
   if (!stats) return <div className="h-40 animate-pulse bg-gray-100 rounded-lg" />;
   switch (id) {
     case "revenue_trend": return <RevenueTrendChart data={stats.revenue_by_day} />;
