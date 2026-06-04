@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query, execute } from "@/lib/oracle";
 import { sendText } from "@/lib/tg";
+import { sendEmail } from "@/lib/gmail";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -23,6 +24,7 @@ interface CandidateRow {
   NAME: string;
   TELEGRAM_CHAT_ID: number | null;
   APP_USER_ID: number | null;
+  CONTACT_EMAIL: string | null;
   DAYS_SINCE: number;
 }
 
@@ -83,15 +85,19 @@ function buildSegmentJoin(segment: string): { join: string; where: string } {
 // For tg_message rules, only customers with a linked TG user are returned.
 async function getCandidates(rule: RuleRow): Promise<CandidateRow[]> {
   const { join: segJoin, where: segWhere } = buildSegmentJoin(rule.SEGMENT);
-  const needsTg = rule.ACTION_TYPE === "tg_message";
+  const needsTg    = rule.ACTION_TYPE === "tg_message";
+  const needsEmail = rule.ACTION_TYPE === "email_send";
 
   const tgJoin = needsTg
     ? `JOIN AGRO_CRM_APP_USERS au ON au.CUSTOMER_ID = c.ID AND au.STATUS = 'linked'`
     : `LEFT JOIN AGRO_CRM_APP_USERS au ON au.CUSTOMER_ID = c.ID AND au.STATUS = 'linked'`;
 
+  const emailWhere = needsEmail ? `AND c.CONTACT_EMAIL IS NOT NULL` : "";
+
   return query<CandidateRow>(`
     SELECT c.ID                                    AS CUSTOMER_ID,
            c.NAME,
+           c.CONTACT_EMAIL,
            au.TELEGRAM_CHAT_ID,
            au.ID                                   AS APP_USER_ID,
            ROUND(SYSDATE - s.LAST_DATE)            AS DAYS_SINCE
@@ -107,6 +113,7 @@ async function getCandidates(rule: RuleRow): Promise<CandidateRow[]> {
     WHERE c.ACTIVE = 'Y'
       AND s.LAST_DATE < SYSDATE - :1
       ${segWhere}
+      ${emailWhere}
   `, [rule.CONDITION_DAYS]);
 }
 
@@ -172,6 +179,25 @@ async function doManagerTask(
   ]);
 }
 
+async function doEmailSend(
+  rule: RuleRow,
+  candidate: CandidateRow
+): Promise<void> {
+  if (!candidate.CONTACT_EMAIL) throw new Error("no contact email");
+
+  const subject = render(rule.TASK_TITLE ?? "Сообщение от нашей компании", {
+    customer_name: String(candidate.NAME ?? ""),
+    days_since:    String(candidate.DAYS_SINCE ?? ""),
+  });
+
+  const text = render(rule.MESSAGE_TEMPLATE ?? "", {
+    customer_name: String(candidate.NAME ?? ""),
+    days_since:    String(candidate.DAYS_SINCE ?? ""),
+  });
+
+  await sendEmail({ to: String(candidate.CONTACT_EMAIL), subject, text });
+}
+
 // ── Main handler ──────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
@@ -217,6 +243,8 @@ export async function POST(req: NextRequest) {
             await doTgMessage(rule, c);
           } else if (rule.ACTION_TYPE === "manager_task") {
             await doManagerTask(rule, c);
+          } else if (rule.ACTION_TYPE === "email_send") {
+            await doEmailSend(rule, c);
           }
           fired++;
         } catch (err) {
