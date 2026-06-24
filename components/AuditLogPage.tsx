@@ -30,7 +30,7 @@ function DiffBlock({ label, raw }: { label: string; raw: string | null }) {
   return (
     <div className="mt-2">
       <div className="text-[10px] text-gray-400 uppercase mb-1">{label}</div>
-      <div className="bg-gray-50 border border-gray-800 rounded-lg px-3 py-2 space-y-0.5">
+      <div className="bg-gray-50 border border-[#c8d3e8] rounded-lg px-3 py-2 space-y-0.5">
         {entries.map(([k, v]) => (
           <div key={k} className="flex gap-2 text-sm">
             <span className="text-gray-500 shrink-0 w-28 truncate">{k}:</span>
@@ -87,8 +87,8 @@ export default function AuditLogPage() {
           <button key={f.v} onClick={() => setEntityType(f.v)}
             className={`px-3 py-1.5 rounded-lg text-sm border transition ${
               entityType === f.v
-                ? "border-gray-800 bg-gray-900 text-white"
-                : "border-gray-800 text-gray-500 hover:bg-gray-100"
+                ? "border-[#c8d3e8] bg-gray-900 text-white"
+                : "border-[#c8d3e8] text-gray-500 hover:bg-gray-100"
             }`}>
             {f.label}
           </button>
@@ -104,10 +104,10 @@ export default function AuditLogPage() {
             <div className="text-center text-gray-400 py-16">{t("auditLog.empty")}</div>
           )}
           {entries.map(e => {
-            const cls    = ACTION_CLS[e.action] ?? "text-gray-600 border-gray-800";
+            const cls    = ACTION_CLS[e.action] ?? "text-gray-600 border-[#c8d3e8]";
             const isOpen = expanded === e.id;
             return (
-              <div key={e.id} className="border border-gray-800 rounded-xl overflow-hidden">
+              <div key={e.id} className="border border-[#c8d3e8] rounded-xl overflow-hidden">
                 <button
                   className="w-full text-left px-4 py-3 hover:bg-gray-50 transition flex items-start gap-3"
                   onClick={() => setExpanded(isOpen ? null : e.id)}>
@@ -128,7 +128,7 @@ export default function AuditLogPage() {
                   <span className="text-gray-400 text-sm shrink-0 mt-1">{isOpen ? "▲" : "▼"}</span>
                 </button>
                 {isOpen && (
-                  <div className="px-4 pb-4 border-t border-gray-800">
+                  <div className="px-4 pb-4 border-t border-[#c8d3e8]">
                     <DiffBlock label={t("auditLog.was")}    raw={e.old_values} />
                     <DiffBlock label={t("auditLog.became")} raw={e.new_values} />
                     {!e.old_values && !e.new_values && (

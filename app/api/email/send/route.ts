@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { sendEmail } from "@/lib/gmail";
+import { syncOutboundEmail } from "@/lib/email-db";
+import { randomUUID } from "crypto";
 
 async function requireAuth() {
   const cookieStore = await cookies();
@@ -25,14 +27,23 @@ export async function POST(req: Request) {
   if (!body.to?.trim()) return NextResponse.json({ error: "Поле 'to' обязательно" }, { status: 400 });
   if (!body.text?.trim()) return NextResponse.json({ error: "Текст письма не может быть пустым" }, { status: 400 });
 
+  const subject = body.subject?.trim() ?? "(без темы)";
+  const text    = body.text.trim();
+  const to      = body.to.trim();
+
   try {
-    await sendEmail({
-      to: body.to.trim(),
-      subject: body.subject?.trim() ?? "(без темы)",
-      text: body.text.trim(),
-      inReplyTo: body.inReplyTo,
-      references: body.references,
-    });
+    await sendEmail({ to, subject, text, inReplyTo: body.inReplyTo, references: body.references });
+
+    const smtpUser = process.env.SMTP_USER ?? "";
+    syncOutboundEmail({
+      messageId: randomUUID(),
+      to,
+      from: smtpUser,
+      subject,
+      text,
+      sentAt: new Date(),
+    }).catch(() => {});
+
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("SMTP send error:", err);

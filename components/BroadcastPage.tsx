@@ -51,9 +51,10 @@ export default function BroadcastPage() {
   }
 
   async function send() {
-    if (!message.trim()) return;
-    if (channel === "email" && !subject.trim()) return;
     setSending(true); setResult(null); setError(null);
+
+    if (!message.trim()) { setSending(false); return; }
+    if (channel === "email" && !subject.trim()) { setSending(false); return; }
 
     const url  = channel === "email" ? "/api/broadcasts/email" : "/api/broadcasts";
     const body = channel === "email"
@@ -84,7 +85,7 @@ export default function BroadcastPage() {
 
       <div className="space-y-5">
         {/* Channel toggle */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {(["telegram", "email"] as Channel[]).map(ch => (
             <button key={ch} onClick={() => { setChannel(ch); setResult(null); setError(null); }}
               className={`px-4 py-1.5 rounded-lg border text-sm font-medium transition ${
@@ -105,7 +106,7 @@ export default function BroadcastPage() {
                 onClick={() => setSegment(s.v)}
                 className={`text-left p-3 rounded-xl border text-sm transition ${
                   segment === s.v
-                    ? "border-gray-800 bg-white/10 text-zinc-400"
+                    ? "border-[#c8d3e8] bg-white/10 text-zinc-400"
                     : "border-zinc-800 text-zinc-400 hover:bg-zinc-200"
                 }`}
               >
@@ -124,7 +125,7 @@ export default function BroadcastPage() {
               value={aiHint}
               onChange={(e) => setAiHint(e.target.value)}
               placeholder={t("broadcasts.aiHintPlaceholder")}
-              className="flex-1 border border-zinc-700 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-800 transition"
+              className="flex-1 border border-zinc-700 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#c8d3e8] transition"
             />
             <button
               onClick={generateAI}
@@ -144,7 +145,7 @@ export default function BroadcastPage() {
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               placeholder={t("broadcasts.emailSubjectPlaceholder")}
-              className="w-full border border-zinc-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-gray-800 transition"
+              className="w-full border border-zinc-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#c8d3e8] transition"
             />
           </div>
         )}
@@ -157,13 +158,11 @@ export default function BroadcastPage() {
             onChange={(e) => setMessage(e.target.value)}
             rows={5}
             placeholder={t("broadcasts.messagePlaceholder")}
-            className="w-full border border-zinc-700 rounded-xl px-4 py-3 text-sm outline-none focus:border-gray-800 transition resize-none"
+            className="w-full border border-zinc-700 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#c8d3e8] transition resize-none"
           />
           <div className="flex justify-between items-center mt-1">
             <span className="text-sm text-zinc-600">{message.length} {t("broadcasts.chars")}</span>
-            {message.length > 4096 && (
-              <span className="text-sm text-red-400">{t("broadcasts.limitExceeded")}</span>
-            )}
+            {message.length > 4096 && <span className="text-sm text-red-400">{t("broadcasts.limitExceeded")}</span>}
           </div>
         </div>
 
@@ -181,7 +180,7 @@ export default function BroadcastPage() {
         <button
           onClick={send}
           disabled={sending || !message.trim() || message.length > 4096 || (channel === "email" && !subject.trim())}
-          className="w-full py-3 rounded-xl bg-white text-black border border-zinc-800 font-medium text-sm hover:bg-zinc-200 disabled:opacity-40 transition"
+          className="w-full py-3 rounded-xl font-medium text-sm transition disabled:opacity-40 bg-white text-black border border-zinc-800 hover:bg-zinc-200"
         >
           {sending
             ? t("broadcasts.sending")

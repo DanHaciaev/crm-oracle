@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useT } from "@/lib/locale";
+import { useConfirm } from "@/lib/confirm";
 
 export interface Activity {
   id:          number;
@@ -25,7 +26,7 @@ const TYPE_ICONS: Record<string, string> = {
 const OUTCOME_CLS: Record<string, string> = {
   reached:   "border-emerald-500/40 text-emerald-400",
   no_answer: "border-red-500/40 text-red-400",
-  voicemail: "border-gray-800 text-gray-400",
+  voicemail: "border-[#c8d3e8] text-gray-400",
   busy:      "border-amber-500/40 text-amber-400",
   completed: "border-emerald-500/40 text-emerald-400",
   cancelled: "border-red-500/40 text-red-400",
@@ -51,7 +52,8 @@ interface Props {
 }
 
 export default function ActivityTimeline({ customerId, currentUser, isAdmin }: Props) {
-  const t = useT();
+  const t       = useT();
+  const confirm = useConfirm();
   const [items, setItems]     = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
@@ -90,7 +92,7 @@ export default function ActivityTimeline({ customerId, currentUser, isAdmin }: P
   }
 
   async function remove(id: number) {
-    if (!confirm(t("activities.deleteConfirm"))) return;
+    if (!await confirm({ message: t("activities.deleteConfirm"), danger: true })) return;
     await fetch(`/api/activities/${id}`, { method: "DELETE" });
     setItems(prev => prev.filter(a => a.id !== id));
   }
@@ -99,7 +101,7 @@ export default function ActivityTimeline({ customerId, currentUser, isAdmin }: P
 
   return (
     <div className="space-y-4">
-      <div className="border border-gray-800 rounded-xl p-4 space-y-3">
+      <div className="border border-[#c8d3e8] rounded-xl p-4 space-y-3">
         <div className="flex gap-2 flex-wrap">
           {Object.keys(TYPE_ICONS).map((k) => (
             <button
@@ -108,7 +110,7 @@ export default function ActivityTimeline({ customerId, currentUser, isAdmin }: P
               className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition
                 ${type === k
                   ? "bg-gray-900 border-gray-700 text-white"
-                  : "border-gray-800 text-gray-500 hover:bg-gray-100"}`}
+                  : "border-[#c8d3e8] text-gray-500 hover:bg-gray-100"}`}
             >
               {TYPE_ICONS[k]} {t(`activityTypes.${k}`)}
             </button>
@@ -124,7 +126,7 @@ export default function ActivityTimeline({ customerId, currentUser, isAdmin }: P
                 className={`px-2.5 py-1 rounded-lg text-sm border transition
                   ${outcome === k
                     ? `${OUTCOME_CLS[k]} bg-gray-100`
-                    : "border-gray-800 text-gray-500 hover:border-gray-800"}`}
+                    : "border-[#c8d3e8] text-gray-500 hover:border-[#c8d3e8]"}`}
               >
                 {t(`activityOutcomes.${k}`)}
               </button>
@@ -137,7 +139,7 @@ export default function ActivityTimeline({ customerId, currentUser, isAdmin }: P
           onChange={(e) => setBody(e.target.value)}
           placeholder={type === "note" ? t("activities.bodyPlaceholder") : t("activities.commentPlaceholder")}
           rows={2}
-          className="w-full border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-gray-800 resize-none"
+          className="w-full border border-[#c8d3e8] bg-white rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-[#c8d3e8] resize-none"
         />
 
         <div className="flex justify-end">
@@ -170,11 +172,11 @@ export default function ActivityTimeline({ customerId, currentUser, isAdmin }: P
             const canDel  = isAdmin || a.created_by === currentUser;
             return (
               <div key={a.id} className="flex gap-3 group pb-4 last:pb-0">
-                <div className="shrink-0 w-10 h-10 rounded-full border border-gray-800 bg-gray-50 flex items-center justify-center text-base z-10">
+                <div className="shrink-0 w-10 h-10 rounded-full border border-[#c8d3e8] bg-gray-50 flex items-center justify-center text-base z-10">
                   {icon}
                 </div>
 
-                <div className="flex-1 min-w-0 border border-gray-800 rounded-xl bg-gray-50 px-4 py-3">
+                <div className="flex-1 min-w-0 border border-[#c8d3e8] rounded-xl bg-gray-50 px-4 py-3">
                   <div className="flex items-start justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-semibold text-gray-700">{typeLabel}</span>

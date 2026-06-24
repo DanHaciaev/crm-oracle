@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useT } from "@/lib/locale";
+import { useConfirm } from "@/lib/confirm";
 
 interface Attachment {
   id:          number;
@@ -63,7 +64,7 @@ function PreviewModal({ att, onClose }: { att: Attachment; onClose: () => void }
         className="bg-white shadow-2xl flex flex-col w-full overflow-hidden h-full"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[#c8d3e8]">
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-lg">{fileIcon(att.file_type)}</span>
             <span className="text-sm font-medium text-gray-800 truncate">{att.file_name}</span>
@@ -117,7 +118,8 @@ interface Props {
 }
 
 export default function AttachmentsPanel({ entityType, entityId, currentUser, isAdmin }: Props) {
-  const t = useT();
+  const t       = useT();
+  const confirm = useConfirm();
   const [items, setItems]         = useState<Attachment[]>([]);
   const [loading, setLoading]     = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -154,7 +156,7 @@ export default function AttachmentsPanel({ entityType, entityId, currentUser, is
   }
 
   async function remove(att: Attachment) {
-    if (!confirm(`${t("files.deleteConfirm")} "${att.file_name}"?`)) return;
+    if (!await confirm({ message: `${t("files.deleteConfirm")} "${att.file_name}"?`, danger: true })) return;
     setDeleting(att.id);
     await fetch(`/api/attachments/${att.id}`, { method: "DELETE" });
     setDeleting(null);
@@ -167,7 +169,7 @@ export default function AttachmentsPanel({ entityType, entityId, currentUser, is
 
       <div className="space-y-4">
         <div
-          className="border-2 border-dashed border-gray-800 rounded-xl p-6 text-center cursor-pointer hover:border-gray-800 transition"
+          className="border-2 border-dashed border-[#c8d3e8] rounded-xl p-6 text-center cursor-pointer hover:border-[#c8d3e8] transition"
           onClick={() => inputRef.current?.click()}
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => { e.preventDefault(); upload(e.dataTransfer.files); }}
@@ -205,7 +207,7 @@ export default function AttachmentsPanel({ entityType, entityId, currentUser, is
               const canDel      = isAdmin || att.uploaded_by === currentUser;
               const canPreview  = isPreviewable(att.file_type);
               return (
-                <div key={att.id} className="flex items-center gap-3 border border-gray-800 rounded-xl px-4 py-3 hover:bg-gray-50 transition group">
+                <div key={att.id} className="flex items-center gap-3 border border-[#c8d3e8] rounded-xl px-4 py-3 hover:bg-gray-50 transition group">
                   <span className="text-xl shrink-0">{fileIcon(att.file_type)}</span>
                   <div className="flex-1 min-w-0">
                     <button
@@ -222,7 +224,7 @@ export default function AttachmentsPanel({ entityType, entityId, currentUser, is
                     {canPreview && (
                       <button
                         onClick={() => setPreview(att)}
-                        className="text-sm text-gray-500 hover:text-gray-900 transition px-2 py-1 border border-gray-800 rounded-lg"
+                        className="text-sm text-gray-500 hover:text-gray-900 transition px-2 py-1 border border-[#c8d3e8] rounded-lg"
                       >
                         {t("files.preview")}
                       </button>
@@ -230,7 +232,7 @@ export default function AttachmentsPanel({ entityType, entityId, currentUser, is
                     <a
                       href={`/api/attachments/${att.id}`}
                       download={att.file_name}
-                      className="text-sm text-gray-500 hover:text-gray-900 transition px-2 py-1 border border-gray-800 rounded-lg"
+                      className="text-sm text-gray-500 hover:text-gray-900 transition px-2 py-1 border border-[#c8d3e8] rounded-lg"
                     >
                       {t("common.download")}
                     </a>

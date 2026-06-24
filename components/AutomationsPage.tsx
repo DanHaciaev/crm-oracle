@@ -7,6 +7,7 @@ import {
   TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { useT, useLocale } from "@/lib/locale";
+import { useConfirm } from "@/lib/confirm";
 
 interface Rule {
   id: number; name: string; trigger_type: string;
@@ -28,11 +29,12 @@ interface AutoData { rules: Rule[]; log: LogEntry[] }
 const RESULT_CLS: Record<string, string> = {
   success: "border-emerald-500/40 text-emerald-400",
   error:   "border-red-500/40 text-red-400",
-  skipped: "border-gray-800 text-gray-400",
+  skipped: "border-[#c8d3e8] text-gray-400",
 };
 
 export default function AutomationsPage() {
-  const t = useT();
+  const t       = useT();
+  const confirm = useConfirm();
   const { locale } = useLocale();
   const [data, setData]         = useState<AutoData | null>(null);
   const [loading, setLoading]   = useState(true);
@@ -149,7 +151,7 @@ export default function AutomationsPage() {
   }
 
   async function deleteRule(id: number, name: string) {
-    if (!confirm(`${t("automations.deleteConfirm")} "${name}"? ${t("automations.deleteRuleConfirm")}`)) return;
+    if (!await confirm({ message: `${t("automations.deleteConfirm")} "${name}"? ${t("automations.deleteRuleConfirm")}`, danger: true })) return;
     setDeleting(id);
     await fetch(`/api/automations/${id}`, { method: "DELETE" });
     setDeleting(null);
@@ -200,7 +202,7 @@ export default function AutomationsPage() {
         <div className="flex gap-2">
           <button
             onClick={() => { setShowForm(true); setFormError(null); }}
-            className="px-4 py-2 text-sm rounded-lg border border-gray-800 hover:bg-gray-100 transition text-gray-700"
+            className="px-4 py-2 text-sm rounded-lg border border-[#c8d3e8] hover:bg-gray-100 transition text-gray-700"
           >
             + {t("automations.newRule")}
           </button>
@@ -221,7 +223,7 @@ export default function AutomationsPage() {
       )}
 
       {/* Cron hint */}
-      <div className="border border-gray-800 bg-gray-50 rounded-xl px-4 py-3 text-sm text-gray-500 space-y-1">
+      <div className="border border-[#c8d3e8] bg-gray-50 rounded-xl px-4 py-3 text-sm text-gray-500 space-y-1">
         <div className="text-gray-600 font-medium mb-1">{t("automations.scheduleTitle")}</div>
         <code className="text-gray-700 block mt-1">
           curl -X POST https://&lt;your-domain&gt;/api/cron/automations \<br/>
@@ -232,7 +234,7 @@ export default function AutomationsPage() {
       {/* Rules table */}
       <section className="space-y-3">
         <h2 className="text-sm font-semibold text-gray-700">{t("automations.cols.name")}</h2>
-        <div className="border border-gray-800 rounded-xl overflow-x-auto">
+        <div className="border border-[#c8d3e8] rounded-xl overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -258,7 +260,7 @@ export default function AutomationsPage() {
                   </TableCell>
                   <TableCell className="hidden sm:table-cell text-center text-gray-500">{t("automations.noOrdersDays")} {r.condition_days} {t("common.days")}</TableCell>
                   <TableCell className="text-center">
-                    <span className="inline-flex px-2 py-0.5 rounded-full text-sm border border-gray-800 text-gray-600">
+                    <span className="inline-flex px-2 py-0.5 rounded-full text-sm border border-[#c8d3e8] text-gray-600">
                       {SEGMENT_LABELS[r.segment] ?? r.segment}
                     </span>
                   </TableCell>
@@ -303,11 +305,11 @@ export default function AutomationsPage() {
       <section className="space-y-3">
         <h2 className="text-sm font-semibold text-gray-700">{t("automations.lastFirings")}</h2>
         {data.log.length === 0 ? (
-          <p className="text-sm text-gray-400 py-4 text-center border border-gray-800 rounded-xl">
+          <p className="text-sm text-gray-400 py-4 text-center border border-[#c8d3e8] rounded-xl">
             {t("automations.noFirings")}
           </p>
         ) : (
-          <div className="border border-gray-800 rounded-xl overflow-x-auto">
+          <div className="border border-[#c8d3e8] rounded-xl overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -352,7 +354,7 @@ export default function AutomationsPage() {
       {/* Create rule modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white border border-gray-800 rounded-2xl shadow-2xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white border border-[#c8d3e8] rounded-2xl shadow-2xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <h2 className="text-lg font-semibold text-gray-900">{t("automations.newRuleTitle")}</h2>
 
             <div className="space-y-1">
@@ -360,7 +362,7 @@ export default function AutomationsPage() {
               <input
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                className="w-full border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-800"
+                className="w-full border border-[#c8d3e8] bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#c8d3e8]"
               />
             </div>
 
@@ -370,7 +372,7 @@ export default function AutomationsPage() {
                 type="number" min={1} max={365}
                 value={form.condition_days}
                 onChange={(e) => setForm((f) => ({ ...f, condition_days: Number(e.target.value) }))}
-                className="w-full border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-800"
+                className="w-full border border-[#c8d3e8] bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#c8d3e8]"
               />
             </div>
 
@@ -379,7 +381,7 @@ export default function AutomationsPage() {
               <select
                 value={form.segment}
                 onChange={(e) => setForm((f) => ({ ...f, segment: e.target.value }))}
-                className="w-full border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-800"
+                className="w-full border border-[#c8d3e8] bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#c8d3e8]"
               >
                 {Object.entries(SEGMENT_LABELS).map(([k, v]) => (
                   <option key={k} value={k}>{v}</option>
@@ -396,8 +398,8 @@ export default function AutomationsPage() {
                     onClick={() => setForm((f) => ({ ...f, action_type: k }))}
                     className={`flex-1 py-2 text-sm rounded-lg border transition
                       ${form.action_type === k
-                        ? "border-gray-800 text-white bg-gray-900"
-                        : "border-gray-800 text-gray-600 hover:bg-gray-100"}`}
+                        ? "border-[#c8d3e8] text-white bg-gray-900"
+                        : "border-[#c8d3e8] text-gray-600 hover:bg-gray-100"}`}
                   >
                     {v}
                   </button>
@@ -424,7 +426,7 @@ export default function AutomationsPage() {
                   rows={4}
                   value={form.message_template}
                   onChange={(e) => setForm((f) => ({ ...f, message_template: e.target.value }))}
-                  className="w-full border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-800 resize-none"
+                  className="w-full border border-[#c8d3e8] bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#c8d3e8] resize-none"
                 />
               </div>
             )}
@@ -447,7 +449,7 @@ export default function AutomationsPage() {
                   ref={taskRef}
                   value={form.task_title}
                   onChange={(e) => setForm((f) => ({ ...f, task_title: e.target.value }))}
-                  className="w-full border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-800"
+                  className="w-full border border-[#c8d3e8] bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#c8d3e8]"
                 />
               </div>
             )}
@@ -467,7 +469,7 @@ export default function AutomationsPage() {
                     ref={subjectRef}
                     value={form.task_title}
                     onChange={(e) => setForm((f) => ({ ...f, task_title: e.target.value }))}
-                    className="w-full border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-800"
+                    className="w-full border border-[#c8d3e8] bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#c8d3e8]"
                   />
                 </div>
                 <div className="space-y-1">
@@ -488,7 +490,7 @@ export default function AutomationsPage() {
                     rows={4}
                     value={form.message_template}
                     onChange={(e) => setForm((f) => ({ ...f, message_template: e.target.value }))}
-                    className="w-full border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-800 resize-none"
+                    className="w-full border border-[#c8d3e8] bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#c8d3e8] resize-none"
                   />
                 </div>
               </>
@@ -500,7 +502,7 @@ export default function AutomationsPage() {
                 type="number" min={1} max={365}
                 value={form.cooldown_days}
                 onChange={(e) => setForm((f) => ({ ...f, cooldown_days: Number(e.target.value) }))}
-                className="w-full border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-800"
+                className="w-full border border-[#c8d3e8] bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#c8d3e8]"
               />
             </div>
 
@@ -522,7 +524,7 @@ export default function AutomationsPage() {
               <button
                 onClick={() => { setShowForm(false); setFormError(null); }}
                 disabled={saving}
-                className="px-4 py-2 text-sm rounded-lg border border-gray-800 text-gray-700 hover:bg-gray-100 transition disabled:opacity-50"
+                className="px-4 py-2 text-sm rounded-lg border border-[#c8d3e8] text-gray-700 hover:bg-gray-100 transition disabled:opacity-50"
               >
                 {t("common.cancel")}
               </button>

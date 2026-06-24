@@ -32,18 +32,20 @@ export async function GET() {
   }
 
   const rows = await query<CustomerRow>(`
-    SELECT
-      c.ID, c.CODE, c.NAME, c.COUNTRY, c.CUSTOMER_TYPE,
-      c.CONTACT_PHONE, c.CONTACT_EMAIL, c.ACTIVE,
-      au.ID                AS APP_USER_ID,
-      au.TELEGRAM_USERNAME AS TG_USERNAME,
-      au.TELEGRAM_CHAT_ID  AS TG_CHAT_ID,
-      (SELECT COUNT(*) FROM AGRO_CRM_TG_BINDINGS b
-        WHERE b.CUSTOMER_ID = c.ID AND b.STATUS = 'pending') AS PENDING_INVITES
-    FROM AGRO_CUSTOMERS c
-    LEFT JOIN AGRO_CRM_APP_USERS au
-      ON au.CUSTOMER_ID = c.ID AND au.STATUS = 'linked'
-    ORDER BY c.NAME
+    SELECT * FROM (
+      SELECT
+        c.ID, c.CODE, c.NAME, c.COUNTRY, c.CUSTOMER_TYPE,
+        c.CONTACT_PHONE, c.CONTACT_EMAIL, c.ACTIVE,
+        au.ID                AS APP_USER_ID,
+        au.TELEGRAM_USERNAME AS TG_USERNAME,
+        au.TELEGRAM_CHAT_ID  AS TG_CHAT_ID,
+        (SELECT COUNT(*) FROM AGRO_CRM_TG_BINDINGS b
+          WHERE b.CUSTOMER_ID = c.ID AND b.STATUS = 'pending') AS PENDING_INVITES
+      FROM AGRO_CUSTOMERS c
+      LEFT JOIN AGRO_CRM_APP_USERS au
+        ON au.CUSTOMER_ID = c.ID AND au.STATUS = 'linked'
+      ORDER BY c.NAME
+    ) WHERE ROWNUM <= 500
   `);
 
   return NextResponse.json(
@@ -81,8 +83,14 @@ export async function POST(request: Request) {
   const customerType = body.customer_type === "export" ? "export" : "domestic";
   let code: string = String(body.code ?? "").trim();
   if (!code) {
-    const stamp = new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14);
-    code = `CUST-${stamp}`;
+    const maxRows = await query<{ MAX_NUM: number }>(
+      `SELECT NVL(MAX(TO_NUMBER(REGEXP_SUBSTR(CODE, '[0-9]+$'))), 0) AS MAX_NUM
+         FROM AGRO_CUSTOMERS
+        WHERE REGEXP_LIKE(CODE, '^CUS[0-9]+$')`,
+      []
+    );
+    const maxNum = Number(maxRows[0]?.MAX_NUM ?? 0);
+    code = `CUS${String(maxNum + 1).padStart(3, "0")}`;
   }
 
   const dup = await query<{ ID: number }>(

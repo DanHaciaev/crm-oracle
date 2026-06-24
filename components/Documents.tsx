@@ -210,7 +210,7 @@ export default function Documents() {
                     <TableCell>
                       <div className="flex justify-center gap-2">
                         <a href={url} target="_blank" rel="noopener noreferrer" className="px-3 py-1 text-sm rounded-md border hover:bg-gray-50 transition">{t("common.details")}</a>
-                        <a href={url} download={doc.name} className="px-3 py-1 text-sm rounded-md border border-gray-800 text-gray-700 hover:bg-gray-100 transition">{t("common.download")}</a>
+                        <a href={url} download={doc.name} className="px-3 py-1 text-sm rounded-md border border-[#c8d3e8] text-gray-700 hover:bg-gray-100 transition">{t("common.download")}</a>
                         <button onClick={() => setDeleteTarget(doc)} className="px-3 py-1 text-sm rounded-md border border-red-200 text-red-500 hover:bg-red-50 transition">{t("common.delete")}</button>
                       </div>
                     </TableCell>

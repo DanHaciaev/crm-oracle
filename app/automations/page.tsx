@@ -1,12 +1,5 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import Layout from "@/components/Layout";
-import AutomationsPage from "@/components/AutomationsPage";
-
-export default function Page() {
-  return (
-    <Layout>
-      <AutomationsPage />
-    </Layout>
-  );
+export default function AutomationsRedirect() {
+  redirect("/broadcasts");
 }

@@ -9,6 +9,8 @@ import {
 import LinkCustomerModal from "@/components/LinkCustomerModal";
 import AppUserEventsModal from "@/components/AppUserEventsModal";
 import { useT, useLocale } from "@/lib/locale";
+import { toast } from "sonner";
+import { useConfirm } from "@/lib/confirm";
 
 interface AppUser {
   id:                number;
@@ -28,19 +30,20 @@ type Filter = "all" | "pending" | "linked" | "blocked";
 
 function StatusBadge({ s }: { s: string }) {
   const map: Record<string, string> = {
-    pending:  "border-gray-800 text-gray-500",
+    pending:  "border-[#c8d3e8] text-gray-500",
     linked:   "border-emerald-400 text-emerald-600",
     blocked:  "border-red-300 text-red-500",
   };
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-sm border ${map[s] ?? "border-gray-800"}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-sm border ${map[s] ?? "border-[#c8d3e8]"}`}>
       {s}
     </span>
   );
 }
 
 export default function AppUsersTable() {
-  const t = useT();
+  const t       = useT();
+  const confirm = useConfirm();
   const { locale } = useLocale();
   const [users, setUsers]       = useState<AppUser[]>([]);
   const [loading, setLoading]   = useState(true);
@@ -90,7 +93,7 @@ export default function AppUsersTable() {
     setBusy(false);
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
-      alert((j as { error?: string }).error ?? t("common.error"));
+      toast.error((j as { error?: string }).error ?? t("common.error"));
       return;
     }
     fetchUsers();
@@ -122,7 +125,7 @@ export default function AppUsersTable() {
         <StatCard label={t("appUsers.statsBlocked")} value={String(stats.blocked)} />
       </div>
 
-      <div className="border border-gray-800 rounded-xl overflow-auto">
+      <div className="border border-[#c8d3e8] rounded-xl overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -163,7 +166,7 @@ export default function AppUsersTable() {
                     <div className="inline-flex gap-2 flex-wrap justify-end">
                       <button
                         onClick={() => setEventsTarget(u)}
-                        className="px-2 py-1 text-sm rounded-md border border-gray-800 hover:bg-gray-100 transition text-gray-700"
+                        className="px-2 py-1 text-sm rounded-md border border-[#c8d3e8] hover:bg-gray-100 transition text-gray-700"
                         title={t("appUsers.events")}
                       >
                         {t("appUsers.events")}
@@ -179,8 +182,8 @@ export default function AppUsersTable() {
                       {u.status === "linked" && (
                         <button
                           disabled={busy}
-                          onClick={() => { if (confirm(t("appUsers.unlinkConfirm"))) patch(u.id, { action: "unlink" }); }}
-                          className="px-2 py-1 text-sm rounded-md border border-gray-800 hover:bg-gray-100 transition text-gray-700"
+                          onClick={async () => { if (await confirm({ message: t("appUsers.unlinkConfirm") })) patch(u.id, { action: "unlink" }); }}
+                          className="px-2 py-1 text-sm rounded-md border border-[#c8d3e8] hover:bg-gray-100 transition text-gray-700"
                         >
                           {t("appUsers.unlink")}
                         </button>
@@ -188,7 +191,7 @@ export default function AppUsersTable() {
                       {u.status !== "blocked" && (
                         <button
                           disabled={busy}
-                          onClick={() => { if (confirm(t("appUsers.blockConfirm"))) patch(u.id, { action: "block" }); }}
+                          onClick={async () => { if (await confirm({ message: t("appUsers.blockConfirm"), danger: true })) patch(u.id, { action: "block" }); }}
                           className="px-2 py-1 text-sm rounded-md border border-red-500/40 text-red-300 hover:bg-red-500/10 transition"
                         >
                           {t("appUsers.block")}
@@ -198,7 +201,7 @@ export default function AppUsersTable() {
                         <button
                           disabled={busy}
                           onClick={() => patch(u.id, { action: "unblock" })}
-                          className="px-2 py-1 text-sm rounded-md border border-gray-800 hover:bg-gray-100 transition text-gray-700"
+                          className="px-2 py-1 text-sm rounded-md border border-[#c8d3e8] hover:bg-gray-100 transition text-gray-700"
                         >
                           {t("appUsers.unblock")}
                         </button>
@@ -237,7 +240,7 @@ function FilterBtn({ active, onClick, label, count }: {
     <button
       onClick={onClick}
       className={`flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm transition ${
-        active ? "border-gray-800 bg-gray-100" : "border-gray-800 hover:bg-gray-50"
+        active ? "border-[#c8d3e8] bg-gray-100" : "border-[#c8d3e8] hover:bg-gray-50"
       }`}
     >
       <span>{label}</span>
@@ -248,7 +251,7 @@ function FilterBtn({ active, onClick, label, count }: {
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="border flex-1 border-gray-800 rounded-xl p-5 text-center">
+    <div className="border flex-1 border-[#c8d3e8] rounded-xl p-5 text-center">
       <div className="text-3xl font-bold">{value}</div>
       <div className="text-sm text-gray-400 mt-1">{label}</div>
     </div>

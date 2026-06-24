@@ -8,6 +8,7 @@ import {
 import WeightTicketDetailModal from "@/components/WeightTicketDetailModal";
 import type { PdfLang } from "@/lib/pdf-act";
 import { useT, useLocale } from "@/lib/locale";
+import { toast } from "sonner";
 
 export interface WeightTicket {
   id: number;
@@ -29,7 +30,7 @@ function StatusBadge({ status }: { status: string }) {
     draft: { label: t("weightTickets.statusDraft"), cls: "border-amber-500/40 text-amber-400 bg-amber-500/10" },
     finalized: { label: t("weightTickets.statusFinalized"), cls: "border-emerald-500/40 text-emerald-400 bg-emerald-500/10" },
   };
-  const { label, cls } = cfg[status] ?? { label: status, cls: "border-gray-800 text-gray-500 bg-gray-100" };
+  const { label, cls } = cfg[status] ?? { label: status, cls: "border-[#c8d3e8] text-gray-500 bg-gray-100" };
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-sm font-medium border ${cls}`}>
       {label}
@@ -143,9 +144,10 @@ export default function WeightTicketsTable() {
         body: JSON.stringify({ lang }),
       });
       const json = await res.json().catch(() => ({}));
-      alert(res.ok ? t("weightTickets.tgSentSuccess") : (json as { error?: string }).error ?? t("common.error"));
+      if (res.ok) toast.success(t("weightTickets.tgSentSuccess"));
+      else toast.error((json as { error?: string }).error ?? t("common.error"));
     } catch {
-      alert(t("weightTickets.networkError"));
+      toast.error(t("weightTickets.networkError"));
     } finally {
       setSendingId(null);
     }
@@ -160,7 +162,7 @@ export default function WeightTicketsTable() {
         </div>
         <button
           onClick={() => exportCsv(filtered)}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-gray-800 text-sm hover:bg-gray-100 transition shrink-0 text-gray-700"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-[#c8d3e8] text-sm hover:bg-gray-100 transition shrink-0 text-gray-700"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
@@ -182,14 +184,14 @@ export default function WeightTicketsTable() {
             type="date"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
-            className="border border-gray-800 bg-white rounded-lg px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-gray-800 transition"
+            className="border border-[#c8d3e8] bg-white rounded-lg px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-[#c8d3e8] transition"
           />
           <span className="text-gray-400 text-sm">—</span>
           <input
             type="date"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
-            className="border border-gray-800 bg-white rounded-lg px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-gray-800 transition"
+            className="border border-[#c8d3e8] bg-white rounded-lg px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-[#c8d3e8] transition"
           />
           {(dateFrom || dateTo) && (
             <button
@@ -204,7 +206,7 @@ export default function WeightTicketsTable() {
           placeholder={t("weightTickets.searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="border border-gray-800 bg-white rounded-lg px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-gray-800 transition w-full sm:w-64"
+          className="border border-[#c8d3e8] bg-white rounded-lg px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-[#c8d3e8] transition w-full sm:w-64"
         />
       </div>
 
@@ -215,7 +217,7 @@ export default function WeightTicketsTable() {
         <StatCard label={t("weightTickets.totalNetKg")} value={fmtKgShort(stats.totalKg)} />
       </div>
 
-      <div className="border border-gray-800 rounded-xl overflow-auto">
+      <div className="border border-[#c8d3e8] rounded-xl overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -250,7 +252,7 @@ export default function WeightTicketsTable() {
                     <div className="flex items-center justify-center gap-1">
                       <button
                         onClick={() => setOpenId(ticket.id)}
-                        className="px-3 py-1 text-sm rounded-md border border-gray-800 hover:bg-gray-100 transition text-gray-700"
+                        className="px-3 py-1 text-sm rounded-md border border-[#c8d3e8] hover:bg-gray-100 transition text-gray-700"
                       >
                         {t("weightTickets.open")}
                       </button>
@@ -267,7 +269,7 @@ export default function WeightTicketsTable() {
                           ))}
                           <button
                             onClick={() => setLangPickId(null)}
-                            className="px-1.5 py-1 text-sm rounded-md border border-gray-800 text-gray-500 hover:bg-gray-100 transition"
+                            className="px-1.5 py-1 text-sm rounded-md border border-[#c8d3e8] text-gray-500 hover:bg-gray-100 transition"
                           >
                             ✕
                           </button>
@@ -276,7 +278,7 @@ export default function WeightTicketsTable() {
                         <button
                           onClick={() => setLangPickId(ticket.id)}
                           disabled={sendingId === ticket.id}
-                          className="px-3 py-1 text-sm rounded-md border border-gray-800 text-sky-400 hover:bg-gray-200 transition disabled:opacity-40"
+                          className="px-3 py-1 text-sm rounded-md border border-[#c8d3e8] text-sky-400 hover:bg-gray-200 transition disabled:opacity-40"
                           title={t("weightTickets.sendTg")}
                         >
                           {sendingId === ticket.id ? "..." : "TG"}
@@ -310,7 +312,7 @@ function FilterBtn({ active, onClick, label, count }: {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm transition ${active ? "border-gray-800 bg-gray-900 text-white" : "border-gray-800 text-gray-500 hover:bg-gray-100"
+      className={`flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm transition ${active ? "border-[#c8d3e8] bg-gray-900 text-white" : "border-[#c8d3e8] text-gray-500 hover:bg-gray-100"
         }`}
     >
       <span>{label}</span>
@@ -321,7 +323,7 @@ function FilterBtn({ active, onClick, label, count }: {
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="border border-gray-800 rounded-xl p-4 text-center">
+    <div className="border border-[#c8d3e8] rounded-xl p-4 text-center">
       <div className="text-2xl font-bold tabular-nums">{value}</div>
       <div className="text-sm text-gray-400 mt-1">{label}</div>
     </div>

@@ -34,7 +34,7 @@ function GroupBadge({ group }: { group: string }) {
     vegetable: "border-green-500/40 text-green-400 bg-green-500/10",
     berry:     "border-pink-500/40 text-pink-400 bg-pink-500/10",
   };
-  const cls = cfg[group] ?? "border-gray-800 text-gray-500 bg-gray-100";
+  const cls = cfg[group] ?? "border-[#c8d3e8] text-gray-500 bg-gray-100";
   const key = `items.groups.${group}`;
   const label = t(key);
   return (
@@ -184,7 +184,7 @@ export default function ItemsTable() {
         </div>
         <button
           onClick={() => exportCsv(filtered)}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-gray-800 text-sm hover:bg-gray-100 transition shrink-0 text-gray-700"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-[#c8d3e8] text-sm hover:bg-gray-100 transition shrink-0 text-gray-700"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
@@ -200,12 +200,12 @@ export default function ItemsTable() {
           placeholder={t("items.searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="border border-gray-800 bg-white rounded-lg px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-gray-800 transition w-60"
+          className="border border-[#c8d3e8] bg-white rounded-lg px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-[#c8d3e8] transition w-60"
         />
         <select
           value={group}
           onChange={(e) => setGroup(e.target.value)}
-          className="border border-gray-800 bg-white rounded-lg px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-gray-800 transition"
+          className="border border-[#c8d3e8] bg-white rounded-lg px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-[#c8d3e8] transition"
         >
           <option value="all">{t("items.allGroups")}</option>
           {groups.map((g) => (
@@ -229,7 +229,7 @@ export default function ItemsTable() {
         <StatCard label={t("items.statsNetKg")}    value={fmtKg(stats.net_kg)} />
       </div>
 
-      <div className="border border-gray-800 rounded-xl overflow-auto">
+      <div className="border border-[#c8d3e8] rounded-xl overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -305,7 +305,7 @@ export default function ItemsTable() {
 
 function StatCard({ label, value, suffix }: { label: string; value: string; suffix?: string }) {
   return (
-    <div className="border border-gray-800 rounded-xl p-4 text-center">
+    <div className="border border-[#c8d3e8] rounded-xl p-4 text-center">
       <div className="text-2xl font-bold tabular-nums">
         {value}{suffix && <span className="text-sm text-gray-400 ml-1">{suffix}</span>}
       </div>

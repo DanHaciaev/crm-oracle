@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useT } from "@/lib/locale";
+import { useConfirm } from "@/lib/confirm";
 
 interface Task {
   id: number; title: string;
@@ -21,15 +22,15 @@ interface NewTaskForm {
 const PRIORITY_CLS: Record<string, string> = {
   urgent: "border-red-500/50 text-red-400 bg-red-500/10",
   high:   "border-orange-500/50 text-orange-400 bg-orange-500/10",
-  normal: "border-gray-800 text-gray-400 bg-gray-100",
-  low:    "border-gray-800 text-gray-400 bg-transparent",
+  normal: "border-[#c8d3e8] text-gray-400 bg-gray-100",
+  low:    "border-[#c8d3e8] text-gray-400 bg-transparent",
 };
 
 const STATUS_CLS: Record<string, string> = {
   open:        "border-blue-500/40 text-blue-400",
   in_progress: "border-violet-500/40 text-violet-400",
   done:        "border-emerald-500/40 text-emerald-400",
-  cancelled:   "border-gray-800 text-gray-400",
+  cancelled:   "border-[#c8d3e8] text-gray-400",
 };
 
 function fmtDate(s: string | null) {
@@ -48,7 +49,8 @@ interface Customer { id: number; name: string; }
 interface Props { customerId?: number; compact?: boolean; }
 
 export default function TasksPage({ customerId, compact = false }: Props) {
-  const t = useT();
+  const t       = useT();
+  const confirm = useConfirm();
   const [tasks, setTasks]         = useState<Task[]>([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
@@ -94,7 +96,7 @@ export default function TasksPage({ customerId, compact = false }: Props) {
   }
 
   async function deleteTask(id: number) {
-    if (!confirm(t("tasks.noTasks"))) return;
+    if (!await confirm({ message: t("tasks.deleteConfirm") ?? "Удалить задачу?", danger: true })) return;
     await fetch(`/api/tasks/${id}`, { method: "DELETE" });
     setTasks(prev => prev.filter(tk => tk.id !== id));
   }
@@ -139,7 +141,7 @@ export default function TasksPage({ customerId, compact = false }: Props) {
             <p className="text-sm text-gray-500 mt-1">{t("tasks.subtitle")}</p>
           </div>
           <button onClick={() => setShowForm(true)}
-            className="px-4 py-2 rounded-lg border border-gray-800 text-gray-700 text-sm font-medium hover:bg-gray-100 transition">
+            className="px-4 py-2 rounded-lg border border-[#c8d3e8] text-gray-700 text-sm font-medium hover:bg-gray-100 transition">
             + {t("tasks.newTask")}
           </button>
         </div>
@@ -148,7 +150,7 @@ export default function TasksPage({ customerId, compact = false }: Props) {
       {compact && (
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm font-medium text-gray-700">{t("tasks.title")}</span>
-          <button onClick={() => setShowForm(true)} className="text-sm px-2.5 py-1 border border-gray-800 rounded-md hover:bg-gray-100 transition text-gray-700">
+          <button onClick={() => setShowForm(true)} className="text-sm px-2.5 py-1 border border-[#c8d3e8] rounded-md hover:bg-gray-100 transition text-gray-700">
             + {t("common.add")}
           </button>
         </div>
@@ -164,7 +166,7 @@ export default function TasksPage({ customerId, compact = false }: Props) {
         ].map(s => (
           <button key={s.v} onClick={() => setStatus(s.v)}
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-sm transition
-              ${statusFilter === s.v ? "border-gray-800 bg-gray-900 text-white" : "border-gray-800 text-gray-500 hover:bg-gray-100"}`}>
+              ${statusFilter === s.v ? "border-[#c8d3e8] bg-gray-900 text-white" : "border-[#c8d3e8] text-gray-500 hover:bg-gray-100"}`}>
             {s.label} <span className="tabular-nums">{s.count}</span>
           </button>
         ))}
@@ -184,11 +186,11 @@ export default function TasksPage({ customerId, compact = false }: Props) {
           return (
             <div key={task.id}
               className={`border rounded-xl p-4 flex items-start gap-3 group transition
-                ${task.status === "done" ? "border-gray-800 opacity-60" : "border-gray-800 hover:border-gray-800"}`}>
+                ${task.status === "done" ? "border-[#c8d3e8] opacity-60" : "border-[#c8d3e8] hover:border-[#c8d3e8]"}`}>
               <button
                 onClick={() => updateStatus(task.id, task.status === "done" ? "open" : "done")}
                 className={`mt-0.5 w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition
-                  ${task.status === "done" ? "border-emerald-500 bg-emerald-500/20" : "border-gray-800 hover:border-emerald-500"}`}>
+                  ${task.status === "done" ? "border-emerald-500 bg-emerald-500/20" : "border-[#c8d3e8] hover:border-emerald-500"}`}>
                 {task.status === "done" && <span className="text-emerald-400 text-sm">✓</span>}
               </button>
 
@@ -226,7 +228,7 @@ export default function TasksPage({ customerId, compact = false }: Props) {
               <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition">
                 {task.status === "open" && (
                   <button onClick={() => updateStatus(task.id, "in_progress")}
-                    className="text-sm px-2 py-1 border border-gray-800 rounded-md hover:bg-gray-100 transition text-gray-700">
+                    className="text-sm px-2 py-1 border border-[#c8d3e8] rounded-md hover:bg-gray-100 transition text-gray-700">
                     {t("taskStatuses.in_progress")}
                   </button>
                 )}
@@ -242,7 +244,7 @@ export default function TasksPage({ customerId, compact = false }: Props) {
 
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white border border-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
+          <div className="bg-white border border-[#c8d3e8] rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
             <h2 className="text-lg font-semibold text-gray-900">{t("tasks.newTask")}</h2>
             <div className="space-y-3 text-sm">
               <TInput label={`${t("tasks.taskTitle")} *`} value={form.title} onChange={v => setForm(f => ({ ...f, title: v }))} />
@@ -250,7 +252,7 @@ export default function TasksPage({ customerId, compact = false }: Props) {
                 <div>
                   <label className="block text-sm text-gray-500 mb-1">{t("tasks.customer")}</label>
                   <select value={form.customer_id} onChange={(e) => setForm(f => ({ ...f, customer_id: e.target.value }))}
-                    className="w-full border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-800">
+                    className="w-full border border-[#c8d3e8] bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#c8d3e8]">
                     <option value="">—</option>
                     {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
@@ -260,7 +262,7 @@ export default function TasksPage({ customerId, compact = false }: Props) {
                 <div>
                   <label className="block text-sm text-gray-500 mb-1">{t("tasks.priority")}</label>
                   <select value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}
-                    className="w-full border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-800">
+                    className="w-full border border-[#c8d3e8] bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#c8d3e8]">
                     <option value="low">{t("priorities.low")}</option>
                     <option value="normal">{t("priorities.normal")}</option>
                     <option value="high">{t("priorities.high")}</option>
@@ -273,11 +275,11 @@ export default function TasksPage({ customerId, compact = false }: Props) {
               <div>
                 <label className="block text-sm text-gray-500 mb-1">{t("common.notes")}</label>
                 <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                  rows={2} className="w-full border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-800 resize-none" />
+                  rows={2} className="w-full border border-[#c8d3e8] bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#c8d3e8] resize-none" />
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-1">
-              <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm border border-gray-800 rounded-lg hover:bg-gray-100 transition text-gray-700">
+              <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm border border-[#c8d3e8] rounded-lg hover:bg-gray-100 transition text-gray-700">
                 {t("common.cancel")}
               </button>
               <button onClick={createTask} disabled={saving || !form.title}
@@ -299,7 +301,7 @@ function TInput({ label, value, onChange, type = "text" }: {
     <div>
       <label className="block text-sm text-gray-500 mb-1">{label}</label>
       <input type={type} value={value} onChange={e => onChange(e.target.value)}
-        className="w-full border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-800 transition" />
+        className="w-full border border-[#c8d3e8] bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#c8d3e8] transition" />
     </div>
   );
 }

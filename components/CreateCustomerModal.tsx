@@ -72,8 +72,8 @@ export default function CreateCustomerModal({ appUser, onClose, onCreated }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white border border-gray-800 text-gray-900 rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-auto">
-        <div className="p-6 border-b border-gray-800 flex items-start justify-between">
+      <div className="bg-white border border-[#c8d3e8] text-gray-900 rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-auto">
+        <div className="p-6 border-b border-[#c8d3e8] flex items-start justify-between">
           <div>
             <h2 className="text-lg font-semibold">{t("customers.newCustomer")}</h2>
             <p className="text-sm text-gray-500 mt-0.5">
@@ -130,8 +130,8 @@ export default function CreateCustomerModal({ appUser, onClose, onCreated }: {
           )}
         </div>
 
-        <div className="flex justify-end gap-2 p-4 border-t border-gray-800">
-          <button onClick={onClose} className="px-4 py-2 text-sm rounded-lg border border-gray-800 hover:bg-gray-100 transition text-gray-700">
+        <div className="flex justify-end gap-2 p-4 border-t border-[#c8d3e8]">
+          <button onClick={onClose} className="px-4 py-2 text-sm rounded-lg border border-[#c8d3e8] hover:bg-gray-100 transition text-gray-700">
             {t("common.cancel")}
           </button>
           <button
@@ -147,7 +147,7 @@ export default function CreateCustomerModal({ appUser, onClose, onCreated }: {
   );
 }
 
-const inputCls = "w-full border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-800 focus:ring-1 focus:ring-gray-200 transition";
+const inputCls = "w-full border border-[#c8d3e8] bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#c8d3e8] focus:ring-1 focus:ring-gray-200 transition";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (

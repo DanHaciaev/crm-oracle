@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/static-components */
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
@@ -18,10 +19,16 @@ import {
 import { GripVertical, TrendingUp, TrendingDown, Minus, RefreshCw, Phone } from "lucide-react";
 import Link from "next/link";
 import { useT } from "@/lib/locale";
+import {
+  Table, TableBody, TableCell,
+  TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
+import WinLossWidget from "@/components/WinLossWidget";
+import ForecastActualWidget from "@/components/ForecastActualWidget";
 
 type Period   = "7d" | "30d" | "90d" | "ytd";
 type SaleType = "all" | "domestic" | "export";
-type BlockId  = "revenue_trend" | "top_customers" | "top_items" | "status_pie" | "churn_risk" | "recent_orders" | "monthly_revenue" | "forecast";
+type BlockId  = "revenue_trend" | "top_customers" | "top_items" | "status_pie" | "churn_risk" | "recent_orders" | "monthly_revenue" | "forecast" | "bottleneck" | "expiring_stock" | "win_loss" | "forecast_actual" | "pipeline_velocity";
 
 interface Kpi {
   revenue: number; orders: number; active_customers: number; unread: number;
@@ -38,7 +45,7 @@ interface Stats {
 }
 
 const DEFAULT_BLOCKS: BlockId[] = [
-  "monthly_revenue", "forecast", "revenue_trend", "top_customers", "top_items", "status_pie", "churn_risk", "recent_orders",
+  "monthly_revenue", "forecast", "forecast_actual", "pipeline_velocity", "expiring_stock", "bottleneck", "win_loss", "revenue_trend", "top_customers", "top_items", "status_pie", "churn_risk", "recent_orders",
 ];
 
 const CHART_COLORS = ["#10b981", "#818cf8", "#fbbf24", "#fb7185", "#38bdf8", "#a78bfa", "#34d399", "#f97316"];
@@ -80,7 +87,7 @@ function KpiCard({ label, value, sub, prev, curr, accent }: {
   prev?: number; curr?: number; accent?: string;
 }) {
   return (
-    <div className="rounded-xl border border-gray-800 bg-gray-50 p-4 flex flex-col gap-1">
+    <div className="rounded-xl border border-[#c8d3e8] bg-gray-50 p-4 flex flex-col gap-1">
       <div className="text-sm text-gray-400 uppercase tracking-wide">{label}</div>
       <div className={`text-2xl font-bold ${accent ?? "text-gray-700"}`}>{value}</div>
       <div className="flex items-center justify-between mt-1">
@@ -222,27 +229,27 @@ function ChurnRiskTable({ data }: { data: Stats["churn_risk"] }) {
   if (!data.length)
     return <p className="text-sm text-gray-400 py-4">{t("dashboard.noChurnRisk")}</p>;
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="text-left text-gray-600 text-sm border-b border-gray-800">
-            <th className="pb-2 font-medium">{t("dashboard.client")}</th>
-            <th className="pb-2 font-medium text-center">{t("dashboard.prevPeriod")}</th>
-            <th className="pb-2 font-medium text-center">{t("dashboard.currPeriod")}</th>
-            <th className="pb-2 font-medium text-center">{t("dashboard.change")}</th>
-          </tr>
-        </thead>
-        <tbody>
+    <div className="border border-[#c8d3e8] rounded-xl overflow-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{t("dashboard.client").toUpperCase()}</TableHead>
+            <TableHead className="text-center">{t("dashboard.prevPeriod").toUpperCase()}</TableHead>
+            <TableHead className="text-center">{t("dashboard.currPeriod").toUpperCase()}</TableHead>
+            <TableHead className="text-center">{t("dashboard.change").toUpperCase()}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {data.map((r, i) => (
-            <tr key={i} className="border-b border-gray-800 hover:bg-gray-50 transition">
-              <td className="py-2.5 pr-4 font-medium text-gray-800">{r.name}</td>
-              <td className="py-2.5 pr-4 text-center text-gray-500 font-mono">{fmtNum(r.prev)}</td>
-              <td className="py-2.5 pr-4 text-center text-gray-700 font-mono">{fmtNum(r.curr)}</td>
-              <td className="py-2.5 text-center font-mono text-red-400">{r.pct.toFixed(1)}%</td>
-            </tr>
+            <TableRow key={i}>
+              <TableCell className="font-medium">{r.name}</TableCell>
+              <TableCell className="text-center font-mono text-gray-500">{fmtNum(r.prev)}</TableCell>
+              <TableCell className="text-center font-mono">{fmtNum(r.curr)}</TableCell>
+              <TableCell className="text-center font-mono text-red-400">{r.pct.toFixed(1)}%</TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }
@@ -252,50 +259,50 @@ function RecentOrdersTable({ data }: { data: Stats["recent_orders"] }) {
   if (!data.length) return <Empty />;
   const label = (status: string) => t(`sales.statuses.${status}`) || status;
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="text-center text-gray-800 text-sm border-b border-gray-800">
-            <th className="pb-2 font-medium">{t("dashboard.number")}</th>
-            <th className="pb-2 font-medium">{t("common.date")}</th>
-            <th className="pb-2 font-medium">{t("dashboard.client")}</th>
-            <th className="pb-2 font-medium">{t("common.amount")}</th>
-            <th className="pb-2 font-medium">{t("dashboard.weightNet")}</th>
-            <th className="pb-2 font-medium">{t("common.status")}</th>
-          </tr>
-        </thead>
-        <tbody>
+    <div className="border border-[#c8d3e8] rounded-xl overflow-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{t("dashboard.number").toUpperCase()}</TableHead>
+            <TableHead>{t("common.date").toUpperCase()}</TableHead>
+            <TableHead>{t("dashboard.client").toUpperCase()}</TableHead>
+            <TableHead className="text-center">{t("common.amount").toUpperCase()}</TableHead>
+            <TableHead className="text-center">{t("dashboard.weightNet").toUpperCase()}</TableHead>
+            <TableHead className="text-center">{t("common.status").toUpperCase()}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {data.map((r, i) => (
-            <tr key={i} className="border-b border-gray-800 hover:bg-gray-200 transition text-center">
-              <td className="py-2.5 pr-4 font-mono text-gray-600 text-sm">{r.doc_number}</td>
-              <td className="py-2.5 pr-4 text-gray-500 text-sm whitespace-nowrap">{r.doc_date}</td>
-              <td className="py-2.5 pr-4 text-gray-800">{r.customer_name}</td>
-              <td className="py-2.5 pr-4 font-mono text-gray-700 text-center">
+            <TableRow key={i}>
+              <TableCell className="font-mono text-gray-500">{r.doc_number}</TableCell>
+              <TableCell className="whitespace-nowrap text-gray-500">{r.doc_date}</TableCell>
+              <TableCell>{r.customer_name}</TableCell>
+              <TableCell className="font-mono text-center">
                 {r.currency !== "MDL" ? (
                   <>
                     <div>{fmtNum(r.amount_orig)} {r.currency}</div>
-                    <div className="text-sm text-gray-400">≈ {fmtNum(r.amount)} MDL</div>
+                    <div className="text-xs text-gray-400">≈ {fmtNum(r.amount)} MDL</div>
                   </>
                 ) : (
                   <div>{fmtNum(r.amount)} MDL</div>
                 )}
-              </td>
-              <td className="py-2.5 pr-4 font-mono text-zinc-400">{fmtKg(r.weight_kg)}</td>
-              <td className="py-2.5">
+              </TableCell>
+              <TableCell className="font-mono text-center text-zinc-400">{fmtKg(r.weight_kg)}</TableCell>
+              <TableCell className="text-center">
                 <span
-                  className="inline-flex px-2 py-0.5 rounded-full text-[10px] border text-zinc-100"
+                  className="inline-flex px-2 py-0.5 rounded-full text-[10px] border"
                   style={{
-                    color:       STATUS_COLORS[r.status] ?? "#f4f5f5",
-                    borderColor: (STATUS_COLORS[r.status] ?? "#f4f5f5") + "60",
+                    color:       STATUS_COLORS[r.status] ?? "#6b7280",
+                    borderColor: (STATUS_COLORS[r.status] ?? "#6b7280") + "60",
                   }}
                 >
                   {label(r.status)}
                 </span>
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }
@@ -365,7 +372,7 @@ function ForecastWidget() {
           { label: t("dashboard.forecast60d"), val: data.forecast_60d },
           { label: t("dashboard.forecast90d"), val: data.forecast_90d },
         ].map(({ label, val }) => (
-          <div key={label} className="rounded-lg border border-gray-800 bg-gray-50 p-3 text-center">
+          <div key={label} className="rounded-lg border border-[#c8d3e8] bg-gray-50 p-3 text-center">
             <div className="text-[11px] text-gray-400 uppercase tracking-wide mb-1">{label}</div>
             <div className="text-lg font-bold text-emerald-400">{fmtNum(val)}</div>
             <div className="text-[10px] text-gray-400">MDL</div>
@@ -399,10 +406,230 @@ function ForecastWidget() {
   );
 }
 
+interface BottleneckData {
+  leads: { status: string; count: number; max_days: number }[];
+  deals: { status: string; count: number; max_days: number }[];
+}
+
+const STALE_THRESHOLD = 14;
+
+function BottleneckWidget() {
+  const t = useT();
+  const [data, setData] = useState<BottleneckData | null>(null);
+
+  useEffect(() => {
+    fetch("/api/dashboard/bottleneck")
+      .then(r => r.json())
+      .then((d: unknown) => setData(d as BottleneckData))
+      .catch(() => {});
+  }, []);
+
+  if (!data) return <div className="h-40 animate-pulse bg-gray-100 rounded-lg" />;
+
+  const staleLeads = data.leads.filter(l => l.max_days >= STALE_THRESHOLD);
+  const staleDeals = data.deals.filter(d => d.max_days >= STALE_THRESHOLD);
+
+  function dayCls(d: number) {
+    if (d >= 30) return "text-red-500 font-semibold";
+    if (d >= 14) return "text-amber-500";
+    return "text-gray-500";
+  }
+
+  function StageTable({ rows, labelPrefix }: { rows: typeof staleLeads; labelPrefix: string }) {
+    if (!rows.length) return <p className="text-sm text-gray-400 py-1">—</p>;
+    return (
+      <div className="border border-[#c8d3e8] rounded-xl overflow-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>СТАДИЯ</TableHead>
+              <TableHead className="text-center">ШТ.</TableHead>
+              <TableHead className="text-center">МАКС. ДНЕЙ</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map(r => (
+              <TableRow key={r.status}>
+                <TableCell>{t(`${labelPrefix}.${r.status}`) || r.status}</TableCell>
+                <TableCell className="text-center font-mono">{r.count}</TableCell>
+                <TableCell className={`text-center font-mono ${dayCls(r.max_days)}`}>{r.max_days}д</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    );
+  }
+
+  const totalStale = staleLeads.reduce((s, r) => s + r.count, 0) + staleDeals.reduce((s, r) => s + r.count, 0);
+
+  return (
+    <div className="space-y-5">
+      {totalStale === 0 ? (
+        <p className="text-sm text-emerald-500 py-2">✓ Нет застрявших лидов и сделок</p>
+      ) : (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-amber-400/40 bg-amber-50 text-amber-700 text-sm">
+          ⚠ {totalStale} позиций без движения {STALE_THRESHOLD}+ дней
+        </div>
+      )}
+      <div>
+        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Лиды (стагнация)</div>
+        <StageTable rows={staleLeads} labelPrefix="leadStatuses" />
+      </div>
+      <div>
+        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Сделки (стагнация)</div>
+        <StageTable rows={staleDeals} labelPrefix="sales.statuses" />
+      </div>
+    </div>
+  );
+}
+
+interface ExpiringBatch {
+  batch_id: number; batch_number: string; item_name: string;
+  qty_kg: number; expiry_date: string; days_left: number;
+  top_customers: { id: number; name: string }[];
+}
+
+function ExpiringStockWidget() {
+  const [items, setItems] = useState<ExpiringBatch[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/dashboard/expiring")
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then((d: ExpiringBatch[]) => setItems(d))
+      .catch(() => {})
+      .finally(() => setLoaded(true));
+  }, []);
+
+  if (!loaded) return <div className="h-40 animate-pulse bg-gray-100 rounded-lg" />;
+
+  if (!items.length)
+    return <p className="text-sm text-emerald-500 py-2">✓ Нет партий с истекающим сроком — всё в норме</p>;
+
+  function urgency(days: number) {
+    if (days <= 3)  return "bg-red-50 border-red-300";
+    if (days <= 7)  return "bg-orange-50 border-orange-300";
+    return "bg-amber-50 border-amber-200";
+  }
+  function daysCls(days: number) {
+    if (days <= 3)  return "text-red-600 font-bold";
+    if (days <= 7)  return "text-orange-600 font-semibold";
+    return "text-amber-600";
+  }
+
+  return (
+    <div className="space-y-2.5">
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-red-300/60 bg-red-50 text-red-700 text-sm">
+        ⚠ {items.length} партий истекает в течение 14 дней — нужно срочно продать
+      </div>
+      {items.map(b => (
+        <div key={b.batch_id} className={`rounded-lg border p-3 ${urgency(b.days_left)}`}>
+          <div className="flex items-start justify-between gap-2 mb-1.5">
+            <div>
+              <span className="font-semibold text-sm text-gray-800">{b.item_name}</span>
+              <span className="ml-2 text-xs text-gray-500 font-mono">{b.batch_number}</span>
+            </div>
+            <div className="text-right shrink-0">
+              <div className={`text-sm ${daysCls(b.days_left)}`}>{b.days_left}д</div>
+              <div className="text-xs text-gray-500">{fmtNum(b.qty_kg)} кг</div>
+            </div>
+          </div>
+          {b.top_customers.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-1">
+              <span className="text-xs text-gray-400">Берут:</span>
+              {b.top_customers.map(c => (
+                <Link key={c.id} href={`/customers/${c.id}`} className="text-xs text-blue-600 hover:underline">
+                  {c.name}
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+type PVData = { stages: { STATUS: string; AVG_DAYS: number; CNT: number }[]; won_cycle: { AVG_CYCLE: number; WON_COUNT: number } | null };
+
+function PipelineVelocityWidget() {
+  const t = useT();
+  // undefined = loading, null = error/empty, PVData = loaded
+  const [data, setData] = useState<PVData | null | undefined>(undefined);
+
+  useEffect(() => {
+    const empty: PVData = { stages: [], won_cycle: null };
+    fetch("/api/dashboard/pipeline-velocity")
+      .then(r => r.ok ? r.json() : empty)
+      .then(d => setData(d ?? empty))
+      .catch(() => setData(empty));
+  }, []);
+
+  const STATUS_COLORS: Record<string, string> = {
+    new:       "bg-sky-400",
+    contacted: "bg-blue-400",
+    qualified: "bg-violet-400",
+    proposal:  "bg-amber-400",
+  };
+  const STATUS_TEXT: Record<string, string> = {
+    new:       "text-sky-600",
+    contacted: "text-blue-600",
+    qualified: "text-violet-600",
+    proposal:  "text-amber-600",
+  };
+
+  if (data === undefined) return <div className="h-40 animate-pulse bg-gray-100 rounded-lg" />;
+
+  const stages = data?.stages ?? [];
+  const maxDays = Math.max(...stages.map(s => s.AVG_DAYS), 1);
+
+  return (
+    <div className="space-y-3">
+      {stages.length === 0 ? (
+        <p className="text-xs text-gray-400 text-center py-2">Нет активных лидов в воронке</p>
+      ) : stages.map(s => (
+        <div key={s.STATUS}>
+          <div className="flex items-center justify-between mb-1">
+            <span className={`text-xs font-medium ${STATUS_TEXT[s.STATUS] ?? "text-gray-600"}`}>
+              {t(`leadStatuses.${s.STATUS}`) || s.STATUS}
+              <span className="text-gray-400 font-normal ml-1">({s.CNT} лид.)</span>
+            </span>
+            <span className="text-xs font-semibold text-gray-700">{s.AVG_DAYS} дн.</span>
+          </div>
+          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${STATUS_COLORS[s.STATUS] ?? "bg-gray-400"}`}
+              style={{ width: `${Math.max(4, (s.AVG_DAYS / maxDays) * 100)}%` }}
+            />
+          </div>
+        </div>
+      ))}
+      {data?.won_cycle && data.won_cycle.WON_COUNT > 0 && (
+        <div className={`pt-3 flex items-center justify-between ${stages.length > 0 ? "mt-3 border-t border-gray-100" : ""}`}>
+          <div>
+            <span className="text-xs text-gray-500">Средний цикл сделки</span>
+            <span className="text-xs text-gray-400 ml-1">({data.won_cycle.WON_COUNT} сделок)</span>
+          </div>
+          <span className="text-sm font-bold text-emerald-600">{data.won_cycle.AVG_CYCLE} дн.</span>
+        </div>
+      )}
+      {!data?.won_cycle && stages.length === 0 && (
+        <p className="text-sm text-gray-400 text-center py-4">Нет данных</p>
+      )}
+    </div>
+  );
+}
+
 function BlockContent({ id, stats }: { id: BlockId; stats: Stats | null }) {
   // These blocks fetch their own data independently
-  if (id === "monthly_revenue") return <MonthlyRevenueChart />;
-  if (id === "forecast")        return <ForecastWidget />;
+  if (id === "monthly_revenue")    return <MonthlyRevenueChart />;
+  if (id === "forecast")           return <ForecastWidget />;
+  if (id === "bottleneck")         return <BottleneckWidget />;
+  if (id === "expiring_stock")     return <ExpiringStockWidget />;
+  if (id === "win_loss")           return <WinLossWidget />;
+  if (id === "forecast_actual")    return <ForecastActualWidget />;
+  if (id === "pipeline_velocity")  return <PipelineVelocityWidget />;
 
   if (!stats) return <div className="h-40 animate-pulse bg-gray-100 rounded-lg" />;
   switch (id) {
@@ -454,7 +681,7 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
       className={`px-3 py-1.5 rounded-lg text-sm font-medium transition border
         ${active
           ? "bg-gray-900 border-gray-700 text-white"
-          : "border-gray-800 text-gray-700 hover:bg-gray-100"
+          : "border-[#c8d3e8] text-gray-700 hover:bg-gray-100"
         }`}
     >
       {label}
@@ -488,14 +715,14 @@ function CallTodayWidget() {
   }, []);
 
   return (
-    <div className="rounded-xl border border-gray-800 bg-gray-50 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
+    <div className="rounded-xl border border-[#c8d3e8] bg-gray-50 overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[#c8d3e8]">
         <div className="flex items-center gap-2">
           <Phone className="w-4 h-4 text-gray-600" />
           <span className="text-sm font-semibold text-gray-800">{t("dashboard.callToday")}</span>
         </div>
         {!loading && items.length > 0 && (
-          <span className="text-xs px-2 py-0.5 rounded-full border border-gray-800 text-gray-500">
+          <span className="text-xs px-2 py-0.5 rounded-full border border-[#c8d3e8] text-gray-500">
             {items.length}
           </span>
         )}
@@ -633,6 +860,13 @@ export default function Dashboard() {
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
           </button>
+          <button
+            onClick={() => { localStorage.removeItem("crm_dash_blocks"); setBlocks(DEFAULT_BLOCKS); }}
+            className="ml-1 px-2.5 py-1.5 rounded-lg border border-zinc-800 text-zinc-800 hover:bg-zinc-200 transition text-xs"
+            title={t("dashboard.resetLayout")}
+          >
+            {t("dashboard.resetLayout")}
+          </button>
         </div>
       </div>
 
@@ -673,6 +907,7 @@ export default function Dashboard() {
       <CallTodayWidget />
 
       <DndContext
+        id="dashboard-dnd"
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragStart={handleDragStart}
