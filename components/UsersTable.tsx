@@ -7,6 +7,7 @@ import {
   TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { useT, useLocale } from "@/lib/locale";
+import { toast } from "sonner";
 
 interface User {
   id: number;
@@ -305,7 +306,7 @@ export default function UsersTable({ currentUserId }: { currentUserId: number })
       body: JSON.stringify({ id: deleteTarget.id }),
     });
     setDeleting(false);
-    if (!res.ok) { alert(t("customers.deleteError")); return; }
+    if (!res.ok) { toast.error(t("customers.deleteError")); return; }
     setUsers((prev) => prev.filter((u) => u.id !== deleteTarget.id));
     setDeleteTarget(null);
   }
@@ -326,7 +327,7 @@ export default function UsersTable({ currentUserId }: { currentUserId: number })
         </button>
       </div>
 
-      <div className="w-full overflow-auto mt-3 border rounded-xl">
+      <div className="w-full overflow-auto mt-3 border rounded-xl border-[#c8d3e8]">
         <Table>
           <TableHeader className="sticky top-0 z-20 bg-white">
             <TableRow>
@@ -357,7 +358,7 @@ export default function UsersTable({ currentUserId }: { currentUserId: number })
                     <div className="flex items-center justify-center gap-2">
                       <button
                         onClick={() => setEditTarget(u)}
-                        className="px-3 py-1 text-sm rounded-md border border-gray-800 text-gray-700 hover:bg-gray-50 transition"
+                        className="px-3 py-1 text-sm rounded-md border border-[#c8d3e8] text-gray-700 hover:bg-gray-50 transition"
                       >
                         {t("users.changing")}
                       </button>
@@ -365,7 +366,7 @@ export default function UsersTable({ currentUserId }: { currentUserId: number })
                         onClick={() => setDeleteTarget(u)}
                         disabled={u.id === currentUserId}
                         title={u.id === currentUserId ? t("users.cannotDeleteSelf") : ""}
-                        className="px-3 py-1 text-sm rounded-md border border-gray-800 text-red-500 hover:bg-red-50 disabled:opacity-40 disabled:hover:bg-transparent transition"
+                        className="px-3 py-1 text-sm rounded-md border border-[#c8d3e8] text-red-500 hover:bg-red-50 disabled:opacity-40 disabled:hover:bg-transparent transition"
                       >
                         {t("common.delete")}
                       </button>

@@ -54,8 +54,8 @@ export default function AppUserEventsModal({ appUserId, title, onClose }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white border border-gray-800 text-gray-900 rounded-2xl shadow-xl w-full max-w-xl max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex items-start justify-between p-6 border-b border-gray-800">
+      <div className="bg-white border border-[#c8d3e8] text-gray-900 rounded-2xl shadow-xl w-full max-w-xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="flex items-start justify-between p-6 border-b border-[#c8d3e8]">
           <div>
             <h2 className="text-lg font-semibold">{t("appUsers.eventsTitle")}</h2>
             <p className="text-sm text-gray-500 mt-0.5">{title}</p>
@@ -73,7 +73,7 @@ export default function AppUserEventsModal({ appUserId, title, onClose }: {
           ) : (
             <ol className="space-y-2">
               {events.map((e) => (
-                <li key={e.id} className="border border-gray-800 bg-gray-50 rounded-lg p-3 text-sm">
+                <li key={e.id} className="border border-[#c8d3e8] bg-gray-50 rounded-lg p-3 text-sm">
                   <div className="flex items-baseline justify-between gap-2">
                     <span className="text-gray-900">{eventLabel(e.event_type)}</span>
                     <span className="text-sm text-gray-400">{fmtDate(e.created_at)}</span>

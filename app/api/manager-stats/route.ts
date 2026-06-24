@@ -16,6 +16,10 @@ interface StatsRow {
   TOTAL_TASKS: number; OPEN_TASKS: number; DONE_TASKS: number; OVERDUE_TASKS: number;
   TOTAL_ACTS: number; ACTS_7D: number; ACTS_30D: number;
   CALLS: number; MEETINGS: number; NOTES: number;
+  TOTAL_DEALS: number;
+  REVENUE_TOTAL: number;
+  REVENUE_CUR:   number;
+  REVENUE_PREV:  number;
 }
 
 export async function GET() {
@@ -34,8 +38,12 @@ export async function GET() {
       NVL(a.ACTS_30D,      0) AS ACTS_30D,
       NVL(a.CALLS,         0) AS CALLS,
       NVL(a.MEETINGS,      0) AS MEETINGS,
-      NVL(a.NOTES,         0) AS NOTES
-    FROM AGRO_CRM_USERS u
+      NVL(a.NOTES,         0) AS NOTES,
+      NVL(s.TOTAL_DEALS,    0) AS TOTAL_DEALS,
+      NVL(s.REVENUE_TOTAL,  0) AS REVENUE_TOTAL,
+      NVL(s.REVENUE_CUR,    0) AS REVENUE_CUR,
+      NVL(s.REVENUE_PREV,   0) AS REVENUE_PREV
+    FROM AGRO_USERS u
     LEFT JOIN (
       SELECT
         ASSIGNED_TO,
@@ -61,6 +69,21 @@ export async function GET() {
       WHERE CREATED_BY IS NOT NULL
       GROUP BY CREATED_BY
     ) a ON u.USERNAME = a.CREATED_BY
+    LEFT JOIN (
+      SELECT
+        CREATED_BY,
+        COUNT(*)                                                                          AS TOTAL_DEALS,
+        SUM(NVL(TOTAL_AMOUNT_MDL, 0))                                                    AS REVENUE_TOTAL,
+        SUM(CASE WHEN DOC_DATE >= TRUNC(SYSDATE, 'MM')
+                 THEN NVL(TOTAL_AMOUNT_MDL, 0) ELSE 0 END)                              AS REVENUE_CUR,
+        SUM(CASE WHEN DOC_DATE >= TRUNC(ADD_MONTHS(SYSDATE, -1), 'MM')
+                  AND DOC_DATE <  TRUNC(SYSDATE, 'MM')
+                 THEN NVL(TOTAL_AMOUNT_MDL, 0) ELSE 0 END)                              AS REVENUE_PREV
+      FROM AGRO_SALES_DOCS
+      WHERE CREATED_BY IS NOT NULL
+        AND STATUS NOT IN ('draft', 'cancelled')
+      GROUP BY CREATED_BY
+    ) s ON u.USERNAME = s.CREATED_BY
     WHERE u.ACTIVE = 'Y'
     ORDER BY u.ROLE, u.USERNAME
   `, []);
@@ -81,5 +104,9 @@ export async function GET() {
     calls:         Number(r.CALLS),
     meetings:      Number(r.MEETINGS),
     notes:         Number(r.NOTES),
+    total_deals:   Number(r.TOTAL_DEALS),
+    revenue_total: Number(r.REVENUE_TOTAL),
+    revenue_cur:   Number(r.REVENUE_CUR),
+    revenue_prev:  Number(r.REVENUE_PREV),
   })));
 }

@@ -12,7 +12,7 @@ export default function AuthPage() {
 
   const [form, setForm] = useState({
     username: "admin",
-    password: "admin2026#",
+    password: "Artgranit2026#",
   });
 
   function updateForm(key: "username" | "password", value: string) {

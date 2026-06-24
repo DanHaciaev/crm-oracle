@@ -28,7 +28,7 @@ export async function GET() {
 
   const users = await query<UserRow>(
     `SELECT id, username, first_name, last_name, role, created_at
-       FROM AGRO_CRM_USERS
+       FROM AGRO_USERS
       WHERE id = :1 AND active = 'Y'`,
     [payload.id]
   );

@@ -65,7 +65,7 @@ const LEVEL_CFG: Record<ChurnLevel, { label: string; bar: string; badge: string 
 
 function StatCard({ label, value, cls }: { label: string; value: string; cls: string }) {
   return (
-    <div className="border border-gray-800 rounded-xl p-4 text-center">
+    <div className="border border-[#c8d3e8] rounded-xl p-4 text-center">
       <div className={`text-3xl font-bold tabular-nums ${cls}`}>{value}</div>
       <div className="text-sm text-gray-400 mt-1">{label}</div>
     </div>
@@ -163,7 +163,7 @@ export default function ChurnPage() {
           <h1 className="text-2xl font-bold">{t("churn.title")}</h1>
           <p className="text-sm text-gray-500 mt-1">{t("churn.subtitle")}</p>
         </div>
-        <div className="flex rounded-xl border border-gray-200 overflow-hidden text-sm">
+        <div className="flex rounded-xl border border-[#c8d3e8] overflow-hidden text-sm">
           <button onClick={() => setTab("period")}
             className={`px-4 py-2 transition ${tab === "period" ? "bg-gray-900 text-white" : "text-gray-500 hover:bg-gray-50"}`}>
             {t("churn.tabPeriod")}
@@ -182,7 +182,7 @@ export default function ChurnPage() {
             {PERIODS.map((p) => (
               <button key={p.v} onClick={() => setPeriod(p.v)}
                 className={`px-3 py-1.5 rounded-md border text-sm transition ${
-                  period === p.v ? "border-gray-800 bg-gray-900 text-white" : "border-gray-800 text-gray-500 hover:bg-gray-100"
+                  period === p.v ? "border-[#c8d3e8] bg-gray-900 text-white" : "border-[#c8d3e8] text-gray-500 hover:bg-gray-100"
                 }`}>
                 {p.l}
               </button>
@@ -190,7 +190,7 @@ export default function ChurnPage() {
             <div className="flex items-center gap-2 text-sm">
               <span className="text-gray-500">{t("churn.threshold")}</span>
               <select value={threshold} onChange={(e) => setThreshold(Number(e.target.value))}
-                className="border border-gray-800 bg-white rounded-lg px-2 py-1.5 text-sm text-gray-900 outline-none">
+                className="border border-[#c8d3e8] bg-white rounded-lg px-2 py-1.5 text-sm text-gray-900 outline-none">
                 <option value={15}>-15%</option>
                 <option value={20}>-20%</option>
                 <option value={30}>-30%</option>
@@ -212,7 +212,7 @@ export default function ChurnPage() {
             <StatCard label={t("churn.risk.mediumFull")}   value={String(medium)}   cls="text-yellow-400" />
           </div>
 
-          <div className="border border-gray-800 rounded-xl overflow-auto">
+          <div className="border border-[#c8d3e8] rounded-xl overflow-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -261,7 +261,7 @@ export default function ChurnPage() {
                       <TableCell className="text-center">
                         <div className="flex items-center justify-center gap-1">
                           <Link href={`/customers/${item.id}?tab=sales`}
-                            className="px-2.5 py-1 text-sm rounded-md border border-gray-800 hover:bg-gray-100 transition text-gray-700">
+                            className="px-2.5 py-1 text-sm rounded-md border border-[#c8d3e8] hover:bg-gray-100 transition text-gray-700">
                             {t("sales.title")}
                           </Link>
                           {item.tg_linked && (
@@ -319,7 +319,7 @@ export default function ChurnPage() {
               </div>
 
               {/* Score list */}
-              <div className="border border-gray-200 rounded-xl divide-y divide-gray-100">
+              <div className="border border-[#c8d3e8] rounded-xl divide-y divide-gray-100">
                 {scoreItems.length === 0 && (
                   <div className="py-10 text-center text-sm text-gray-400">Нет клиентов в этой категории</div>
                 )}

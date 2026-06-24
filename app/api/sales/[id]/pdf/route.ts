@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { query } from "@/lib/oracle";
 import { verifyToken } from "@/lib/auth";
 import PDFDocument from "pdfkit";
+import path from "path";
 
 async function requireAuth() {
   const store = await cookies();
@@ -49,17 +50,20 @@ export async function GET(
       WHERE sd.ID = :1
     `, [docId]),
     query<Row>(`
-      SELECT sl.LINE_NUM,
-             NVL(i.NAME_RU, i.NAME) ITEM_NAME,
-             NVL(sl.QTY,0) QTY, NVL(sl.UNIT,'шт') UNIT,
-             NVL(sl.PRICE,0) PRICE,
-             NVL(sl.AMOUNT,0) AMOUNT,
-             NVL(sl.AMOUNT_MDL,sl.AMOUNT) AMOUNT_MDL,
-             NVL(sl.NET_WEIGHT_KG,0) NET_KG
+      SELECT sl.ID                          AS LINE_NUM,
+             NVL(i.NAME_RU, i.NAME_RO)     AS ITEM_NAME,
+             NVL(i.UNIT, 'кг')             AS UNIT,
+             NVL(sl.NET_WEIGHT_KG, 0)      AS NET_KG,
+             NVL(sl.GROSS_WEIGHT_KG, 0)    AS GROSS_KG,
+             NVL(sl.PALLETS, 0)            AS PALLETS,
+             NVL(sl.CRATES_COUNT, 0)       AS CRATES_COUNT,
+             NVL(sl.PRICE_PER_KG, 0)       AS PRICE,
+             NVL(sl.AMOUNT, 0)             AS AMOUNT,
+             NVL(sl.AMOUNT_MDL, sl.AMOUNT) AS AMOUNT_MDL
       FROM AGRO_SALES_LINES sl
       JOIN AGRO_ITEMS i ON i.ID = sl.ITEM_ID
       WHERE sl.SALES_DOC_ID = :1
-      ORDER BY sl.LINE_NUM
+      ORDER BY sl.ID
     `, [docId]),
   ]);
 
@@ -69,7 +73,10 @@ export async function GET(
   const doc  = docRows[0];
   const curr = s(doc.CURRENCY_CODE) || "MDL";
 
+  const fontDir  = path.join(process.cwd(), "public", "fonts");
   const pdf = new PDFDocument({ margin: 50, size: "A4" });
+  pdf.registerFont("Regular", path.join(fontDir, "DejaVuSans.ttf"));
+  pdf.registerFont("Bold",    path.join(fontDir, "DejaVuSans-Bold.ttf"));
   const chunks: Buffer[] = [];
   pdf.on("data", (c: Buffer) => chunks.push(c));
 
@@ -77,9 +84,9 @@ export async function GET(
     pdf.on("end", resolve);
 
     // Header
-    pdf.fontSize(18).font("Helvetica-Bold").text("СЧЁТ / INVOICE", { align: "center" });
+    pdf.fontSize(18).font("Bold").text("СЧЁТ / INVOICE", { align: "center" });
     pdf.moveDown(0.4);
-    pdf.fontSize(11).font("Helvetica")
+    pdf.fontSize(11).font("Regular")
       .text(`№ ${s(doc.DOC_NUMBER)}   от ${fmtDate(doc.DOC_DATE)}`, { align: "center" });
     if (doc.INVOICE_NUMBER)
       pdf.fontSize(10).text(`Накладная: ${s(doc.INVOICE_NUMBER)}`, { align: "center" });
@@ -89,8 +96,8 @@ export async function GET(
     pdf.moveDown(0.5);
 
     // Customer
-    pdf.fontSize(10).font("Helvetica-Bold").text("Клиент:");
-    pdf.font("Helvetica")
+    pdf.fontSize(10).font("Bold").text("Клиент:");
+    pdf.font("Regular")
       .text(s(doc.CUSTOMER_NAME))
       .text(s(doc.CUSTOMER_TAX) ? `ИНН/Fiscal: ${s(doc.CUSTOMER_TAX)}` : "")
       .text(s(doc.CUSTOMER_ADDRESS) ? `Адрес: ${s(doc.CUSTOMER_ADDRESS)}` : "")
@@ -100,44 +107,61 @@ export async function GET(
     pdf.moveDown(1);
 
     if (lineRows.length > 0) {
-      // Table header
-      const cols = { num: 50, name: 70, qty: 340, unit: 375, price: 410, amount: 475 };
-      pdf.font("Helvetica-Bold").fontSize(9);
-      pdf.text("№",              cols.num,  pdf.y, { width: 18,  continued: true })
-        .text("Наименование",   cols.name, pdf.y, { width: 265, continued: true })
-        .text("Кол-во",         cols.qty,  pdf.y, { width: 30,  continued: true, align: "right" })
-        .text("Ед.",            cols.unit, pdf.y, { width: 30,  continued: true })
-        .text("Цена",           cols.price, pdf.y, { width: 60,  continued: true, align: "right" })
-        .text(`Сумма (${curr})`, cols.amount, pdf.y, { width: 70, align: "right" });
+      // №, Наименование, Нетто кг, Брутто кг, Паллет, Цена/кг, Сумма
+      const C  = { num: 50, name: 70, netto: 240, brutto: 292, pallets: 348, price: 382, amount: 452 };
+      const W  = { num: 18, name: 165, netto: 48,  brutto: 52,  pallets: 30,  price: 65,  amount: 93  };
+      const RH = 18;
 
-      pdf.moveDown(0.3);
-      pdf.moveTo(50, pdf.y).lineTo(545, pdf.y).stroke("#999");
-      pdf.moveDown(0.3);
-
-      // Rows
-      pdf.font("Helvetica").fontSize(9);
-      for (const ln of lineRows) {
-        const y = pdf.y;
-        pdf.text(s(ln.LINE_NUM),   cols.num,   y, { width: 18,  continued: true })
-          .text(s(ln.ITEM_NAME),  cols.name,  y, { width: 265, continued: true })
-          .text(fmt(n(ln.QTY)),   cols.qty,   y, { width: 30,  continued: true, align: "right" })
-          .text(s(ln.UNIT),       cols.unit,  y, { width: 30,  continued: true })
-          .text(fmt(n(ln.PRICE)), cols.price, y, { width: 60,  continued: true, align: "right" })
-          .text(fmt(n(ln.AMOUNT)), cols.amount, y, { width: 70, align: "right" });
+      function row(y: number, cells: { x: number; w: number; text: string; align?: "left"|"right" }[]) {
+        cells.forEach(({ x, w, text, align }) => {
+          pdf.text(text, x, y, { width: w, align: align ?? "left", lineBreak: false });
+        });
       }
 
-      pdf.moveDown(0.3);
-      pdf.moveTo(50, pdf.y).lineTo(545, pdf.y).stroke("#999");
-      pdf.moveDown(0.5);
+      // Header
+      let rowY = pdf.y;
+      pdf.font("Bold").fontSize(8);
+      row(rowY, [
+        { x: C.num,     w: W.num,     text: "№" },
+        { x: C.name,    w: W.name,    text: "Наименование" },
+        { x: C.netto,   w: W.netto,   text: "Нетто кг",        align: "right" },
+        { x: C.brutto,  w: W.brutto,  text: "Брутто кг",       align: "right" },
+        { x: C.pallets, w: W.pallets, text: "Пал.",             align: "right" },
+        { x: C.price,   w: W.price,   text: "Цена/кг",         align: "right" },
+        { x: C.amount,  w: W.amount,  text: `Сумма (${curr})`, align: "right" },
+      ]);
+      rowY += RH;
+      pdf.moveTo(50, rowY - 3).lineTo(545, rowY - 3).stroke("#999");
+      rowY += 4;
+
+      // Data rows
+      pdf.font("Regular").fontSize(8);
+      let i = 1;
+      for (const ln of lineRows) {
+        row(rowY, [
+          { x: C.num,     w: W.num,     text: String(i++) },
+          { x: C.name,    w: W.name,    text: s(ln.ITEM_NAME) },
+          { x: C.netto,   w: W.netto,   text: fmt(n(ln.NET_KG)),    align: "right" },
+          { x: C.brutto,  w: W.brutto,  text: fmt(n(ln.GROSS_KG)),  align: "right" },
+          { x: C.pallets, w: W.pallets, text: String(n(ln.PALLETS)), align: "right" },
+          { x: C.price,   w: W.price,   text: fmt(n(ln.PRICE)),      align: "right" },
+          { x: C.amount,  w: W.amount,  text: fmt(n(ln.AMOUNT)),     align: "right" },
+        ]);
+        rowY += RH;
+      }
+
+      pdf.moveTo(50, rowY - 2).lineTo(545, rowY - 2).stroke("#999");
+      rowY += 8;
+      pdf.text("", 50, rowY);
     }
 
     // Totals
-    pdf.font("Helvetica-Bold").fontSize(10);
+    pdf.font("Bold").fontSize(10);
     pdf.text(`Итого (${curr}): ${fmt(n(doc.TOTAL_AMOUNT))}`, { align: "right" });
     if (curr !== "MDL")
-      pdf.font("Helvetica").fontSize(9)
+      pdf.font("Regular").fontSize(9)
         .text(`≈ ${fmt(n(doc.TOTAL_AMOUNT_MDL))} MDL`, { align: "right" });
-    pdf.font("Helvetica").fontSize(9)
+    pdf.font("Regular").fontSize(9)
       .text(`Нетто кг: ${fmt(n(doc.TOTAL_NET_KG))}`, { align: "right" });
 
     pdf.moveDown(1.5);

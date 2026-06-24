@@ -101,7 +101,7 @@ export default function WeightTicketDetailModal({ id, onClose }: { id: number; o
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white border border-gray-800 text-gray-900 rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-auto">
+      <div className="bg-white border border-[#c8d3e8] text-gray-900 rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-auto">
         <div className="p-6 space-y-4">
           <div className="flex items-start justify-between">
             <h2 className="text-lg font-semibold">{t("weightTickets.title")}</h2>
@@ -133,7 +133,7 @@ export default function WeightTicketDetailModal({ id, onClose }: { id: number; o
                 </div>
               </div>
 
-              <div className="border border-gray-800 rounded-lg overflow-hidden">
+              <div className="border border-[#c8d3e8] rounded-lg overflow-hidden">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -173,20 +173,20 @@ export default function WeightTicketDetailModal({ id, onClose }: { id: number; o
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   onClick={onClose}
-                  className="px-4 py-2 text-sm rounded-lg border border-gray-800 hover:bg-gray-100 transition text-gray-700"
+                  className="px-4 py-2 text-sm rounded-lg border border-[#c8d3e8] hover:bg-gray-100 transition text-gray-700"
                 >
                   {t("common.close")}
                 </button>
                 <button
                   onClick={handleSendTelegram}
                   disabled={sending}
-                  className="px-4 py-2 text-sm rounded-lg border border-gray-800 text-sky-600 hover:bg-sky-50 transition disabled:opacity-50"
+                  className="px-4 py-2 text-sm rounded-lg border border-[#c8d3e8] text-sky-600 hover:bg-sky-50 transition disabled:opacity-50"
                 >
                   {sending ? t("weightTickets.detail.sending") : t("weightTickets.detail.sendTg")}
                 </button>
                 <button
                   onClick={handlePrint}
-                  className="px-4 py-2 text-sm rounded-lg border border-gray-800 text-gray-800 hover:bg-gray-100 transition"
+                  className="px-4 py-2 text-sm rounded-lg border border-[#c8d3e8] text-gray-800 hover:bg-gray-100 transition"
                 >
                   {t("weightTickets.detail.print")}
                 </button>

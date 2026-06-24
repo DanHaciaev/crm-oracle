@@ -8,6 +8,7 @@ import {
   TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { useT } from "@/lib/locale";
+import { toast } from "sonner";
 
 interface Customer {
   id:              number;
@@ -46,7 +47,7 @@ function TgStatusCell({ c }: { c: Customer }) {
   }
   if (c.pending_invites > 0) {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-sm border border-gray-800 text-gray-600">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-sm border border-[#c8d3e8] text-gray-600">
         {c.pending_invites} pending
       </span>
     );
@@ -101,7 +102,7 @@ export default function CustomersTable() {
       setDepCounts((json as { counts?: { sales: number; weight_tickets: number } }).counts ?? null);
       setModalStep("has_deps");
     } else {
-      alert((json as { error?: string }).error ?? t("customers.deleteError"));
+      toast.error((json as { error?: string }).error ?? t("customers.deleteError"));
     }
   }
 
@@ -115,7 +116,7 @@ export default function CustomersTable() {
       setCustomers((prev) => prev.filter((c) => c.id !== deleteTarget.id));
       setDeleteTarget(null);
     } else {
-      alert((json as { error?: string }).error ?? t("customers.deleteError"));
+      toast.error((json as { error?: string }).error ?? t("customers.deleteError"));
     }
   }
 
@@ -131,7 +132,7 @@ export default function CustomersTable() {
       );
       setDeleteTarget(null);
     } else {
-      alert((json as { error?: string }).error ?? t("customers.deactivateError"));
+      toast.error((json as { error?: string }).error ?? t("customers.deactivateError"));
     }
   }
 
@@ -148,11 +149,11 @@ export default function CustomersTable() {
             placeholder={t("customers.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-800 transition w-full sm:w-72"
+            className="border border-[#c8d3e8] bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#c8d3e8] transition w-full sm:w-72"
           />
           <button
             onClick={exportCustomersCsv}
-            className="flex items-center gap-2 px-3 py-2 rounded-md border border-gray-800 text-sm hover:bg-gray-100 transition shrink-0 text-gray-700"
+            className="flex items-center gap-2 px-3 py-2 rounded-md border border-[#c8d3e8] text-sm hover:bg-gray-100 transition shrink-0 text-gray-700"
             title={t("common.export")}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -164,7 +165,7 @@ export default function CustomersTable() {
         </div>
       </div>
 
-      <div className="border border-gray-800 rounded-xl overflow-auto">
+      <div className="border border-[#c8d3e8] rounded-xl overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -200,7 +201,7 @@ export default function CustomersTable() {
                     <div className="flex items-center justify-center gap-1">
                       <Link
                         href={`/customers/${c.id}`}
-                        className="inline-block px-3 py-1 text-sm rounded-md border border-gray-800 text-gray-700 hover:bg-gray-100 transition"
+                        className="inline-block px-3 py-1 text-sm rounded-md border border-[#c8d3e8] text-gray-700 hover:bg-gray-100 transition"
                       >
                         {t("customers.open")}
                       </Link>
@@ -221,7 +222,7 @@ export default function CustomersTable() {
 
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white border border-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
+          <div className="bg-white border border-[#c8d3e8] rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
             {modalStep === "confirm" ? (
               <>
                 <h2 className="text-lg font-semibold text-gray-900">{t("customers.deleteConfirmTitle")}</h2>
@@ -230,7 +231,7 @@ export default function CustomersTable() {
                 </p>
                 <div className="flex justify-end gap-2 pt-2">
                   <button onClick={closeModal} disabled={working}
-                    className="px-4 py-2 text-sm rounded-lg border border-gray-800 hover:bg-gray-100 transition disabled:opacity-50 text-gray-700">
+                    className="px-4 py-2 text-sm rounded-lg border border-[#c8d3e8] hover:bg-gray-100 transition disabled:opacity-50 text-gray-700">
                     {t("common.cancel")}
                   </button>
                   <button onClick={handleHardDelete} disabled={working}
@@ -258,7 +259,7 @@ export default function CustomersTable() {
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
                   <button onClick={closeModal} disabled={working}
-                    className="px-4 py-2 text-sm rounded-lg border border-gray-800 hover:bg-gray-100 transition disabled:opacity-50 text-gray-700">
+                    className="px-4 py-2 text-sm rounded-lg border border-[#c8d3e8] hover:bg-gray-100 transition disabled:opacity-50 text-gray-700">
                     {t("common.cancel")}
                   </button>
                   <button onClick={handleSoftDelete} disabled={working}

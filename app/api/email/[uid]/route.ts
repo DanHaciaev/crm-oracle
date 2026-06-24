@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { fetchEmailByUid, markAsRead, deleteEmail } from "@/lib/gmail";
+import { syncInboundEmail } from "@/lib/email-db";
 
 async function requireAuth() {
   const cookieStore = await cookies();
@@ -25,8 +26,9 @@ export async function GET(
     const email = await fetchEmailByUid(uid);
     if (!email) return NextResponse.json({ error: "Письмо не найдено" }, { status: 404 });
 
-    // mark as read in background (don't await — response faster)
+    // mark as read + sync to DB in background
     markAsRead(uid).catch(() => {});
+    syncInboundEmail(email).catch(() => {});
 
     return NextResponse.json(email);
   } catch (err) {

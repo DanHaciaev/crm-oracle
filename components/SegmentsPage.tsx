@@ -43,12 +43,12 @@ const SEG_CLS: Record<string, string> = {
   active:   "border-emerald-500/50 text-emerald-400 bg-emerald-500/10",
   sleeping: "border-orange-500/50 text-orange-400 bg-orange-500/10",
   churned:  "border-red-500/50 text-red-400 bg-red-500/10",
-  no_orders:"border-gray-800 text-gray-500 bg-gray-100",
+  no_orders:"border-[#c8d3e8] text-gray-500 bg-gray-100",
 };
 
 function SegBadge({ seg }: { seg: string }) {
   const t   = useT();
-  const cls = SEG_CLS[seg] ?? "border-gray-800 text-gray-400";
+  const cls = SEG_CLS[seg] ?? "border-[#c8d3e8] text-gray-400";
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-sm font-medium border ${cls}`}>
       {t(`segments.${seg}`) || seg}
@@ -119,7 +119,7 @@ export default function SegmentsPage() {
         {SEG_BUTTONS.map(s => (
           <button key={s.v} onClick={() => setSegment(s.v)}
             className={`border rounded-xl p-3 text-center transition ${
-              segment === s.v ? "border-gray-800 bg-gray-100" : "border-gray-800 hover:border-gray-800"
+              segment === s.v ? "border-[#c8d3e8] bg-gray-100" : "border-[#c8d3e8] hover:border-[#c8d3e8]"
             }`}>
             <div className={`text-2xl font-bold tabular-nums ${s.cls}`}>{counts[s.v] ?? 0}</div>
             <div className="text-sm text-gray-500 mt-0.5">{t(`segments.${s.v}`)}</div>
@@ -137,7 +137,7 @@ export default function SegmentsPage() {
         <input
           type="text" placeholder={t("common.search")}
           value={search} onChange={e => setSearch(e.target.value)}
-          className="border border-gray-800 bg-white rounded-lg px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-gray-800 transition w-56"
+          className="border border-[#c8d3e8] bg-white rounded-lg px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-[#c8d3e8] transition w-56"
         />
         {segment !== "all" && (
           <Link href={`/broadcasts?segment=${segment}`}
@@ -153,7 +153,7 @@ export default function SegmentsPage() {
         )}
       </div>
 
-      <div className="border border-gray-800 rounded-xl overflow-auto">
+      <div className="border border-[#c8d3e8] rounded-xl overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>

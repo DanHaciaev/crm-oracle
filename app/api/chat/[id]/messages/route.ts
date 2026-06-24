@@ -45,7 +45,7 @@ export async function GET(
     `SELECT m.ID, m.DIRECTION, m.BODY, m.FILE_ID, m.FILE_TYPE, m.STATUS,
             m.SENT_BY_USER, u.USERNAME AS SENT_BY_NAME, m.CREATED_AT
        FROM AGRO_CRM_CHAT_MESSAGES m
-       LEFT JOIN AGRO_CRM_USERS u ON u.ID = m.SENT_BY_USER
+       LEFT JOIN AGRO_USERS u ON u.ID = m.SENT_BY_USER
       WHERE m.APP_USER_ID = :1
       ORDER BY m.CREATED_AT ASC, m.ID ASC`,
     [appUserId]

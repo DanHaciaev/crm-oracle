@@ -25,8 +25,8 @@ async function getPool(): Promise<oracledb.Pool> {
     globalThis._oraclePool = await oracledb.createPool({
       ...dbConfig,
       poolMin:       2,
-      poolMax:       10,
-      poolIncrement: 1,
+      poolMax:       25,
+      poolIncrement: 2,
       poolTimeout:   60,
     });
   }

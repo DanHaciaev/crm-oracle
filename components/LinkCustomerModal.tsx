@@ -72,8 +72,8 @@ export default function LinkCustomerModal({ appUser, onClose, onLinked }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white border border-gray-800 text-gray-900 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex items-start justify-between p-6 border-b border-gray-800">
+      <div className="bg-white border border-[#c8d3e8] text-gray-900 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="flex items-start justify-between p-6 border-b border-[#c8d3e8]">
           <div>
             <h2 className="text-lg font-semibold">{t("appUsers.linkTitle")}</h2>
             <p className="text-sm text-gray-500 mt-0.5">{userLabel}</p>
@@ -88,7 +88,7 @@ export default function LinkCustomerModal({ appUser, onClose, onLinked }: {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t("customers.searchPlaceholder")}
-            className="w-full border border-gray-800 bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-800 transition"
+            className="w-full border border-[#c8d3e8] bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#c8d3e8] transition"
           />
 
           {error && (
@@ -100,7 +100,7 @@ export default function LinkCustomerModal({ appUser, onClose, onLinked }: {
           ) : filtered.length === 0 ? (
             <div className="text-sm text-gray-400 py-6 text-center">{t("common.noResults")}</div>
           ) : (
-            <div className="border border-gray-800 rounded-lg divide-y divide-gray-100">
+            <div className="border border-[#c8d3e8] rounded-lg divide-y divide-gray-100">
               {filtered.slice(0, 50).map((c) => (
                 <button
                   key={c.id}
@@ -125,8 +125,8 @@ export default function LinkCustomerModal({ appUser, onClose, onLinked }: {
           )}
         </div>
 
-        <div className="flex justify-end gap-2 p-4 border-t border-gray-800">
-          <button onClick={onClose} className="px-4 py-2 text-sm rounded-lg border border-gray-800 hover:bg-gray-100 transition text-gray-700">
+        <div className="flex justify-end gap-2 p-4 border-t border-[#c8d3e8]">
+          <button onClick={onClose} className="px-4 py-2 text-sm rounded-lg border border-[#c8d3e8] hover:bg-gray-100 transition text-gray-700">
             {t("common.cancel")}
           </button>
         </div>
