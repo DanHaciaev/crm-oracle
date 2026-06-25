@@ -1,16 +1,8 @@
-import Groq from "groq-sdk";
+// Thin re-export wrapper — keeps all existing imports working unchanged.
+import { aiChat, aiAnalysis, aiChatTurn } from "@/lib/ai";
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+type Message = { role: "system" | "user" | "assistant"; content: string };
 
-export async function groqChat(systemPrompt: string, userPrompt: string): Promise<string> {
-  const completion = await groq.chat.completions.create({
-    model: "llama-3.3-70b-versatile",
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user",   content: userPrompt },
-    ],
-    max_tokens: 600,
-    temperature: 0.7,
-  });
-  return completion.choices[0]?.message?.content?.trim() ?? "";
-}
+export const groqChat     = (sys: string, user: string, prov?: string, mdl?: string) => aiChat(sys, user, prov, mdl);
+export const groqAnalysis = (sys: string, user: string, prov?: string, mdl?: string) => aiAnalysis(sys, user, prov, mdl);
+export const groqChatTurn = (msgs: Message[], prov?: string, mdl?: string)           => aiChatTurn(msgs, prov, mdl);

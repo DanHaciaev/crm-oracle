@@ -7,10 +7,10 @@ import LangSwitcher from "@/components/LangSwitcher";
 import { Toaster } from "sonner";
 import { ConfirmProvider } from "@/lib/confirm";
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+export default function Layout({ children, fullHeight }: { children: React.ReactNode; fullHeight?: boolean }) {
   return (
     <ConfirmProvider>
-    <SidebarProvider>
+    <SidebarProvider className="min-h-0 h-svh overflow-hidden">
       <AppSidebar />
       <main className="flex-1 flex flex-col overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#c8d3e8] bg-white shrink-0">
@@ -20,7 +20,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <NotificationBell />
           </div>
         </div>
-        <div className="flex-1 overflow-auto">
+        <div className={`flex-1 ${fullHeight ? "overflow-hidden flex flex-col" : "overflow-auto"}`}>
           {children}
         </div>
       </main>

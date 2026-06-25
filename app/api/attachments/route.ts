@@ -99,13 +99,14 @@ export async function POST(req: NextRequest) {
   }
 
   const rows = await query<AttRow>(`
-    SELECT ID, ENTITY_TYPE, ENTITY_ID, FILE_NAME, FILE_TYPE, FILE_SIZE,
-           UPLOADED_BY, UPLOADED_AT
-    FROM AGRO_CRM_ATTACHMENTS
-    WHERE ENTITY_TYPE = :1 AND ENTITY_ID = :2
-    AND UPLOADED_BY = :3
-    ORDER BY UPLOADED_AT DESC
-    FETCH FIRST 1 ROWS ONLY
+    SELECT * FROM (
+      SELECT ID, ENTITY_TYPE, ENTITY_ID, FILE_NAME, FILE_TYPE, FILE_SIZE,
+             UPLOADED_BY, UPLOADED_AT
+      FROM AGRO_CRM_ATTACHMENTS
+      WHERE ENTITY_TYPE = :1 AND ENTITY_ID = :2
+      AND UPLOADED_BY = :3
+      ORDER BY UPLOADED_AT DESC
+    ) WHERE ROWNUM <= 1
   `, [entityType, entityId, user.username]);
 
   return NextResponse.json(rows[0] ? mapRow(rows[0]) : { success: true }, { status: 201 });
