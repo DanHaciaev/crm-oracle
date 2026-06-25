@@ -190,77 +190,112 @@ function ClientList({ clients, selected, onSelect, loading }: {
   clients: Client[]; selected: Client | null;
   onSelect: (c: Client) => void; loading: boolean;
 }) {
+  const spinnerOrEmpty = loading
+    ? <div className="flex items-center justify-center gap-2 py-8 text-sm text-gray-400"><Spinner /> Поиск...</div>
+    : <div className="py-10 text-center text-sm text-gray-400">Нет результатов</div>;
+
   return (
-    <div className="overflow-auto border-b border-[#c8d3e8]" style={{ maxHeight: 240 }}>
-      {loading && (
-        <div className="flex items-center justify-center gap-2 py-8 text-sm text-gray-400">
-          <Spinner /> Поиск...
-        </div>
-      )}
-      {!loading && clients.length === 0 && (
-        <div className="py-10 text-center text-sm text-gray-400">Нет результатов</div>
-      )}
+    <div className="border-b border-[#c8d3e8] flex-1 md:flex-none overflow-auto md:max-h-60">
+      {(loading || clients.length === 0) && spinnerOrEmpty}
+
       {!loading && clients.length > 0 && (
-        <table className="w-full text-sm border-collapse min-w-160">
-          <thead className="sticky top-0 z-10 bg-gray-50 border-b border-[#c8d3e8]">
-            <tr>
-              <th className="text-left px-4 py-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wide w-8"></th>
-              <th className="text-left px-3 py-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Клиент</th>
-              <th className="text-left px-3 py-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wide w-36">Телефон</th>
-              <th className="text-left px-3 py-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wide w-44 hidden xl:table-cell">Email</th>
-              <th className="text-center px-3 py-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wide w-16">Сделки</th>
-              <th className="text-right px-3 py-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wide w-28">Выиграно</th>
-              <th className="text-right px-4 py-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wide w-28">Посл. активность</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
+        <>
+          {/* ── Mobile: card list ── */}
+          <div className="md:hidden divide-y divide-gray-100">
             {clients.map(c => {
-              const isSelected = selected?.id === c.id;
+              const isSel = selected?.id === c.id;
               return (
-                <tr key={c.id} onClick={() => onSelect(c)}
-                  className={`cursor-pointer transition-colors group ${
-                    isSelected
-                      ? "bg-[#516895]/8 border-l-[3px] border-l-[#516895]"
-                      : "hover:bg-gray-50 border-l-[3px] border-l-transparent"
+                <div key={c.id} onClick={() => onSelect(c)}
+                  className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors border-l-[3px] ${
+                    isSel ? "bg-[#516895]/8 border-l-[#516895]" : "hover:bg-gray-50 border-l-transparent"
                   }`}
                 >
-                  {/* Avatar */}
-                  <td className="px-2 py-2">
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-white text-[10px] font-bold shrink-0 ${avatarColor(c.name)}`}>
-                      {initials(c.name)}
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-bold shrink-0 ${avatarColor(c.name)}`}>
+                    {initials(c.name)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className={`font-medium text-sm truncate ${isSel ? "text-[#516895]" : "text-gray-800"}`}>{c.name}</div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      {c.customer_type && (
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${TYPE_CLS[c.customer_type] ?? "bg-gray-100 text-gray-500"}`}>
+                          {TYPE_LABEL[c.customer_type] ?? c.customer_type}
+                        </span>
+                      )}
+                      <span className="text-[11px] text-gray-400 font-mono">{c.contact_phone ?? ""}</span>
                     </div>
-                  </td>
-                  {/* Name + type */}
-                  <td className="px-3 py-2">
-                    <div className={`font-medium text-sm ${isSelected ? "text-[#516895]" : "text-gray-800"}`}>
-                      {c.name}
-                    </div>
-                    {c.customer_type && (
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${TYPE_CLS[c.customer_type] ?? "bg-gray-100 text-gray-500"}`}>
-                        {TYPE_LABEL[c.customer_type] ?? c.customer_type}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2 text-xs text-gray-500 font-mono">{c.contact_phone ?? "—"}</td>
-                  <td className="px-3 py-2 text-xs text-gray-400 truncate hidden xl:table-cell">{c.contact_email ?? "—"}</td>
-                  <td className="px-3 py-2 text-center">
-                    {c.deal_count > 0 ? (
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#516895]/10 text-[#516895] text-xs font-semibold">
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    {c.deal_count > 0 && (
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#516895]/10 text-[#516895] text-[10px] font-semibold">
                         {c.deal_count}
                       </span>
-                    ) : <span className="text-gray-300 text-xs">—</span>}
-                  </td>
-                  <td className="px-3 py-2 text-right text-xs tabular-nums">
-                    {c.won_sum > 0
-                      ? <span className="text-emerald-600 font-medium">{fmtMoney(c.won_sum)}</span>
-                      : <span className="text-gray-300">—</span>}
-                  </td>
-                  <td className="px-4 py-2 text-right text-xs text-gray-400 tabular-nums">{fmtDate(c.last_activity)}</td>
-                </tr>
+                    )}
+                    {c.won_sum > 0 && (
+                      <span className="text-[10px] text-emerald-600 font-medium tabular-nums">{fmtMoney(c.won_sum)}</span>
+                    )}
+                  </div>
+                  <span className="text-gray-300 text-sm shrink-0">›</span>
+                </div>
               );
             })}
-          </tbody>
-        </table>
+          </div>
+
+          {/* ── Desktop: table ── */}
+          <table className="hidden md:table w-full text-sm border-collapse min-w-160">
+            <thead className="sticky top-0 z-10 bg-gray-50 border-b border-[#c8d3e8]">
+              <tr>
+                <th className="text-left px-4 py-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wide w-8"></th>
+                <th className="text-left px-3 py-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Клиент</th>
+                <th className="text-left px-3 py-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wide w-36">Телефон</th>
+                <th className="text-left px-3 py-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wide w-44 hidden xl:table-cell">Email</th>
+                <th className="text-center px-3 py-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wide w-16">Сделки</th>
+                <th className="text-right px-3 py-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wide w-28">Выиграно</th>
+                <th className="text-right px-4 py-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wide w-28">Посл. активность</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {clients.map(c => {
+                const isSelected = selected?.id === c.id;
+                return (
+                  <tr key={c.id} onClick={() => onSelect(c)}
+                    className={`cursor-pointer transition-colors ${
+                      isSelected
+                        ? "bg-[#516895]/8 border-l-[3px] border-l-[#516895]"
+                        : "hover:bg-gray-50 border-l-[3px] border-l-transparent"
+                    }`}
+                  >
+                    <td className="px-2 py-2">
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-white text-[10px] font-bold shrink-0 ${avatarColor(c.name)}`}>
+                        {initials(c.name)}
+                      </div>
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className={`font-medium text-sm ${isSelected ? "text-[#516895]" : "text-gray-800"}`}>{c.name}</div>
+                      {c.customer_type && (
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${TYPE_CLS[c.customer_type] ?? "bg-gray-100 text-gray-500"}`}>
+                          {TYPE_LABEL[c.customer_type] ?? c.customer_type}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-xs text-gray-500 font-mono">{c.contact_phone ?? "—"}</td>
+                    <td className="px-3 py-2 text-xs text-gray-400 truncate hidden xl:table-cell">{c.contact_email ?? "—"}</td>
+                    <td className="px-3 py-2 text-center">
+                      {c.deal_count > 0
+                        ? <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#516895]/10 text-[#516895] text-xs font-semibold">{c.deal_count}</span>
+                        : <span className="text-gray-300 text-xs">—</span>}
+                    </td>
+                    <td className="px-3 py-2 text-right text-xs tabular-nums">
+                      {c.won_sum > 0
+                        ? <span className="text-emerald-600 font-medium">{fmtMoney(c.won_sum)}</span>
+                        : <span className="text-gray-300">—</span>}
+                    </td>
+                    <td className="px-4 py-2 text-right text-xs text-gray-400 tabular-nums">{fmtDate(c.last_activity)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </>
       )}
     </div>
   );
@@ -507,6 +542,7 @@ export default function ClientViewerPage() {
   const [detailLoading, setDetailLoading]         = useState(false);
   const [activities, setActivities]               = useState<Activity[]>([]);
   const [activitiesLoading, setActivitiesLoading] = useState(false);
+  const [mobilePanel, setMobilePanel]             = useState<"list" | "detail" | "ai">("list");
 
   const abortRef = useRef<AbortController | null>(null);
 
@@ -537,6 +573,7 @@ export default function ClientViewerPage() {
 
   async function selectClient(c: Client) {
     setSelected(c); setDeals([]); setDetail(null); setActivities([]);
+    setMobilePanel("detail");
 
     setDealsLoading(true);
     const dr = await fetch(`/api/sales?customer_id=${c.id}&page=1`);
@@ -554,11 +591,47 @@ export default function ClientViewerPage() {
     setActivitiesLoading(false);
   }
 
-  return (
-    <div className="flex flex-1 min-h-0 overflow-hidden bg-[#f8fafc]">
+  const detailContent = selected ? (
+    <>
+      <DealsGrid client={selected} deals={deals} loading={dealsLoading} />
+      <ClientCard client={selected} detail={detail} detailLoading={detailLoading}
+        activities={activities} activitiesLoading={activitiesLoading} />
+    </>
+  ) : null;
 
-      {/* ── LEFT ── */}
-      <div className={`flex flex-col min-w-0 min-h-0 overflow-hidden ${selected ? "flex-1" : "w-full"} bg-white border-r border-[#c8d3e8]`}>
+  return (
+    <div className="flex flex-1 min-h-0 overflow-hidden bg-[#f8fafc] flex-col md:flex-row">
+
+      {/* ── Mobile nav bar (shown when a client is selected) ── */}
+      {selected && (
+        <div className="md:hidden shrink-0 flex items-center gap-2 px-3 py-2 bg-white border-b border-[#c8d3e8]">
+          <button
+            onClick={() => { setMobilePanel("list"); }}
+            className="flex items-center gap-1 text-sm font-medium text-[#516895]"
+          >
+            ← Список
+          </button>
+          <div className="ml-auto flex border border-[#c8d3e8] rounded-lg overflow-hidden text-xs font-medium">
+            <button
+              onClick={() => setMobilePanel("detail")}
+              className={`px-3 py-1.5 transition ${mobilePanel === "detail" ? "bg-[#516895] text-white" : "text-gray-500 hover:bg-gray-50"}`}
+            >
+              Карточка
+            </button>
+            <button
+              onClick={() => setMobilePanel("ai")}
+              className={`px-3 py-1.5 transition border-l border-[#c8d3e8] ${mobilePanel === "ai" ? "bg-[#516895] text-white" : "text-gray-500 hover:bg-gray-50"}`}
+            >
+              ИИ-анализ
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── LEFT: Search + List + (desktop only) Detail ── */}
+      <div className={`flex flex-col min-w-0 min-h-0 overflow-hidden bg-white border-r border-[#c8d3e8] md:flex md:flex-1 ${
+        !selected || mobilePanel === "list" ? "flex flex-1" : "hidden"
+      }`}>
         <SearchPanel
           q={q} setQ={setQ} type={type} setType={setType}
           onlyDeals={onlyDeals} setOnlyDeals={setOnlyDeals}
@@ -569,12 +642,11 @@ export default function ClientViewerPage() {
 
         <ClientList clients={clients} selected={selected} onSelect={selectClient} loading={loading} />
 
+        {/* Desktop only: detail below the list */}
         {selected ? (
-          <>
-            <DealsGrid client={selected} deals={deals} loading={dealsLoading} />
-            <ClientCard client={selected} detail={detail} detailLoading={detailLoading}
-              activities={activities} activitiesLoading={activitiesLoading} />
-          </>
+          <div className="hidden md:flex md:flex-col md:flex-1 md:min-h-0 md:overflow-hidden">
+            {detailContent}
+          </div>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center p-8">
             <div className="w-16 h-16 rounded-2xl bg-[#516895]/8 flex items-center justify-center text-3xl">👤</div>
@@ -584,9 +656,20 @@ export default function ClientViewerPage() {
         )}
       </div>
 
-      {/* ── RIGHT: AI ── */}
+      {/* ── Mobile only: Detail panel ── */}
+      {selected && mobilePanel === "detail" && (
+        <div className="md:hidden flex flex-col flex-1 min-h-0 overflow-hidden bg-white">
+          {detailContent}
+        </div>
+      )}
+
+      {/* ── RIGHT: AI panel ── */}
       {selected && (
-        <div className="w-100 shrink-0 flex flex-col min-h-0 overflow-auto border-l border-[#c8d3e8] bg-white">
+        <div className={`flex flex-col min-h-0 bg-white border-l border-[#c8d3e8] ${
+          mobilePanel === "ai"
+            ? "flex flex-1 overflow-hidden"                              // mobile full screen
+            : "hidden md:flex md:w-100 md:shrink-0 md:overflow-hidden"  // desktop fixed panel
+        }`}>
           <CustomerAiPanel customerId={selected.id} customerName={selected.name} />
         </div>
       )}
