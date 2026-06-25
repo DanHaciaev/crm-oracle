@@ -199,8 +199,6 @@ export default function CustomerDetail({ id }: { id: string }) {
   const [newLink, setNewLink]         = useState<string | null>(null);
   const [generating, setGenerating]   = useState(false);
   const [deleting, setDeleting]       = useState(false);
-  const [aiSummary, setAiSummary]     = useState<string | null>(null);
-  const [aiLoading, setAiLoading]     = useState(false);
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [isAdmin, setIsAdmin]         = useState(false);
   const router                        = useRouter();
@@ -272,18 +270,6 @@ export default function CustomerDetail({ id }: { id: string }) {
       })
       .catch(() => {});
   }, []);
-
-  async function analyzeCustomer() {
-    setAiLoading(true); setAiSummary(null);
-    const res  = await fetch("/api/ai/customer", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ customerId: Number(id) }),
-    });
-    const json = await res.json().catch(() => ({})) as { summary?: string; error?: string };
-    setAiLoading(false);
-    setAiSummary(json.summary ?? json.error ?? t("common.error"));
-  }
 
   async function generateLink() {
     setGenerating(true); setNewLink(null);
@@ -502,25 +488,6 @@ export default function CustomerDetail({ id }: { id: string }) {
           </section>
 
           {stats && stats.order_count > 0 && <RetentionBlock stats={stats} />}
-
-          <section className="border border-[#c8d3e8] rounded-xl p-5 space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-700">✨ {t("customers.aiAnalysis")}</h2>
-              <button
-                onClick={analyzeCustomer}
-                disabled={aiLoading}
-                className="px-3 py-1.5 text-sm rounded-lg bg-gray-900 text-white hover:bg-gray-700 disabled:opacity-40 transition"
-              >
-                {aiLoading ? t("customers.aiAnalyzing") : t("customers.aiAnalyze")}
-              </button>
-            </div>
-            {aiSummary && (
-              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{aiSummary}</p>
-            )}
-            {!aiSummary && !aiLoading && (
-              <p className="text-sm text-gray-400">{t("customers.aiAnalysis")} — нажмите кнопку для анализа</p>
-            )}
-          </section>
 
           <section className="border border-red-500/30 rounded-xl p-5">
             <h2 className="text-base font-semibold text-red-300 mb-1">{t("customers.dangerZone")}</h2>

@@ -15,7 +15,7 @@ import {
 import {
   LayoutDashboard, Users, Target, TrendingUp, PieChart, AlertTriangle,
   MessageSquare, Mail, Megaphone, CheckSquare, Package, Scale,
-  UserCog, History, UserCircle, LogOut, Truck, GitMerge,
+  UserCog, History, UserCircle, LogOut, Truck, GitMerge, Search,
 } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { format } from "date-fns"
@@ -34,7 +34,8 @@ export function AppSidebar() {
     {
       label: t("nav.groupCRM"),
       links: [
-        { name: t("nav.customers"), href: "/customers", icon: Users },
+        { name: t("nav.customers"),     href: "/customers",      icon: Users },
+        { name: "Просмотр клиентов",   href: "/client-viewer",  icon: Search },
         { name: t("nav.suppliers"), href: "/suppliers", icon: Truck },
         { name: t("nav.leads"),     href: "/leads",     icon: Target },
         { name: t("nav.sales"),     href: "/sales",     icon: TrendingUp },
