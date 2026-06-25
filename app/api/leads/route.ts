@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
     ? `AND (UPPER(l.NAME) LIKE UPPER('%${search.replace(/'/g, "''")}%') OR UPPER(l.COMPANY) LIKE UPPER('%${search.replace(/'/g, "''")}%'))`
     : "";
   const pipelineCond = pipelineId && /^\d+$/.test(pipelineId)
-    ? `AND l.PIPELINE_ID = ${pipelineId}` : "";
+    ? `AND (l.PIPELINE_ID = ${pipelineId} OR l.PIPELINE_ID IS NULL)` : "";
 
   const rows = await query<LeadRow>(`
     SELECT * FROM (
