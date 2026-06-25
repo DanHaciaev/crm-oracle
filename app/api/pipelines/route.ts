@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { query, execute } from "@/lib/oracle";
 import { verifyToken } from "@/lib/auth";
 
-interface PipelineRow {
+interface PipelineRow { [key: string]: unknown;
   ID: number;
   NAME: string;
   DESCRIPTION: string | null;
