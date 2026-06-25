@@ -362,7 +362,7 @@ export default function ManagerStatsPage() {
             </div>
 
             {/* Revenue summary */}
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-2 gap-2">
               <div className="bg-violet-50 border border-violet-100 rounded-lg p-2 text-center">
                 <div className="text-sm font-semibold text-violet-600 tabular-nums">
                   {m.revenue_cur > 0 ? new Intl.NumberFormat("ru-MD", { maximumFractionDigits: 0 }).format(m.revenue_cur) : "0"}

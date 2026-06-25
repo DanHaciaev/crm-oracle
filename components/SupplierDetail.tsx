@@ -102,7 +102,7 @@ export default function SupplierDetail({ id }: { id: string }) {
       </div>
 
       {/* KPI */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           { label: t("suppliers.purchaseCount"), value: String(active.length) },
           { label: `${t("suppliers.netKg")}, кг`,  value: fmtNum(totalNetKg) },

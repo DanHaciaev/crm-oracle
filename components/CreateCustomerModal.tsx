@@ -92,7 +92,7 @@ export default function CreateCustomerModal({ appUser, onClose, onCreated }: {
             <input value={form.code} onChange={(e) => update("code", e.target.value)} placeholder={t("customers.codePlaceholder")} className={inputCls} />
           </Field>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label={t("common.type")}>
               <select
                 value={form.customer_type}
@@ -108,7 +108,7 @@ export default function CreateCustomerModal({ appUser, onClose, onCreated }: {
             </Field>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label={t("common.phone")}>
               <input value={form.contact_phone} onChange={(e) => update("contact_phone", e.target.value)} className={inputCls} />
             </Field>

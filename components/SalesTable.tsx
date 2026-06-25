@@ -181,7 +181,7 @@ function DealPanel({
   const accent = KANBAN_COLORS[doc.status] ?? KANBAN_COLORS.draft;
 
   return (
-    <aside className="w-80 shrink-0 flex flex-col bg-white border-l border-[#e2e8f0] overflow-hidden" style={{ maxHeight: "calc(100vh - 56px)" }}>
+    <aside className="w-full md:w-80 shrink-0 flex flex-col bg-white border-l border-[#e2e8f0] overflow-y-auto" style={{ maxHeight: "calc(100vh - 56px)" }}>
 
       {/* Colored accent bar */}
       <div className={`h-1 w-full shrink-0 ${accent.bar}`} />
@@ -555,7 +555,7 @@ export default function SalesTable({ customerId, compact = false }: Props) {
     <div className={compact ? "" : ""}>
       {/* Header */}
       {!compact && (
-        <div className="px-4 sm:px-8 pt-6 pb-4 border-b border-[#c8d3e8] flex items-start justify-between gap-4 flex-col acts:flex-row">
+        <div className="px-4 sm:px-8 pt-6 pb-4 border-b border-[#c8d3e8] flex items-start justify-between gap-4 flex-col sm:flex-row">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{t("sales.title")}</h1>
             <p className="text-sm text-gray-500 mt-1">{t("sales.subtitle")}</p>
@@ -627,7 +627,7 @@ export default function SalesTable({ customerId, compact = false }: Props) {
 
       {/* Stat cards */}
       {!compact && (
-        <div className={`grid grid-cols-3 gap-3 ${view === "list" ? "px-4 sm:px-8 py-4" : "px-4 sm:px-8 pt-4"}`}>
+        <div className={`grid grid-cols-1 sm:grid-cols-3 gap-3 ${view === "list" ? "px-4 sm:px-8 py-4" : "px-4 sm:px-8 pt-4"}`}>
           <StatCard label={t("sales.docs")}              value={String(stats.count)} />
           <StatCard label={`${t("common.amount")} (MDL)`} value={fmtMoney(stats.amount_mdl)} suffix="MDL" />
           <StatCard label={t("sales.netKg")}              value={fmtKg(stats.kg)} />
@@ -688,15 +688,18 @@ export default function SalesTable({ customerId, compact = false }: Props) {
             </div>
           </div>
 
-          {/* Right panel — sticks to top while you scroll down */}
+          {/* Right panel — overlay on mobile, side panel on desktop */}
           {selectedDoc && (
-            <div className="shrink-0 sticky top-0 self-start">
-              <DealPanel
-                doc={selectedDoc}
-                onClose={() => setSelectedDoc(null)}
-                onStatusChange={handleStatusChange}
-              />
-            </div>
+            <>
+              <div className="md:hidden fixed inset-0 bg-black/40 z-40" onClick={() => setSelectedDoc(null)} />
+              <div className="fixed inset-y-0 right-0 z-50 md:relative md:inset-auto md:z-auto shrink-0 md:sticky md:top-0 md:self-start">
+                <DealPanel
+                  doc={selectedDoc}
+                  onClose={() => setSelectedDoc(null)}
+                  onStatusChange={handleStatusChange}
+                />
+              </div>
+            </>
           )}
         </div>
       )}

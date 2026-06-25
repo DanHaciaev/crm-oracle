@@ -421,7 +421,7 @@ function LeadPanel({ lead, onClose, onDelete, onStatusChange, onUpdate, onPropos
   );
 
   return (
-    <aside className="w-80 shrink-0 border-l border-[#e2e8f0] flex flex-col bg-white overflow-y-auto">
+    <aside className="w-full md:w-80 shrink-0 border-l border-[#e2e8f0] flex flex-col bg-white overflow-y-auto">
 
       {/* Colored accent bar */}
       <div className={`h-1 w-full shrink-0 ${bar}`} />
@@ -764,7 +764,7 @@ function ProposalModal({ lead, onClose, t }: { lead: Lead; onClose: () => void; 
 
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           {/* Meta row */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-gray-400 mb-1 block">Действительно до</label>
               <input type="date" value={validity} onChange={e => setValidity(e.target.value)} className={inp} />
@@ -1108,17 +1108,22 @@ export default function LeadsPage() {
           )}
         </div>
 
-        {/* Right panel — no padding, reaches bottom and right edge */}
+        {/* Right panel — overlay on mobile, side panel on desktop */}
         {selectedLead && (
-          <LeadPanel
-            lead={selectedLead}
-            onClose={() => setSelectedLead(null)}
-            onDelete={handleDelete}
-            onStatusChange={handleStatusChange}
-            onUpdate={handleLeadUpdate}
-            onProposal={setProposalLead}
-            t={t}
-          />
+          <>
+            <div className="md:hidden fixed inset-0 bg-black/40 z-40" onClick={() => setSelectedLead(null)} />
+            <div className="fixed inset-y-0 right-0 z-50 md:relative md:inset-auto md:z-auto">
+              <LeadPanel
+                lead={selectedLead}
+                onClose={() => setSelectedLead(null)}
+                onDelete={handleDelete}
+                onStatusChange={handleStatusChange}
+                onUpdate={handleLeadUpdate}
+                onProposal={setProposalLead}
+                t={t}
+              />
+            </div>
+          </>
         )}
       </div>
 

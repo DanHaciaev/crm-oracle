@@ -192,7 +192,8 @@ function StatusPieChart({ data }: { data: Stats["order_statuses"] }) {
   const label = (status: string) => t(`sales.statuses.${status}`) || status;
   return (
     <div className="flex flex-col sm:flex-row items-center gap-4">
-      <ResponsiveContainer width={200} height={200}>
+      <div className="w-full max-w-[200px] mx-auto sm:mx-0 shrink-0">
+      <ResponsiveContainer width="100%" height={200}>
         <PieChart>
           <Pie data={data} dataKey="count" nameKey="status" cx="50%" cy="50%"
             innerRadius={55} outerRadius={85} paddingAngle={2}
@@ -211,6 +212,7 @@ function StatusPieChart({ data }: { data: Stats["order_statuses"] }) {
           />
         </PieChart>
       </ResponsiveContainer>
+      </div>
       <div className="flex flex-col gap-2 text-sm">
         {data.map((d, i) => (
           <div key={i} className="flex items-center gap-2">
@@ -366,7 +368,7 @@ function ForecastWidget() {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
           { label: t("dashboard.forecast30d"), val: data.forecast_30d },
           { label: t("dashboard.forecast60d"), val: data.forecast_60d },
@@ -876,7 +878,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard
           label={t("dashboard.revenue")}
           value={kpi ? fmtNum(kpi.revenue) : "—"}
