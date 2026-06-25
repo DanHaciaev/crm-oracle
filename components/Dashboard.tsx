@@ -192,7 +192,7 @@ function StatusPieChart({ data }: { data: Stats["order_statuses"] }) {
   const label = (status: string) => t(`sales.statuses.${status}`) || status;
   return (
     <div className="flex flex-col sm:flex-row items-center gap-4">
-      <div className="w-full max-w-[200px] mx-auto sm:mx-0 shrink-0">
+      <div className="w-full max-w-50 mx-auto sm:mx-0 shrink-0">
       <ResponsiveContainer width="100%" height={200}>
         <PieChart>
           <Pie data={data} dataKey="count" nameKey="status" cx="50%" cy="50%"

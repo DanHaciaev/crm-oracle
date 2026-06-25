@@ -1112,7 +1112,7 @@ export default function LeadsPage() {
         {selectedLead && (
           <>
             <div className="md:hidden fixed inset-0 bg-black/40 z-40" onClick={() => setSelectedLead(null)} />
-            <div className="fixed inset-y-0 right-0 z-50 md:relative md:inset-auto md:z-auto">
+            <div className="fixed w-full md:w-auto inset-y-0 right-0 z-50 md:relative md:inset-auto md:z-auto">
               <LeadPanel
                 lead={selectedLead}
                 onClose={() => setSelectedLead(null)}

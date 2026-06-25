@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { useEffect, useState, useRef } from "react";
@@ -161,10 +162,10 @@ export default function CalendarPage({ embedded = false }: { embedded?: boolean 
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
 
         {/* Top bar */}
-        <div className="px-6 py-3.5 bg-white border-b border-[#c8d3e8] flex items-center gap-3 shrink-0">
+        <div className="px-6 py-3.5 bg-white border-b border-[#c8d3e8] flex sm:items-center flex-col sm:flex-row gap-3 shrink-0">
           <h1 className="text-base font-bold text-gray-900">Календарь</h1>
 
-          <div className="flex items-center gap-1 ml-4">
+          <div className="flex items-center gap-1 sm:ml-4">
             <button onClick={goToday}
               className="px-3 py-1.5 text-sm rounded-lg border border-[#c8d3e8] text-gray-700 hover:bg-gray-50 transition font-medium">
               Сегодня

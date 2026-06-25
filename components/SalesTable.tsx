@@ -638,7 +638,7 @@ export default function SalesTable({ customerId, compact = false }: Props) {
       {view === "kanban" && !loading && (
         <div className="flex items-stretch mx-4 sm:mx-8 mb-6">
           {/* Kanban scroll area */}
-          <div className="flex-1 min-w-0 overflow-auto py-4 pr-4 bg-[#f4f6fb] rounded-2xl">
+          <div className={`flex-1 min-w-0 overflow-auto py-4 bg-[#f4f6fb] rounded-2xl${selectedDoc ? " pr-4" : ""}`}>
             <div className="flex gap-3 pb-2 pt-1 flex-wrap">
               {KANBAN_STATUSES.map(col => {
                 const cards = filtered.filter(d => d.status === col);
@@ -692,7 +692,7 @@ export default function SalesTable({ customerId, compact = false }: Props) {
           {selectedDoc && (
             <>
               <div className="md:hidden fixed inset-0 bg-black/40 z-40" onClick={() => setSelectedDoc(null)} />
-              <div className="fixed inset-y-0 right-0 z-50 md:relative md:inset-auto md:z-auto shrink-0 md:sticky md:top-0 md:self-start">
+              <div className="fixed inset-y-0 right-0 z-50 w-full md:w-auto  md:inset-auto md:z-auto shrink-0 md:sticky md:top-0 md:self-start">
                 <DealPanel
                   doc={selectedDoc}
                   onClose={() => setSelectedDoc(null)}
