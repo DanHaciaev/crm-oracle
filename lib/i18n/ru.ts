@@ -11,6 +11,8 @@ export const ru = {
     leads:         "Лиды",
     churn:         "Риск оттока",
     duplicates:    "Дубликаты",
+    analytics:     "Аналитика товаров",
+    crons:         "Крон-задачи",
     aiSearch:      "AI Поиск",
     broadcasts:    "Рассылки",
     automations:   "Автоматизация",

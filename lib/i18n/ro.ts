@@ -11,6 +11,8 @@ export const ro = {
     leads:         "Leaduri",
     churn:         "Risc de abandon",
     duplicates:    "Duplicate",
+    analytics:     "Analitică produse",
+    crons:         "Sarcini cron",
     aiSearch:      "Căutare AI",
     broadcasts:    "Difuzări",
     automations:   "Automatizare",

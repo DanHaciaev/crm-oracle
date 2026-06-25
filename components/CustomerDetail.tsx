@@ -349,7 +349,7 @@ export default function CustomerDetail({ id }: { id: string }) {
     { key: "telegram",   label: "Telegram" },
     { key: "nps",        label: "NPS" },
     { key: "batches",      label: t("customers.tabs.batches") },
-{ key: "loyalty",      label: "Лояльность" },
+    { key: "loyalty",      label: "Лояльность" },
   ];
 
   return (
@@ -690,9 +690,10 @@ export default function CustomerDetail({ id }: { id: string }) {
         <BatchesTab customerId={data.id} />
       )}
 
-{tab === "loyalty" && data && (
+      {tab === "loyalty" && data && (
         <LoyaltyTab customerId={data.id} />
       )}
+
     </div>
   );
 }
