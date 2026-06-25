@@ -41,6 +41,7 @@ const STATUS_CLS: Record<string, string> = {
   draft:     "border-[#c8d3e8]    text-gray-500    bg-gray-100",
   confirmed: "border-blue-500/40  text-blue-400   bg-blue-500/10",
   shipped:   "border-violet-500/40 text-violet-400 bg-violet-500/10",
+  delivered: "border-amber-500/40 text-amber-500  bg-amber-50",
   closed:    "border-emerald-500/40 text-emerald-400 bg-emerald-500/10",
   cancelled: "border-red-500/40   text-red-400    bg-red-500/10",
 };
@@ -50,12 +51,13 @@ const TYPE_CLS: Record<string, string> = {
   export:   "border-sky-500/40   text-sky-400   bg-sky-500/10",
 };
 
-const KANBAN_STATUSES = ["draft", "confirmed", "shipped", "closed", "cancelled"] as const;
+const KANBAN_STATUSES = ["draft", "confirmed", "shipped", "delivered", "closed", "cancelled"] as const;
 
 const KANBAN_COLORS: Record<string, { bar: string; dot: string; text: string }> = {
   draft:     { bar: "bg-gray-400",    dot: "bg-gray-400",    text: "text-gray-600" },
   confirmed: { bar: "bg-blue-500",    dot: "bg-blue-500",    text: "text-blue-700" },
   shipped:   { bar: "bg-violet-500",  dot: "bg-violet-500",  text: "text-violet-700" },
+  delivered: { bar: "bg-amber-500",   dot: "bg-amber-500",   text: "text-amber-700" },
   closed:    { bar: "bg-emerald-500", dot: "bg-emerald-500", text: "text-emerald-700" },
   cancelled: { bar: "bg-red-400",     dot: "bg-red-400",     text: "text-red-600" },
 };
@@ -64,6 +66,7 @@ const KANBAN_CARD_LEFT: Record<string, string> = {
   draft:     "border-l-gray-300",
   confirmed: "border-l-blue-400",
   shipped:   "border-l-violet-400",
+  delivered: "border-l-amber-400",
   closed:    "border-l-emerald-400",
   cancelled: "border-l-red-300",
 };
@@ -172,7 +175,7 @@ function DealPanel({
     ? doc.customer_name.split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase()
     : "??";
 
-  const PIPELINE = ["draft", "confirmed", "shipped", "closed"] as const;
+  const PIPELINE = ["draft", "confirmed", "shipped", "delivered", "closed"] as const;
   const pipeIdx  = PIPELINE.indexOf(doc.status as typeof PIPELINE[number]);
   const isCancelled = doc.status === "cancelled";
   const accent = KANBAN_COLORS[doc.status] ?? KANBAN_COLORS.draft;
@@ -537,12 +540,13 @@ export default function SalesTable({ customerId, compact = false }: Props) {
   }
 
   const STATUS_TABS = [
-    { v: "all",       label: t("common.all"),               count: total },
-    { v: "confirmed", label: t("sales.statuses.confirmed"), count: statusCounts.confirmed ?? 0 },
-    { v: "shipped",   label: t("sales.statuses.shipped"),   count: statusCounts.shipped   ?? 0 },
-    { v: "closed",    label: t("sales.statuses.closed"),    count: statusCounts.closed    ?? 0 },
-    { v: "draft",     label: t("sales.statuses.draft"),     count: statusCounts.draft     ?? 0 },
-    { v: "cancelled", label: t("sales.statuses.cancelled"), count: statusCounts.cancelled ?? 0 },
+    { v: "all",       label: t("common.all"),                count: total },
+    { v: "confirmed", label: t("sales.statuses.confirmed"),  count: statusCounts.confirmed  ?? 0 },
+    { v: "shipped",   label: t("sales.statuses.shipped"),    count: statusCounts.shipped    ?? 0 },
+    { v: "delivered", label: t("sales.statuses.delivered"),  count: statusCounts.delivered  ?? 0 },
+    { v: "closed",    label: t("sales.statuses.closed"),     count: statusCounts.closed     ?? 0 },
+    { v: "draft",     label: t("sales.statuses.draft"),      count: statusCounts.draft      ?? 0 },
+    { v: "cancelled", label: t("sales.statuses.cancelled"),  count: statusCounts.cancelled  ?? 0 },
   ];
 
   const colSpan = customerId ? 8 : 9;

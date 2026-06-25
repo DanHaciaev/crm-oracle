@@ -1,10 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function CapturePage() {
   const [form, setForm]       = useState({ name: "", phone: "", email: "", company: "", notes: "" });
   const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    window.history.pushState(null, "", window.location.href);
+    const block = () => window.history.pushState(null, "", window.location.href);
+    window.addEventListener("popstate", block);
+    return () => window.removeEventListener("popstate", block);
+  }, []);
   const [done, setDone]       = useState(false);
   const [error, setError]     = useState<string | null>(null);
 

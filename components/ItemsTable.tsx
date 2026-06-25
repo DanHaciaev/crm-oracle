@@ -53,7 +53,7 @@ function TempBadge({ min, max }: { min: number | null; max: number | null }) {
   );
 }
 
-export default function ItemsTable() {
+export default function ItemsTable({ hideHeader }: { hideHeader?: boolean } = {}) {
   const t = useT();
   const { locale } = useLocale();
   const [items, setItems]       = useState<Item[]>([]);
@@ -178,10 +178,12 @@ export default function ItemsTable() {
   return (
     <div className="p-4 sm:p-8">
       <div className="flex items-start justify-between mb-6 gap-4 flex-col acts:flex-row">
-        <div>
-          <h1 className="text-2xl font-bold">{t("items.title")}</h1>
-          <p className="text-sm text-gray-500 mt-1">{t("items.catalogSubtitle")}</p>
-        </div>
+        {!hideHeader && (
+          <div>
+            <h1 className="text-2xl font-bold">{t("items.title")}</h1>
+            <p className="text-sm text-gray-500 mt-1">{t("items.catalogSubtitle")}</p>
+          </div>
+        )}
         <button
           onClick={() => exportCsv(filtered)}
           className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-[#c8d3e8] text-sm hover:bg-gray-100 transition shrink-0 text-gray-700"

@@ -11,6 +11,8 @@ export const en = {
     leads:         "Leads",
     churn:         "Churn Risk",
     duplicates:    "Duplicates",
+    analytics:     "Product Analytics",
+    crons:         "Cron Jobs",
     aiSearch:      "AI Search",
     broadcasts:    "Broadcasts",
     automations:   "Automation",
