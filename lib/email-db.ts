@@ -126,7 +126,7 @@ export async function getEmailHistory(opts: {
 
   const limit = opts.limit ?? 50;
 
-  interface Row {
+  interface Row { [key: string]: unknown;
     ID: number; MESSAGE_ID: string | null; DIRECTION: string;
     FROM_ADDR: string | null; TO_ADDR: string | null; SUBJECT: string | null;
     BODY_TEXT: string | null; LEAD_ID: number | null; CUSTOMER_ID: number | null;

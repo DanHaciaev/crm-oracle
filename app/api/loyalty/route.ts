@@ -23,7 +23,7 @@ async function requireAuth() {
   return token ? verifyToken(token) : null;
 }
 
-interface MemberRow {
+interface MemberRow { [key: string]: unknown;
   MEMBER_ID: number;
   CUSTOMER_ID: number;
   CUSTOMER_NAME: string;
@@ -34,7 +34,7 @@ interface MemberRow {
   ENROLLED_AT: Date | string | null;
 }
 
-interface StatsRow {
+interface StatsRow { [key: string]: unknown;
   TOTAL_MEMBERS: number;
   TOTAL_POINTS: number;
 }
