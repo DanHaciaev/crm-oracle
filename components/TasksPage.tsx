@@ -258,7 +258,7 @@ export default function TasksPage({ customerId, compact = false }: Props) {
                   </select>
                 </div>
               )}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm text-gray-500 mb-1">{t("tasks.priority")}</label>
                   <select value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}

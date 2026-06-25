@@ -177,7 +177,7 @@ export default function ItemsTable({ hideHeader }: { hideHeader?: boolean } = {}
 
   return (
     <div className="p-4 sm:p-8">
-      <div className="flex items-start justify-between mb-6 gap-4 flex-col acts:flex-row">
+      <div className="flex items-start justify-between mb-6 gap-4 flex-col sm:flex-row">
         {!hideHeader && (
           <div>
             <h1 className="text-2xl font-bold">{t("items.title")}</h1>
@@ -224,7 +224,7 @@ export default function ItemsTable({ hideHeader }: { hideHeader?: boolean } = {}
         )}
       </div>
 
-      <div className="grid grid-cols-2 acts:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         <StatCard label={t("items.statsTotal")}    value={String(stats.total)} />
         <StatCard label={t("items.statsWithSales")} value={String(stats.withSales)} />
         <StatCard label={t("items.statsRevenue")}  value={fmtMoney(stats.revenue)} suffix="MDL" />

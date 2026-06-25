@@ -206,7 +206,7 @@ export default function ChurnPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <StatCard label={t("churn.risk.criticalFull")} value={String(critical)} cls="text-red-400" />
             <StatCard label={t("churn.risk.highFull")}     value={String(high)}     cls="text-orange-400" />
             <StatCard label={t("churn.risk.mediumFull")}   value={String(medium)}   cls="text-yellow-400" />

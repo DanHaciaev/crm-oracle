@@ -281,7 +281,9 @@ export default function CalendarPage({ embedded = false }: { embedded?: boolean 
 
       {/* ── RIGHT PANEL ── */}
       {selected && selectedDayNum && (
-        <aside className="w-80 border-l border-[#c8d3e8] bg-white flex flex-col shrink-0 overflow-hidden">
+        <>
+        <div className="md:hidden fixed inset-0 bg-black/40 z-40" onClick={() => setSelected(null)} />
+        <aside className="fixed inset-y-0 right-0 z-50 md:relative md:inset-auto md:z-auto w-full md:w-80 border-l border-[#c8d3e8] bg-white flex flex-col shrink-0 overflow-hidden">
 
           {/* Panel header */}
           <div className="px-4 pt-4 pb-3 border-b border-[#c8d3e8]">
@@ -438,6 +440,7 @@ export default function CalendarPage({ embedded = false }: { embedded?: boolean 
             </div>
           )}
         </aside>
+        </>
       )}
     </div>
   );
