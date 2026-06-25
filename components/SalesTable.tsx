@@ -638,7 +638,7 @@ export default function SalesTable({ customerId, compact = false }: Props) {
       {view === "kanban" && !loading && (
         <div className="flex items-stretch mx-4 sm:mx-8 mb-6">
           {/* Kanban scroll area */}
-          <div className={`flex-1 min-w-0 overflow-auto py-4 bg-[#f4f6fb] rounded-2xl${selectedDoc ? " pr-4" : ""}`}>
+          <div className="flex-1 min-w-0 overflow-auto py-4 pr-4 bg-[#f4f6fb] rounded-2xl">
             <div className="flex gap-3 pb-2 pt-1 flex-wrap">
               {KANBAN_STATUSES.map(col => {
                 const cards = filtered.filter(d => d.status === col);
