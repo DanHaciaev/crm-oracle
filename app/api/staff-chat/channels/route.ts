@@ -9,7 +9,7 @@ async function getAuth() {
   return token ? verifyToken(token) : null;
 }
 
-interface ChannelRow {
+interface ChannelRow extends Record<string, unknown> {
   ROOM:       string;
   LABEL:      string;
   CREATED_AT: Date | string;
