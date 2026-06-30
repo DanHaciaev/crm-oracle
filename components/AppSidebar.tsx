@@ -15,7 +15,7 @@ import {
 import {
   LayoutDashboard, Users, Target, TrendingUp, PieChart, AlertTriangle,
   MessageSquare, Mail, Megaphone, CheckSquare, Package, Scale,
-  UserCog, History, UserCircle, LogOut, Truck, GitMerge, Search,
+  UserCog, History, UserCircle, LogOut, Truck, GitMerge, Search, MessagesSquare,
 } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { format } from "date-fns"
@@ -47,6 +47,7 @@ export function AppSidebar() {
     {
       label: t("nav.groupComms"),
       links: [
+        { name: "Чат сотрудников",    href: "/staff-chat",  icon: MessagesSquare },
         { name: t("nav.inbox"),       href: "/inbox",       icon: MessageSquare },
         { name: t("nav.email"),       href: "/email",       icon: Mail },
         { name: t("nav.broadcasts"),  href: "/broadcasts",  icon: Megaphone },
