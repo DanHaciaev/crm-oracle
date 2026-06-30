@@ -359,7 +359,7 @@ export default function StaffChat() {
   const otherUsers  = users.filter(u => u.id !== user.id);
 
   function dmHeader(): { label: string; initials: string; color: string } | null {
-    if (isChannel) return null;
+    if (isChannel || !user) return null;
     const parts   = room.replace("dm:", "").split(":");
     const otherId = Number(parts[0]) === user.id ? Number(parts[1]) : Number(parts[0]);
     const u       = users.find(u => u.id === otherId);
