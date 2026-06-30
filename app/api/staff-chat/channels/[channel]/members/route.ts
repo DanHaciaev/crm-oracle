@@ -17,7 +17,7 @@ async function isActiveChannel(room: string): Promise<boolean> {
   return rows.length > 0;
 }
 
-interface MemberRow {
+interface MemberRow extends Record<string, unknown> {
   ID:         number;
   USERNAME:   string;
   FIRST_NAME: string | null;

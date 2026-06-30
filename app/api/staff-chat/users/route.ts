@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { query } from "@/lib/oracle";
 import { verifyToken } from "@/lib/auth";
 
-interface UserRow {
+interface UserRow extends Record<string, unknown> {
   ID: number;
   USERNAME: string;
   FIRST_NAME: string | null;

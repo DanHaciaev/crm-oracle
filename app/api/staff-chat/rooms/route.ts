@@ -3,12 +3,12 @@ import { cookies } from "next/headers";
 import { query } from "@/lib/oracle";
 import { verifyToken } from "@/lib/auth";
 
-interface ChannelInfoRow {
+interface ChannelInfoRow extends Record<string, unknown> {
   ROOM:  string;
   LABEL: string;
 }
 
-interface UnreadRow {
+interface UnreadRow extends Record<string, unknown> {
   ROOM:   string;
   UNREAD: number;
 }

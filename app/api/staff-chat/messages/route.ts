@@ -32,7 +32,7 @@ async function checkChannelMembership(channel: string, userId: number): Promise<
   return rows.length > 0;
 }
 
-interface MsgRow {
+interface MsgRow extends Record<string, unknown> {
   ID:                number;
   SENDER_ID:         number;
   BODY:              string;
