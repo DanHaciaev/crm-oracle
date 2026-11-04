@@ -1,6 +1,7 @@
 "use client";
 
 import type { salesPalletBon, shippingNote, exportDecl } from "@/lib/documents/sales";
+import type { returnAct } from "@/lib/documents/returns";
 import { Lang, f1, f2, f3, dash, Header, Signatures } from "./PrintShell";
 
 type Bon      = Awaited<ReturnType<typeof salesPalletBon>>;
@@ -306,6 +307,72 @@ export function ExportDecl({ d, lang }: { d: ExportD; lang: Lang }) {
       )}
       {d.notes && <div className="section"><strong>{L.observatii}:</strong> {d.notes}</div>}
       <Signatures labels={[L.exportator, L.vama, L.fitoinspector]} />
+      <div className="stamp-area">{L.stamp}</div>
+    </div>
+  );
+}
+
+// ── Act de restituire (return act) ───────────────────────────────────────
+type RetAct = Awaited<ReturnType<typeof returnAct>>;
+
+const RET_T = {
+  ro: { title: "ACT DE RESTITUIRE A MARFII", nr: "Nr.", data: "Data", furnizor: "Furnizor", client: "Client (returnează)",
+        vanzare: "Documentul de vânzare", depozit: "Depozit", col_denumire: "Denumire", col_lot: "Lot", col_cant: "Cant., kg",
+        col_pret: "Preț", col_suma: "Suma", total: "TOTAL", motiv: "Motivul returului", anulat: "RETUR ANULAT",
+        predat: "Predat (client)", primit: "Primit (depozit)", stamp: "Ștampilă" },
+  ru: { title: "АКТ ВОЗВРАТА ТОВАРА", nr: "№", data: "Дата", furnizor: "Поставщик", client: "Клиент (возвращает)",
+        vanzare: "Документ продажи", depozit: "Склад", col_denumire: "Наименование", col_lot: "Партия", col_cant: "Кол-во, кг",
+        col_pret: "Цена", col_suma: "Сумма", total: "ИТОГО", motiv: "Причина возврата", anulat: "ВОЗВРАТ ОТМЕНЁН",
+        predat: "Сдал (клиент)", primit: "Принял (склад)", stamp: "М.П." },
+  en: { title: "GOODS RETURN ACT", nr: "No.", data: "Date", furnizor: "Supplier", client: "Customer (returning)",
+        vanzare: "Sales document", depozit: "Warehouse", col_denumire: "Description", col_lot: "Batch", col_cant: "Qty, kg",
+        col_pret: "Price", col_suma: "Amount", total: "TOTAL", motiv: "Reason for return", anulat: "RETURN CANCELLED",
+        predat: "Handed over (customer)", primit: "Received (warehouse)", stamp: "Seal" },
+};
+
+export function ReturnAct({ d, lang }: { d: RetAct; lang: Lang }) {
+  const L = RET_T[lang];
+  return (
+    <div className="doc">
+      <Header company={d.company_name} title={L.title} />
+      {d.status === "cancelled" && <div className="verdict bad"><div className="result fail">{L.anulat}</div></div>}
+      <div className="doc-row">
+        <div>{L.nr}: <strong>{dash(d.doc_number)}</strong></div>
+        <div>{L.data}: <strong>{dash(d.doc_date)}</strong></div>
+      </div>
+      <div className="parties">
+        <div className="party">
+          <div className="title">{L.furnizor}</div>
+          <div><strong>{dash(d.company_name)}</strong></div>
+          <div>{d.company_address}</div>
+          <div>IDNO: {d.company_idno}</div>
+        </div>
+        <div className="party">
+          <div className="title">{L.client}</div>
+          <div><strong>{dash(d.customer_name)}</strong></div>
+          <div>{d.customer_address}</div>
+          <div>IDNO: {d.customer_idno}</div>
+        </div>
+      </div>
+      <div className="doc-row">
+        <div>{L.vanzare}: <strong>{dash(d.sale_number)}</strong> {d.sale_date && `(${d.sale_date})`}</div>
+        <div>{L.depozit}: <strong>{dash(d.warehouse_name)}</strong></div>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>{L.col_denumire}</th><th>{L.col_lot}</th><th className="num">{L.col_cant}</th><th className="num">{L.col_pret}</th><th className="num">{L.col_suma}</th></tr></thead>
+        <tbody>
+          {d.lines.map((l, i) => (
+            <tr key={i}><td>{i + 1}</td><td>{dash(l.item_name)}</td><td>{dash(l.batch_number)}</td>
+              <td className="num">{f1(l.qty_kg)}</td><td className="num">{f2(l.price_per_kg)}</td><td className="num">{f2(l.amount)}</td></tr>
+          ))}
+          {d.lines.length === 0 && <tr><td colSpan={6} className="empty">—</td></tr>}
+        </tbody>
+        <tfoot>
+          <tr className="total-row"><td colSpan={3}>{L.total}</td><td className="num">{f1(d.total_qty_kg)}</td><td /><td className="num">{f2(d.total_amount)} {d.currency_code}</td></tr>
+        </tfoot>
+      </table>
+      <div className="boxed"><strong>{L.motiv}:</strong> {dash(d.reason)}</div>
+      <Signatures labels={[L.predat, L.primit]} />
       <div className="stamp-area">{L.stamp}</div>
     </div>
   );

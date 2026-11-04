@@ -3,7 +3,7 @@
 // closed sales) × that sales line's MDL price; cost = the same kg × the
 // purchase line's MDL cost per kg (LINE_TOTAL_MDL / NET_WEIGHT_KG).
 //
-// Many purchases have no price entered yet (Artgranit lets the price be set
+// Many purchases have no price entered yet (DIPP FRUICT lets the price be set
 // later). Those batches get no cost and are NOT treated as free: margin is
 // only computed where the cost is known, and `coverage` says how much of the
 // revenue that is. No estimated / averaged costs are substituted.
@@ -33,7 +33,9 @@ export function parseProfitFilters(sp: URLSearchParams): ProfitFilters {
 
 // One row per (batch, customer) — everything else is aggregated from it.
 async function rawRows(f: ProfitFilters, lang: Lang) {
-  const where: string[] = ["sd.STATUS IN ('shipped','delivered','closed')"];
+  // 'returned' sales are included and their returns subtracted below: a full
+  // return nets to zero, a partial one leaves what the customer kept.
+  const where: string[] = ["sd.STATUS IN ('shipped','delivered','closed','returned')"];
   const binds: Record<string, string | number> = {};
   if (f.date_from)    { where.push("sd.DOC_DATE >= TO_DATE(:dfrom, 'YYYY-MM-DD')"); binds.dfrom = f.date_from; }
   if (f.date_to)      { where.push("sd.DOC_DATE < TO_DATE(:dto, 'YYYY-MM-DD') + 1"); binds.dto = f.date_to; }
@@ -69,9 +71,31 @@ async function rawRows(f: ProfitFilters, lang: Lang) {
              pl.NET_WEIGHT_KG, pl.LINE_TOTAL_MDL, c.ID, c.NAME
   `, binds);
 
+  // Returns of shipped goods leave AGRO_BATCH_ALLOCATIONS untouched (it's the
+  // shipment's historical record), so the returned kg / revenue is taken off
+  // here — same filters, active (not cancelled) returns only.
+  const returned = await query<Row>(`
+    SELECT rl.BATCH_ID, sd.CUSTOMER_ID,
+           SUM(rl.QTY_KG) AS RET_KG,
+           SUM(rl.QTY_KG * NVL(sl.AMOUNT_MDL, 0) / NULLIF(sl.NET_WEIGHT_KG, 0)) AS RET_REVENUE
+    FROM AGRO_SALES_RETURN_LINES rl
+    JOIN AGRO_SALES_RETURNS r ON r.ID = rl.RETURN_ID AND NVL(r.STATUS, 'active') <> 'cancelled'
+    JOIN AGRO_SALES_LINES sl ON sl.ID = rl.SALES_LINE_ID
+    JOIN AGRO_SALES_DOCS  sd ON sd.ID = sl.SALES_DOC_ID
+    JOIN AGRO_BATCHES     b  ON b.ID  = rl.BATCH_ID
+    LEFT JOIN AGRO_PURCHASE_LINES pl ON pl.ID = b.PURCHASE_LINE_ID
+    LEFT JOIN AGRO_PURCHASE_DOCS  pd ON pd.ID = pl.PURCHASE_DOC_ID
+    WHERE ${where.join(" AND ")}
+    GROUP BY rl.BATCH_ID, sd.CUSTOMER_ID
+  `, binds);
+  const retKey = (batch: unknown, cust: unknown) => `${n(batch)}|${n(cust)}`;
+  const ret = new Map(returned.map(r => [retKey(r.BATCH_ID, r.CUSTOMER_ID), { kg: n(r.RET_KG), revenue: n(r.RET_REVENUE) }]));
+
   return rows.map(r => {
     const costPerKg = r.COST_PER_KG != null ? n(r.COST_PER_KG) : null;
-    const sold = n(r.SOLD_KG), revenue = n(r.REVENUE);
+    const back = ret.get(retKey(r.BATCH_ID, r.CUSTOMER_ID));
+    const sold = Math.max(0, n(r.SOLD_KG) - (back?.kg ?? 0));
+    const revenue = Math.max(0, n(r.REVENUE) - (back?.revenue ?? 0));
     return {
       batch_id: n(r.BATCH_ID), batch_number: s(r.BATCH_NUMBER),
       // A batch not created from a purchase (inventory surplus, return).
@@ -141,7 +165,7 @@ export async function profitability(f: ProfitFilters, lang: Lang) {
   }, { key: "total", label: "", sold_kg: 0, revenue: 0, costed_kg: 0, costed_revenue: 0, cost: 0,
        margin: null, margin_pct: null, coverage: null, sales_count: 0 }));
 
-  // Sold purchases still without a price — what to fill in (in Artgranit)
+  // Sold purchases still without a price — what to fill in (in DIPP FRUICT)
   // to make the report complete. Own production is listed separately.
   const unpricedMap = new Map<number, { purchase_id: number; purchase_doc: string; purchase_date: string | null;
                                         supplier_name: string; origin: string; sold_kg: number; revenue: number; batches: number }>();

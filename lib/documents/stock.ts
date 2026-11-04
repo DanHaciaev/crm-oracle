@@ -20,7 +20,7 @@ export function parsePeriod(sp: URLSearchParams): PeriodParams {
 }
 
 // ── Bilanț de masă (mass balance) ────────────────────────────────────────
-// Artgranit only had the template (its report_mass_balance reads the
+// DIPP FRUICT only had the template (its report_mass_balance reads the
 // all-time AGRO_V_MASS_BALANCE view, no period). Here the balance is built
 // from AGRO_STOCK_MOVEMENTS for the chosen period:
 //   in    = receipt + return + adjustment (inventory surplus)

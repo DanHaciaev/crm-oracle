@@ -2,7 +2,7 @@ import { query } from "@/lib/oracle";
 import { Row, Lang, DocNotFound, s, n, fmtDate, fmtDateTime, pickName, getCompany } from "./common";
 import type { PeriodParams } from "./stock";
 
-// Artgranit only had the templates for the three QA documents below (no data
+// DIPP FRUICT only had the templates for the three QA documents below (no data
 // builders) — they are filled from the QA/HACCP tables directly.
 
 async function qaCheck(checkId: number) {

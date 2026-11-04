@@ -17,7 +17,7 @@ export async function GET() {
 }
 
 // PATCH { current_password, new_password } — change own password. Same
-// scrypt hash format as Artgranit (werkzeug), so it works there too.
+// scrypt hash format as DIPP FRUICT (werkzeug), so it works there too.
 export async function PATCH(request: Request) {
   const u = await currentAccount();
   if (!u) return NextResponse.json({ error: "Не авторизован" }, { status: 401 });

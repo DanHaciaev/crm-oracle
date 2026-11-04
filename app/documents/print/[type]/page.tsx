@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState, type ReactNode } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { PrintShell, type Lang } from "@/components/print/PrintShell";
-import { SalesPalletBon, ShippingNote, ExportDecl } from "@/components/print/SalesDocs";
+import { SalesPalletBon, ShippingNote, ExportDecl, ReturnAct } from "@/components/print/SalesDocs";
 import { PurchaseAct, CustodyReleaseAct, MassBalance } from "@/components/print/StockDocs";
 import { QaProtocol, GmpChecklist, HaccpReport } from "@/components/print/QualityDocs";
 
@@ -12,6 +12,7 @@ const RENDERERS: Record<string, { render: (d: any, lang: Lang) => ReactNode; lan
   sales_pallet_bon:    { render: (d, l) => <SalesPalletBon d={d} lang={l} /> },
   shipping_note:       { render: (d, l) => <ShippingNote d={d} lang={l} /> },
   export_decl:         { render: (d, l) => <ExportDecl d={d} lang={l} /> },
+  return_act:          { render: (d, l) => <ReturnAct d={d} lang={l} /> },
   purchase_act:        { render: (d, l) => <PurchaseAct d={d} lang={l} /> },
   custody_release_act: { render: (d, l) => <CustodyReleaseAct d={d} lang={l} /> },
   mass_balance:        { render: (d, l) => <MassBalance d={d} lang={l} />, landscape: true },

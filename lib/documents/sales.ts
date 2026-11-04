@@ -5,7 +5,7 @@ import {
 } from "./common";
 
 // NOTES value on AGRO_SALES_ALLOCATION_PALLETS rows that are parts of one
-// supplier-total row split across several FIFO batches (Artgranit
+// supplier-total row split across several FIFO batches (DIPP FRUICT
 // _split_aggregate_pallet_row). Must match AGG_PALLET_NOTE there.
 const AGG_PALLET_NOTE = "[total]";
 
@@ -31,7 +31,7 @@ async function salesHeader(docId: number) {
 // One truck can carry several products, and each product's pallets can come
 // from several suppliers — the client's paper bon groups pallet rows by
 // producer, each with its own subtotal. Shared pallets (palet comun) are
-// pulled out into their own section. Ported from Artgranit
+// pulled out into their own section. Ported from DIPP FRUICT
 // get_document_data("sales_pallet_bon").
 
 interface Pallet {

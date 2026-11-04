@@ -1,4 +1,4 @@
-// Excel/CSV reports ported from Artgranit (AgroStore.report_* +
+// Excel/CSV reports ported from DIPP FRUICT (AgroStore.report_* +
 // /api/agro-admin/reports/export/<type>). Each report declares its filters,
 // its columns (in print order, with a type that drives formatting and
 // totals) and a runner returning rows keyed by those column keys.
@@ -147,7 +147,7 @@ export const REPORTS: Record<string, ReportDef> = {
   },
 
   // ── Sales (one row per document) ──
-  // Artgranit filtered AGRO_V_SALES by CUSTOMER_ID/ITEM_ID, which that view
+  // DIPP FRUICT filtered AGRO_V_SALES by CUSTOMER_ID/ITEM_ID, which that view
   // doesn't have — the filters live on the tables here.
   sales: {
     filters: ["period", "customer", "warehouse", "status"],
@@ -255,7 +255,7 @@ export const REPORTS: Record<string, ReportDef> = {
       ["crates_left", "int"], ["pallets", "int"], ["pallets_left", "int"], ["status", "code"],
     ],
     run: async (f, lang) => {
-      // Period = purchase document date, as in Artgranit get_stock_balance.
+      // Period = purchase document date, as in DIPP FRUICT get_stock_balance.
       const w = where(f, { date: "pd.DOC_DATE", warehouse: "b.WAREHOUSE_ID", item: "b.ITEM_ID", supplier: "s.ID", status: "b.STATUS" });
       const rows = norm(await query<Row>(`
         SELECT b.BATCH_NUMBER, i.NAME_RO AS ITEM_NAME_RO, i.NAME_RU AS ITEM_NAME_RU,
@@ -329,7 +329,7 @@ export const REPORTS: Record<string, ReportDef> = {
   },
 
   // ── Mass balance for a period (same calculation as the printed document;
-  //    Artgranit's version was all-time only and ignored its warehouse filter) ──
+  //    DIPP FRUICT's version was all-time only and ignored its warehouse filter) ──
   mass_balance: {
     filters: ["period", "warehouse"],
     columns: [
@@ -366,6 +366,36 @@ export const REPORTS: Record<string, ReportDef> = {
       const w = movementWhere({ date_from: f.date_from, date_to: f.date_to, type: f.status,
                                 warehouse_id: f.warehouse_id, item_id: f.item_id, q: null });
       return norm(await query<Row>(MOVEMENTS_SQL(w.sql), w.binds), lang);
+    },
+  },
+
+  // ── Customer returns, one row per returned line (returns page export). ──
+  returns: {
+    filters: ["period", "customer", "item"],
+    columns: [
+      ["return_number", "text"], ["return_date", "date"], ["return_status", "code"], ["doc_number", "text"],
+      ["customer_name", "text"], ["item_name", "text"], ["batch_number", "text"], ["qty_kg", "kg"],
+      ["amount", "money"], ["currency_code", "text"], ["amount_mdl", "mdl"], ["reason", "text"], ["created_by", "text"],
+    ],
+    run: async (f, lang) => {
+      const w = where(f, { date: "r.RETURN_DATE", customer: "sd.CUSTOMER_ID", item: "sl.ITEM_ID" });
+      return norm(await query<Row>(`
+        SELECT r.RETURN_NUMBER, r.RETURN_DATE, NVL(r.STATUS, 'active') AS RETURN_STATUS,
+               NVL(sd.INVOICE_NUMBER, sd.DOC_NUMBER) AS DOC_NUMBER, c.NAME AS CUSTOMER_NAME,
+               i.NAME_RO AS ITEM_NAME_RO, i.NAME_RU AS ITEM_NAME_RU, b.BATCH_NUMBER,
+               l.QTY_KG, l.AMOUNT, NVL(sd.CURRENCY_CODE, 'MDL') AS CURRENCY_CODE,
+               l.QTY_KG * sl.AMOUNT_MDL / NULLIF(sl.NET_WEIGHT_KG, 0) AS AMOUNT_MDL,
+               r.REASON, r.CREATED_BY
+        FROM AGRO_SALES_RETURN_LINES l
+        JOIN AGRO_SALES_RETURNS r ON r.ID = l.RETURN_ID
+        LEFT JOIN AGRO_SALES_LINES sl ON sl.ID = l.SALES_LINE_ID
+        LEFT JOIN AGRO_SALES_DOCS sd ON sd.ID = r.SALES_DOC_ID
+        LEFT JOIN AGRO_CUSTOMERS c ON c.ID = sd.CUSTOMER_ID
+        LEFT JOIN AGRO_ITEMS i ON i.ID = sl.ITEM_ID
+        LEFT JOIN AGRO_BATCHES b ON b.ID = l.BATCH_ID
+        WHERE 1=1${w.sql}
+        ORDER BY r.RETURN_DATE DESC, r.ID DESC, l.ID
+      `, w.binds), lang);
     },
   },
 

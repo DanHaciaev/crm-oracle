@@ -1,4 +1,4 @@
-// Shared helpers for the printable documents ported from Artgranit
+// Shared helpers for the printable documents ported from DIPP FRUICT
 // (templates/agro/document_*.html + AgroStore.get_document_data).
 import { query } from "@/lib/oracle";
 
@@ -38,7 +38,7 @@ export function round3(x: number) { return Math.round(x * 1000) / 1000; }
 
 // ── Company details ──────────────────────────────────────────────────────
 // Stored in AGRO_MODULE_CONFIG as COMPANY_* keys (group "company"), edited
-// in Settings > Company. COMPANY_NAME is shared with Artgranit, which prints
+// in Settings > Company. COMPANY_NAME is shared with DIPP FRUICT, which prints
 // it on its own acts. An older CRM fiscal invoice used lowercase company.*
 // keys — still read as a fallback.
 export const COMPANY_FIELDS = [

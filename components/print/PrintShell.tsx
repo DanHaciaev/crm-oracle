@@ -5,7 +5,7 @@ import { useState, type ReactNode } from "react";
 export type Lang = "ro" | "ru" | "en";
 export const LANGS: Lang[] = ["ro", "ru", "en"];
 
-// Number formats match the Artgranit Jinja templates ('%.1f' / '%.2f' / '%.3f').
+// Number formats match the DIPP FRUICT Jinja templates ('%.1f' / '%.2f' / '%.3f').
 export const f1 = (v: number | null | undefined) => (v ? v.toFixed(1) : "—");
 export const f2 = (v: number | null | undefined) => (v ? v.toFixed(2) : "—");
 export const f3 = (v: number | null | undefined) => (v != null ? v.toFixed(3) : "—");

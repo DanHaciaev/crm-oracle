@@ -1,7 +1,7 @@
 // Read side of the warehouse section + its two safe actions (block/unblock a
 // batch, acknowledge a storage alert). Stock movements themselves are made
-// in Artgranit — the single source of truth for kilograms — so nothing here
-// changes quantities. Block/unblock mirror Artgranit's AgroStore.block_batch /
+// in DIPP FRUICT — the single source of truth for kilograms — so nothing here
+// changes quantities. Block/unblock mirror DIPP FRUICT's AgroStore.block_batch /
 // unblock_batch exactly, so both systems see the same AGRO_BATCH_BLOCKS rows.
 import { query, getConnection } from "@/lib/oracle";
 import { pickName, type Lang } from "@/lib/documents/common";
@@ -169,7 +169,7 @@ export async function batchDetail(id: number, lang: Lang) {
       GROUP BY sd.ID, sd.DOC_NUMBER, sd.INVOICE_NUMBER, sd.DOC_DATE, sd.STATUS, c.NAME
       ORDER BY sd.DOC_DATE
     `, [id]),
-    // Same timeline as Artgranit get_batch_history, plus warehouse names / author.
+    // Same timeline as DIPP FRUICT get_batch_history, plus warehouse names / author.
     query<Row>(`
       SELECT * FROM (
         SELECT 'movement' AS EVENT_TYPE, m.MOVEMENT_TYPE AS DETAIL, m.QTY_KG, m.REASON AS DESCRIPTION,
@@ -364,7 +364,7 @@ export async function rotation(lang: Lang) {
 
 // ── Control: automatic data checks ───────────────────────────────────────
 // Each check returns the offending batches. "Stock ≠ movements" is the one
-// that found the 9 t gap: kg changed in Artgranit without a movement row.
+// that found the 9 t gap: kg changed in DIPP FRUICT without a movement row.
 export async function controlChecks(lang: Lang) {
   const base = `
     SELECT b.ID, b.BATCH_NUMBER, b.STATUS, b.INITIAL_QTY_KG, b.CURRENT_QTY_KG, b.EXPIRY_DATE,
@@ -432,7 +432,7 @@ export async function unblockBatch(id: number, resolution: string, user: string)
   const rows = await query<Row>(`SELECT BATCH_NUMBER, STATUS, CURRENT_QTY_KG FROM AGRO_BATCHES WHERE ID = :1`, [id]);
   if (!rows.length) throw new ActionError("Партия не найдена");
   if (rows[0].STATUS !== "blocked") throw new ActionError("Партия не заблокирована");
-  // Artgranit always restores 'active'; a batch that is empty by now goes to
+  // DIPP FRUICT always restores 'active'; a batch that is empty by now goes to
   // 'depleted' instead so it doesn't show up as live stock with 0 kg.
   const next = n(rows[0].CURRENT_QTY_KG) > 0 ? "active" : "depleted";
   await inTransaction(async exec => {

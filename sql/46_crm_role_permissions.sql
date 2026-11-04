@@ -2,7 +2,7 @@
 -- AGRO_CRM_ROLE_PERMISSIONS — per-role access to each CRM section
 -- ============================================================
 -- Roles are the ones AGRO_USERS.ROLE already allows (admin, manager,
--- operator, viewer — the table is shared with Artgranit, so no new roles).
+-- operator, viewer — the table is shared with DIPP FRUICT, so no new roles).
 -- "admin" is a hardcoded superuser and never stored here. Rows only hold
 -- what the admin changed in Users > Roles; anything missing falls back to
 -- the defaults in lib/permissions.ts, so no seed data is needed.

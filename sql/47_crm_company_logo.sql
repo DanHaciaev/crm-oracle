@@ -2,7 +2,7 @@
 -- AGRO_CRM_COMPANY_LOGO — company logo printed on documents
 -- ============================================================
 -- Text requisites (name, address, IDNO, IBAN…) live in AGRO_MODULE_CONFIG
--- under COMPANY_* keys (COMPANY_NAME is shared with Artgranit); the logo
+-- under COMPANY_* keys (COMPANY_NAME is shared with DIPP FRUICT); the logo
 -- doesn't fit CONFIG_VALUE (VARCHAR2(1000)) and S3 isn't configured, so it
 -- is a single-row BLOB table. Idempotent.
 

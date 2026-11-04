@@ -14,8 +14,8 @@ import { MovementsTab, CellsTab } from "./JournalTabs";
 type Tab = "overview" | "batches" | "movements" | "cells" | "rotation" | "control";
 const TABS: Tab[] = ["overview", "batches", "movements", "cells", "rotation", "control"];
 
-// Warehouse section: a read-only control panel over Artgranit's stock data.
-// Kilograms only change in Artgranit; the CRM's two safe actions (block /
+// Warehouse section: a read-only control panel over DIPP FRUICT's stock data.
+// Kilograms only change in DIPP FRUICT; the CRM's two safe actions (block /
 // unblock a batch, acknowledge an alert) need "edit" on this section.
 export default function WarehousePage() {
   const t = useT();

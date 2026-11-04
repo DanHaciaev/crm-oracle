@@ -2,7 +2,7 @@ import { query } from "@/lib/oracle";
 import { Row, Lang, DocNotFound, s, n, nOrNull, fmtDate, pickName, getCompany } from "./common";
 
 // ── Act de recepție materie primă (purchase act) ─────────────────────────
-// Artgranit only had the template for this one (no data builder) — fields
+// DIPP FRUICT only had the template for this one (no data builder) — fields
 // are filled from AGRO_PURCHASE_DOCS/LINES directly.
 export async function purchaseAct(docId: number, lang: Lang) {
   const [hdrRows, lineRows, company] = await Promise.all([

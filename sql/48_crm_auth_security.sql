@@ -1,7 +1,7 @@
 -- ============================================================
 -- CRM sign-in security: login history + two-factor auth (TOTP)
 -- ============================================================
--- Both are CRM-only (Artgranit has its own login and doesn't read them),
+-- Both are CRM-only (DIPP FRUICT has its own login and doesn't read them),
 -- so they live in their own tables instead of new AGRO_USERS columns.
 -- Idempotent.
 

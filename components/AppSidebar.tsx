@@ -16,8 +16,8 @@ import {
   LayoutDashboard, Users, Target, TrendingUp, PieChart, AlertTriangle,
   MessageSquare, Mail, Megaphone, CheckSquare, Package, Scale,
   UserCog, History, UserCircle, LogOut, Truck, GitMerge, Search, MessagesSquare,
-  Warehouse, ShoppingCart, FileText, FileSpreadsheet, Gift, CalendarDays,
-  ChevronDown, ChevronRight, Boxes, Building2, BadgePercent,
+  Warehouse, ShoppingCart, FileText, FileSpreadsheet, Gift, CalendarDays, Undo2,
+  ChevronDown, ChevronRight, Boxes, Building2, BadgePercent, Banknote, BookOpen,
 } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { format } from "date-fns"
@@ -45,6 +45,7 @@ export function AppSidebar() {
         { name: t("nav.customers"),    href: "/customers",     icon: Users },
         { name: t("nav.leads"),        href: "/leads",         icon: Target },
         { name: t("nav.sales"),        href: "/sales",         icon: TrendingUp },
+        { name: t("nav.returns"),      href: "/returns",       icon: Undo2 },
         { name: t("nav.clientViewer"), href: "/client-viewer", icon: Search },
         { name: t("nav.loyalty"),      href: "/loyalty",       icon: Gift },
       ],
@@ -59,6 +60,7 @@ export function AppSidebar() {
         { name: t("nav.weightTickets"), href: "/weight-tickets", icon: Scale },
         { name: t("nav.custody"),       href: "/custody",        icon: Warehouse },
         { name: t("nav.items"),         href: "/items",          icon: Package },
+        { name: t("nav.directories"),   href: "/directories",    icon: BookOpen },
       ],
     },
     {
@@ -67,6 +69,7 @@ export function AppSidebar() {
       links: [
         { name: t("nav.documents"), href: "/documents", icon: FileText },
         { name: t("nav.reports"),   href: "/reports",   icon: FileSpreadsheet },
+        { name: t("nav.rates"),     href: "/rates",     icon: Banknote },
         { name: t("nav.profitability"), href: "/profitability", icon: BadgePercent },
       ],
     },

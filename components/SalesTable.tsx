@@ -336,7 +336,7 @@ function DealPanel({
                 {returns.map(r => (
                   <div key={r.id} className="px-3 py-2.5 text-sm">
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs text-orange-700">{r.return_number}</span>
+                      <Link href={`/returns?q=${encodeURIComponent(r.return_number)}`} className="font-mono text-xs text-orange-700 hover:underline">{r.return_number}</Link>
                       <span className="text-xs text-gray-500">{fmtDate(r.return_date)}</span>
                     </div>
                     <div className="flex items-center justify-between mt-0.5">

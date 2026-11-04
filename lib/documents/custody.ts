@@ -4,7 +4,7 @@ import { Row, Lang, DocNotFound, s, n, nOrNull, fmtDate, pickName, getCompany } 
 // ── Act de prestări servicii (custody release act) ───────────────────────
 // One printable act per release event, listing the storage + precooling
 // charges so it can be signed by the storage client on pickup. Ported from
-// Artgranit get_document_data("custody_release_act").
+// DIPP FRUICT get_document_data("custody_release_act").
 export async function custodyReleaseAct(releaseId: number, lang: Lang) {
   const [hdrRows, lineRows, company] = await Promise.all([
     query<Row>(`

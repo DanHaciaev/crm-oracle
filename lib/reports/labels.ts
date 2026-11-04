@@ -1,11 +1,13 @@
 // Column header / coded value translations for the reports. RO and RU are
-// ported from Artgranit AgroStore._REPORT_COLUMN_LABELS/_REPORT_VALUE_LABELS
+// ported from DIPP FRUICT AgroStore._REPORT_COLUMN_LABELS/_REPORT_VALUE_LABELS
 // (client request: raw keys like gross_weight_kg aren't meant for an end
 // user opening the file in Excel); EN and the CRM-only columns are new.
 import type { Lang } from "@/lib/documents/common";
 
 export const COLUMN_LABELS: Record<Lang, Record<string, string>> = {
   ro: {
+    return_status: "Statut retur",
+    return_number: "Nr. retur", return_date: "Data retur",
     item_supplier: "Produs · furnizor", origin: "Proveniență", sold_kg: "Vândut, kg", revenue: "Venit, MDL", cost: "Cost, MDL", margin: "Marjă, MDL", margin_pct: "Marjă, %", cost_per_kg: "Cost / kg, MDL",
     qty_kg: "Cantitate, kg", movement_type: "Tip mișcare", from_warehouse: "Din depozit", to_warehouse: "În depozit", doc_ref: "Document", reason: "Motiv",
     doc_number: "Nr. document", doc_date: "Data", invoice_number: "Nr. document livrare",
@@ -31,6 +33,8 @@ export const COLUMN_LABELS: Record<Lang, Record<string, string>> = {
     waste_kg: "Deseuri, kg", loss_kg: "Pierderi, kg", closing_kg: "Stoc final, kg", change_kg: "Variatie, kg",
   },
   ru: {
+    return_status: "Статус возврата",
+    return_number: "№ возврата", return_date: "Дата возврата",
     item_supplier: "Товар · поставщик", origin: "Происхождение", sold_kg: "Продано, кг", revenue: "Выручка, MDL", cost: "Себестоимость, MDL", margin: "Маржа, MDL", margin_pct: "Маржа, %", cost_per_kg: "Себестоимость / кг, MDL",
     qty_kg: "Количество, кг", movement_type: "Тип движения", from_warehouse: "Со склада", to_warehouse: "На склад", doc_ref: "Документ", reason: "Причина",
     doc_number: "№ документа", doc_date: "Дата", invoice_number: "№ документа отгрузки",
@@ -56,6 +60,8 @@ export const COLUMN_LABELS: Record<Lang, Record<string, string>> = {
     waste_kg: "Отходы, кг", loss_kg: "Потери, кг", closing_kg: "Кон. остаток, кг", change_kg: "Изменение, кг",
   },
   en: {
+    return_status: "Return status",
+    return_number: "Return no.", return_date: "Return date",
     item_supplier: "Product · supplier", origin: "Origin", sold_kg: "Sold, kg", revenue: "Revenue, MDL", cost: "Cost, MDL", margin: "Margin, MDL", margin_pct: "Margin, %", cost_per_kg: "Cost / kg, MDL",
     qty_kg: "Quantity, kg", movement_type: "Movement type", from_warehouse: "From warehouse", to_warehouse: "To warehouse", doc_ref: "Document", reason: "Reason",
     doc_number: "Document no.", doc_date: "Date", invoice_number: "Delivery doc no.",
@@ -86,6 +92,7 @@ const YN = { ro: { Y: "Da", N: "Nu" }, ru: { Y: "Да", N: "Нет" }, en: { Y: 
 
 export const VALUE_LABELS: Record<Lang, Record<string, Record<string, string>>> = {
   ro: {
+    return_status: { active: "Activ", cancelled: "Anulat" },
     origin: { purchase: "Achiziție", own: "Producție proprie", other: "Altă sursă" },
     movement_type: { receipt: "Recepție", shipment: "Livrare", transfer: "Transfer", adjustment: "Plus inventar", return: "Retur", loss: "Pierdere", processing: "Procesare" },
     status: { draft: "Draft", confirmed: "Confirmat", shipped: "Expediat", delivered: "Livrat", closed: "Inchis",
@@ -96,6 +103,7 @@ export const VALUE_LABELS: Record<Lang, Record<string, Record<string, string>>> 
     is_own_production: YN.ro, is_expired: YN.ro, is_blocked: YN.ro,
   },
   ru: {
+    return_status: { active: "Действует", cancelled: "Отменён" },
     origin: { purchase: "Закупка", own: "Собств. производство", other: "Другой источник" },
     movement_type: { receipt: "Приход", shipment: "Отгрузка", transfer: "Перемещение", adjustment: "Излишек", return: "Возврат", loss: "Потеря", processing: "Переработка" },
     status: { draft: "Черновик", confirmed: "Подтверждён", shipped: "Отгружен", delivered: "Доставлен", closed: "Закрыт",
@@ -106,6 +114,7 @@ export const VALUE_LABELS: Record<Lang, Record<string, Record<string, string>>> 
     is_own_production: YN.ru, is_expired: YN.ru, is_blocked: YN.ru,
   },
   en: {
+    return_status: { active: "Active", cancelled: "Cancelled" },
     origin: { purchase: "Purchase", own: "Own production", other: "Other source" },
     movement_type: { receipt: "Receipt", shipment: "Shipment", transfer: "Transfer", adjustment: "Surplus", return: "Return", loss: "Loss", processing: "Processing" },
     status: { draft: "Draft", confirmed: "Confirmed", shipped: "Shipped", delivered: "Delivered", closed: "Closed",
@@ -119,6 +128,7 @@ export const VALUE_LABELS: Record<Lang, Record<string, Record<string, string>>> 
 
 export const REPORT_TITLES: Record<Lang, Record<string, string>> = {
   ro: {
+    returns: "Retururi",
     profitability: "Profitabilitate pe loturi",
     movements: "Mișcări de stoc",
     purchases: "Achiziții", purchase_lines: "Achiziții pe produse", sales: "Vânzări", sales_lines: "Vânzări pe produse",
@@ -126,6 +136,7 @@ export const REPORT_TITLES: Record<Lang, Record<string, string>> = {
     mass_balance: "Bilanț de masă", expiry: "Termene de expirare",
   },
   ru: {
+    returns: "Возвраты",
     profitability: "Прибыльность по партиям",
     movements: "Движения склада",
     purchases: "Закупки", purchase_lines: "Закупки по товарам", sales: "Продажи", sales_lines: "Продажи по товарам",
@@ -133,6 +144,7 @@ export const REPORT_TITLES: Record<Lang, Record<string, string>> = {
     mass_balance: "Баланс массы", expiry: "Сроки годности",
   },
   en: {
+    returns: "Returns",
     profitability: "Batch profitability",
     movements: "Stock movements",
     purchases: "Purchases", purchase_lines: "Purchases by product", sales: "Sales", sales_lines: "Sales by product",
