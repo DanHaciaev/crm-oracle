@@ -17,7 +17,7 @@ import {
   MessageSquare, Mail, Megaphone, CheckSquare, Package, Scale,
   UserCog, History, UserCircle, LogOut, Truck, GitMerge, Search, MessagesSquare,
   Warehouse, ShoppingCart, FileText, FileSpreadsheet, Gift, CalendarDays, Undo2, Wallet,
-  ChevronDown, ChevronRight, Boxes, Building2, BadgePercent, Banknote, BookOpen,
+  ChevronDown, ChevronRight, Boxes, Building2, BadgePercent, Banknote, BookOpen, FileUp,
 } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { format } from "date-fns"
@@ -70,6 +70,7 @@ export function AppSidebar() {
       links: [
         { name: t("nav.documents"), href: "/documents", icon: FileText },
         { name: t("nav.reports"),   href: "/reports",   icon: FileSpreadsheet },
+        { name: t("nav.import"),    href: "/import",    icon: FileUp },
         { name: t("nav.rates"),     href: "/rates",     icon: Banknote },
         { name: t("nav.profitability"), href: "/profitability", icon: BadgePercent },
       ],
@@ -115,7 +116,10 @@ export function AppSidebar() {
 
   // Only sections the user's role can at least view; empty groups disappear.
   const groups = allGroups
-    .map(g => ({ ...g, links: g.links.filter(l => { const m = pageModule(l.href); return !m || can(user?.permissions, m, "view") }) }))
+    .map(g => ({ ...g, links: g.links.filter(l => {
+      // Import has no section of its own: shown to anyone who may add customers, leads or payments.
+      if (l.href === "/import") return (["customers", "leads", "payments"] as const).some(m => can(user?.permissions, m, "edit"))
+      const m = pageModule(l.href); return !m || can(user?.permissions, m, "view") }) }))
     .filter(g => g.links.length > 0)
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/")

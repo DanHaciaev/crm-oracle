@@ -142,6 +142,7 @@ export const API_RULES: ApiRule[] = [
   { prefix: "/api/client-viewer",        read: ["client-viewer"], write: [] },
   { prefix: "/api/leads",                read: ["leads"], write: ["leads"] },
   { prefix: "/api/pipelines",            read: ["leads"], write: ["leads"] },
+  { prefix: "/api/import",               read: ["customers", "leads", "payments"], write: ["customers", "leads", "payments"] },
   { prefix: "/api/receivables",          read: ["payments"], write: ["payments"] },
   { prefix: "/api/payments",             read: ["payments"], write: ["payments"] },
   { prefix: "/api/reports/receivables",  read: ["payments"], write: [] },

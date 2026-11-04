@@ -236,7 +236,7 @@ export async function listPayments(f: { date_from: string | null; date_to: strin
 }
 
 // ── Writes (CRM-owned tables only) ───────────────────────────────────────
-async function tx<T>(dryRun: boolean, fn: (exec: (sql: string, b: Record<string, unknown>) => Promise<Row[]>) => Promise<T>) {
+export async function tx<T>(dryRun: boolean, fn: (exec: (sql: string, b: Record<string, unknown>) => Promise<Row[]>) => Promise<T>) {
   const conn = await getConnection();
   const exec = async (sql: string, b: Record<string, unknown>) =>
     ((await conn.execute(sql, b as never, { outFormat: oracledb.OUT_FORMAT_OBJECT })).rows ?? []) as Row[];
@@ -285,20 +285,26 @@ export async function addPayment(p: NewPayment, user: string, dryRun = false) {
     if (s(d[0].CUR) !== p.currency) throw new PayError(`Валюта оплаты должна совпадать с валютой накладной (${s(d[0].CUR)})`);
   }
   const rate = await rateOn(p.currency, p.pay_date);
-  return tx(dryRun, async exec => {
-    const id = n((await exec(`SELECT AGRO_CRM_PAYMENTS_SEQ.NEXTVAL AS V FROM DUAL`, {}))[0].V);
-    const number = `PAY-${p.pay_date.replace(/-/g, "")}-${String(id).padStart(4, "0")}`;
-    await exec(`
-      INSERT INTO AGRO_CRM_PAYMENTS (ID, PAYMENT_NUMBER, CUSTOMER_ID, SALES_DOC_ID, PAY_DATE, AMOUNT, CURRENCY_CODE,
-                                     RATE_TO_MDL, AMOUNT_MDL, METHOD, REFERENCE, NOTES, STATUS, CREATED_BY)
-      VALUES (:id, :num, :cust, :doc, TO_DATE(:d, 'YYYY-MM-DD'), :amt, :cur, :rate, :mdl, :m, :ref, :notes, 'active', :usr)`,
-      { id, num: number, cust: p.customer_id, doc: p.sales_doc_id, d: p.pay_date, amt: p.amount, cur: p.currency,
-        rate, mdl: rate != null ? r2(p.amount * rate) : null, m: p.method, ref: p.reference, notes: p.notes, usr: user });
-    await exec(`INSERT INTO AGRO_CRM_AUDIT_LOG (ENTITY_TYPE, ENTITY_ID, ENTITY_NAME, ACTION, CHANGED_BY, NEW_VALUES)
-                VALUES ('payment', :id, :name, 'create', :usr, :new)`,
-      { id, name: `${number} · ${s(cust[0].NAME)}`.slice(0, 200), usr: user, new: JSON.stringify(p) });
-    return { id, number, rate_to_mdl: rate };
-  });
+  return tx(dryRun, exec => insertPayment(exec, p, rate, s(cust[0].NAME), user));
+}
+
+// Shared with the Excel import, which inserts many payments in one transaction.
+export async function insertPayment(
+  exec: (sql: string, b: Record<string, unknown>) => Promise<Row[]>,
+  p: NewPayment, rate: number | null, customerName: string, user: string,
+) {
+  const id = n((await exec(`SELECT AGRO_CRM_PAYMENTS_SEQ.NEXTVAL AS V FROM DUAL`, {}))[0].V);
+  const number = `PAY-${p.pay_date.replace(/-/g, "")}-${String(id).padStart(4, "0")}`;
+  await exec(`
+    INSERT INTO AGRO_CRM_PAYMENTS (ID, PAYMENT_NUMBER, CUSTOMER_ID, SALES_DOC_ID, PAY_DATE, AMOUNT, CURRENCY_CODE,
+                                   RATE_TO_MDL, AMOUNT_MDL, METHOD, REFERENCE, NOTES, STATUS, CREATED_BY)
+    VALUES (:id, :num, :cust, :doc, TO_DATE(:d, 'YYYY-MM-DD'), :amt, :cur, :rate, :mdl, :m, :ref, :notes, 'active', :usr)`,
+    { id, num: number, cust: p.customer_id, doc: p.sales_doc_id, d: p.pay_date, amt: p.amount, cur: p.currency,
+      rate, mdl: rate != null ? r2(p.amount * rate) : null, m: p.method, ref: p.reference, notes: p.notes, usr: user });
+  await exec(`INSERT INTO AGRO_CRM_AUDIT_LOG (ENTITY_TYPE, ENTITY_ID, ENTITY_NAME, ACTION, CHANGED_BY, NEW_VALUES)
+              VALUES ('payment', :id, :name, 'create', :usr, :new)`,
+    { id, name: `${number} · ${customerName}`.slice(0, 200), usr: user, new: JSON.stringify(p) });
+  return { id, number, rate_to_mdl: rate };
 }
 
 export async function cancelPayment(id: number, reason: string, user: string, dryRun = false) {
