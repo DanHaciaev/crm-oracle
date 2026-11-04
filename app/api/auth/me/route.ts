@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { query } from "@/lib/oracle";
+import { isRole } from "@/lib/permissions";
+import { rolePermissions } from "@/lib/permissions-server";
 
 interface UserRow {
   [key: string]: unknown;
@@ -9,7 +11,7 @@ interface UserRow {
   USERNAME:   string;
   FIRST_NAME: string | null;
   LAST_NAME:  string | null;
-  ROLE:       "admin" | "manager";
+  ROLE:       string;
   CREATED_AT: string | Date;
 }
 
@@ -38,12 +40,14 @@ export async function GET() {
   }
 
   const u = users[0];
+  const role = isRole(u.ROLE) ? u.ROLE : "viewer";
   return NextResponse.json({
     id:         u.ID,
     username:   u.USERNAME,
     first_name: u.FIRST_NAME,
     last_name:  u.LAST_NAME,
-    role:       u.ROLE,
+    role,
+    permissions: await rolePermissions(role),
     created_at: u.CREATED_AT instanceof Date ? u.CREATED_AT.toISOString() : String(u.CREATED_AT ?? ""),
   });
 }

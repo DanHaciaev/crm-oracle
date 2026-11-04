@@ -13,6 +13,13 @@ interface Supplier {
   id: number; code: string; name: string;
   country: string | null; contact_phone: string | null; contact_email: string | null;
   total_purchases: number; last_purchase: string | null; purchase_count: number;
+  discount_pct: number; globalgap_certified: boolean; globalgap_expiry: string | null;
+}
+
+function isExpiringSoon(iso: string | null) {
+  if (!iso) return false;
+  const days = (new Date(iso).getTime() - Date.now()) / 86400000;
+  return days <= 30;
 }
 
 function fmtDate(s: string | null) {
@@ -73,6 +80,8 @@ export default function SuppliersPage() {
               <TableHead>{t("suppliers.title").slice(0, -1).toUpperCase()}</TableHead>
               <TableHead className="hidden sm:table-cell">{t("suppliers.country").toUpperCase()}</TableHead>
               <TableHead className="hidden md:table-cell">{t("suppliers.phone").toUpperCase()}</TableHead>
+              <TableHead className="hidden lg:table-cell">{t("suppliers.globalgap").toUpperCase()}</TableHead>
+              <TableHead className="text-right hidden lg:table-cell">{t("suppliers.discount").toUpperCase()}</TableHead>
               <TableHead className="text-right">{t("suppliers.purchaseCount").toUpperCase()}</TableHead>
               <TableHead className="text-right hidden lg:table-cell">{t("suppliers.totalPurchases").toUpperCase()}</TableHead>
               <TableHead className="text-right hidden lg:table-cell">{t("suppliers.lastPurchase").toUpperCase()}</TableHead>
@@ -81,15 +90,15 @@ export default function SuppliersPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-gray-400 py-6">{t("common.loading")}</TableCell>
+                <TableCell colSpan={9} className="text-center text-gray-400 py-6">{t("common.loading")}</TableCell>
               </TableRow>
             ) : error ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-red-500 py-6">{error}</TableCell>
+                <TableCell colSpan={9} className="text-center text-red-500 py-6">{error}</TableCell>
               </TableRow>
             ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-gray-400 py-6">
+                <TableCell colSpan={9} className="text-center text-gray-400 py-6">
                   {rows.length ? "Ничего не найдено" : t("suppliers.noPurchases")}
                 </TableCell>
               </TableRow>
@@ -107,6 +116,22 @@ export default function SuppliersPage() {
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">{s.country ?? "—"}</TableCell>
                   <TableCell className="hidden md:table-cell">{s.contact_phone ?? "—"}</TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    {s.globalgap_certified ? (
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs border ${
+                        isExpiringSoon(s.globalgap_expiry)
+                          ? "border-amber-400 text-amber-600 bg-amber-50"
+                          : "border-emerald-400 text-emerald-600 bg-emerald-50"
+                      }`}>
+                        GlobalGAP{isExpiringSoon(s.globalgap_expiry) ? ` · ${fmtDate(s.globalgap_expiry)}` : ""}
+                      </span>
+                    ) : (
+                      <span className="text-gray-300">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums hidden lg:table-cell">
+                    {s.discount_pct > 0 ? `${s.discount_pct}%` : "—"}
+                  </TableCell>
                   <TableCell className="text-right tabular-nums">{s.purchase_count}</TableCell>
                   <TableCell className="text-right tabular-nums hidden lg:table-cell">
                     {s.total_purchases > 0 ? fmtMoney(s.total_purchases) : "—"}

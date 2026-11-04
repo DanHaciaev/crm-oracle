@@ -227,7 +227,7 @@ export default function AutomationsPage() {
         <div className="text-gray-600 font-medium mb-1">{t("automations.scheduleTitle")}</div>
         <code className="text-gray-700 block mt-1">
           curl -X POST https://&lt;your-domain&gt;/api/cron/automations \<br/>
-          &nbsp;&nbsp;-H &quot;Authorization: Bearer $CRON_SECRET&quot;
+          &nbsp;&nbsp;-H &quot;x-cron-secret: $CRON_SECRET&quot;
         </code>
       </div>
 

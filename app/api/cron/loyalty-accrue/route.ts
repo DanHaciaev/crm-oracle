@@ -1,8 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { query, execute } from "@/lib/oracle";
 import { sendText } from "@/lib/tg";
 
-const CRON_SECRET = process.env.CRON_SECRET;
 
 // 1 point per 10 MDL, rounded down
 const POINTS_PER_MDL = 1 / 10;
@@ -36,10 +35,7 @@ async function recalcTier(memberId: number, totalPoints: number) {
   );
 }
 
-export async function GET(req: NextRequest) {
-  if (CRON_SECRET && req.headers.get("x-cron-secret") !== CRON_SECRET)
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
+export async function GET() {
   // Find closed/delivered sales docs for loyalty members not yet accrued
   const docs = await query<DocRow>(`
     SELECT sd.ID           AS DOC_ID,

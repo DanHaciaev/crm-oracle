@@ -4,6 +4,7 @@ import { query } from "@/lib/oracle";
 import { verifyToken } from "@/lib/auth";
 import PDFDocument from "pdfkit";
 import path from "path";
+import { getCompany } from "@/lib/documents/common";
 
 async function requireAuth() {
   const store = await cookies();
@@ -23,20 +24,6 @@ function fmtDate(v: unknown) {
 
 const VAT_RATE = 0.20;
 
-async function getConfig(keys: string[]): Promise<Record<string, string>> {
-  try {
-    const rows = await query<Row>(
-      `SELECT CONFIG_KEY, CONFIG_VALUE FROM AGRO_MODULE_CONFIG WHERE CONFIG_KEY IN (${keys.map((_, i) => `:${i + 1}`).join(",")})`,
-      keys
-    );
-    const out: Record<string, string> = {};
-    for (const r of rows) out[s(r.CONFIG_KEY)] = s(r.CONFIG_VALUE);
-    return out;
-  } catch {
-    return {};
-  }
-}
-
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -49,7 +36,7 @@ export async function GET(
   if (!docId) return NextResponse.json({ error: "Неверный ID" }, { status: 400 });
 
   const [cfg, docRows, lineRows] = await Promise.all([
-    getConfig(["company.name", "company.address", "company.fiscal_code", "company.iban"]),
+    getCompany(),
     query<Row>(`
       SELECT sd.ID, sd.DOC_NUMBER, sd.DOC_DATE,
              sd.INVOICE_NUMBER,
@@ -81,10 +68,10 @@ export async function GET(
   const doc  = docRows[0];
   const curr = s(doc.CURRENCY_CODE) || "MDL";
 
-  const companyName   = cfg["company.name"]       || process.env.COMPANY_NAME || "AGRO Company SRL";
-  const companyAddr   = cfg["company.address"]     || "";
-  const companyFiscal = cfg["company.fiscal_code"] || "";
-  const companyIban   = cfg["company.iban"]        || "";
+  const companyName   = cfg.name;
+  const companyAddr   = cfg.address;
+  const companyFiscal = cfg.fiscal_code;
+  const companyIban   = cfg.iban;
 
   const fontDir = path.join(process.cwd(), "public", "fonts");
   // A4 = 595 × 842 pt, margin 35 each side → usable width = 525

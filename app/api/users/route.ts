@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { query, execute } from "@/lib/oracle";
 import { hashPassword, verifyToken } from "@/lib/auth";
+import { isRole } from "@/lib/permissions";
+import { invalidatePermissions, userAccess } from "@/lib/permissions-server";
 
 interface UserRow {
   [key: string]: unknown; 
@@ -9,9 +11,10 @@ interface UserRow {
   USERNAME: string;
   FIRST_NAME: string | null;
   LAST_NAME: string | null;
-  ROLE: "admin" | "manager";
+  ROLE: string;
   ACTIVE: string;
   CREATED_AT: string | Date;
+  TWO_FACTOR: string;
 }
 
 async function requireAdmin() {
@@ -19,7 +22,8 @@ async function requireAdmin() {
   const token = cookieStore.get("token")?.value;
   const payload = token ? verifyToken(token) : null;
   if (!payload) return { ok: false as const, status: 401, error: "Не авторизован" };
-  if (payload.role !== "admin") return { ok: false as const, status: 403, error: "Доступ только для администраторов" };
+  const me = await userAccess(payload.id);
+  if (!me?.active || me.role !== "admin") return { ok: false as const, status: 403, error: "Доступ только для администраторов" };
   return { ok: true as const, payload };
 }
 
@@ -28,9 +32,11 @@ export async function GET() {
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const rows = await query<UserRow>(
-    `SELECT id, username, first_name, last_name, role, active, created_at
-       FROM AGRO_USERS
-      ORDER BY created_at DESC`
+    `SELECT u.id, u.username, u.first_name, u.last_name, u.role, u.active, u.created_at,
+            NVL(t.ENABLED, 'N') AS TWO_FACTOR
+       FROM AGRO_USERS u
+       LEFT JOIN AGRO_CRM_USER_2FA t ON t.USER_ID = u.id
+      ORDER BY u.created_at DESC`
   );
 
   return NextResponse.json(rows.map((u) => ({
@@ -40,6 +46,7 @@ export async function GET() {
     last_name: u.LAST_NAME,
     role: u.ROLE,
     active: u.ACTIVE === "Y",
+    two_factor: u.TWO_FACTOR === "Y",
     created_at: u.CREATED_AT instanceof Date ? u.CREATED_AT.toISOString() : String(u.CREATED_AT ?? ""),
   })));
 }
@@ -53,8 +60,8 @@ export async function POST(request: Request) {
   if (!username || !password) {
     return NextResponse.json({ error: "Логин и пароль обязательны" }, { status: 400 });
   }
-  if (role && role !== "admin" && role !== "manager") {
-    return NextResponse.json({ error: "Роль должна быть admin или manager" }, { status: 400 });
+  if (role && !isRole(role)) {
+    return NextResponse.json({ error: "Роль должна быть admin, manager, operator или viewer" }, { status: 400 });
   }
 
   const existing = await query<{ ID: number }>(
@@ -84,6 +91,7 @@ export async function DELETE(request: Request) {
   }
 
   await execute(`DELETE FROM AGRO_USERS WHERE id = :1`, [id]);
+  invalidatePermissions();
   return NextResponse.json({ success: true });
 }
 
@@ -95,8 +103,8 @@ export async function PATCH(request: Request) {
   const { id, first_name, last_name, role, password } = await request.json();
 
   if (!id) return NextResponse.json({ error: "id обязателен" }, { status: 400 });
-  if (role && role !== "admin" && role !== "manager") {
-    return NextResponse.json({ error: "Роль должна быть admin или manager" }, { status: 400 });
+  if (role && !isRole(role)) {
+    return NextResponse.json({ error: "Роль должна быть admin, manager, operator или viewer" }, { status: 400 });
   }
 
   if (password) {
@@ -120,5 +128,6 @@ export async function PATCH(request: Request) {
     );
   }
 
+  invalidatePermissions();
   return NextResponse.json({ success: true });
 }

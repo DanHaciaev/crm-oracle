@@ -8,18 +8,18 @@ import {
 } from "@/components/ui/table";
 import { useT, useLocale } from "@/lib/locale";
 import { toast } from "sonner";
+import { ROLES, type Role } from "@/lib/permissions";
 
 interface User {
   id: number;
   username: string;
   first_name: string | null;
   last_name: string | null;
-  role: "admin" | "manager";
+  role: Role;
   active: boolean;
+  two_factor?: boolean;
   created_at: string;
 }
-
-type Role = "admin" | "manager";
 
 const EMPTY_FORM = {
   username: "",
@@ -91,8 +91,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
               value={form.role}
               onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as Role }))}
             >
-              <option value="manager">{t("common.manager")}</option>
-              <option value="admin">{t("common.admin")}</option>
+              {ROLES.map(r => <option key={r} value={r}>{t(`roles.${r}`)}</option>)}
             </select>
           </div>
         </div>
@@ -192,8 +191,7 @@ function EditModal({ user, onClose, onSaved }: { user: User; onClose: () => void
               value={form.role}
               onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as Role }))}
             >
-              <option value="manager">{t("common.manager")}</option>
-              <option value="admin">{t("common.admin")}</option>
+              {ROLES.map(r => <option key={r} value={r}>{t(`roles.${r}`)}</option>)}
             </select>
           </div>
 
@@ -265,10 +263,18 @@ function ConfirmModal({ name, onClose, onConfirm, loading }: {
 
 // ─── Role Badge ───────────────────────────────────────────────────────────────
 
+const ROLE_BADGE: Record<Role, string> = {
+  admin:    "bg-black text-white",
+  manager:  "bg-blue-50 text-blue-700",
+  operator: "bg-emerald-50 text-emerald-700",
+  viewer:   "bg-gray-100 text-gray-600",
+};
+
 function RoleBadge({ role }: { role: Role }) {
+  const t = useT();
   return (
-    <span className={`px-2 py-0.5 rounded-full text-sm font-medium ${role === "admin" ? "bg-black text-white" : "bg-gray-100 text-gray-600"}`}>
-      {role}
+    <span className={`px-2 py-0.5 rounded-full text-sm font-medium ${ROLE_BADGE[role] ?? ROLE_BADGE.viewer}`}>
+      {t(`roles.${role}`)}
     </span>
   );
 }
@@ -296,6 +302,15 @@ export default function UsersTable({ currentUserId }: { currentUserId: number })
   }, [t]);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
+
+  async function reset2fa(u: User) {
+    const res = await fetch("/api/users/2fa", {
+      method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: u.id }),
+    });
+    if (!res.ok) { toast.error(t("common.error")); return; }
+    setUsers(prev => prev.map(x => (x.id === u.id ? { ...x, two_factor: false } : x)));
+    toast.success(t("account.twoFactorReset"));
+  }
 
   async function handleDelete() {
     if (!deleteTarget) return;
@@ -335,6 +350,7 @@ export default function UsersTable({ currentUserId }: { currentUserId: number })
               <TableHead className="text-center">{t("users.lastName")}</TableHead>
               <TableHead className="text-center">{t("common.username")}</TableHead>
               <TableHead className="text-center">{t("common.role")}</TableHead>
+              <TableHead className="text-center">2FA</TableHead>
               <TableHead className="text-center">{t("common.createdAt")}</TableHead>
               <TableHead className="text-center">{t("common.actions")}</TableHead>
             </TableRow>
@@ -342,7 +358,7 @@ export default function UsersTable({ currentUserId }: { currentUserId: number })
           <TableBody>
             {users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-gray-400">{t("users.noUsers")}</TableCell>
+                <TableCell colSpan={7} className="text-center text-gray-400">{t("users.noUsers")}</TableCell>
               </TableRow>
             ) : (
               users.map((u) => (
@@ -351,6 +367,16 @@ export default function UsersTable({ currentUserId }: { currentUserId: number })
                   <TableCell className="text-center">{u.last_name || "—"}</TableCell>
                   <TableCell className="text-center">{u.username}</TableCell>
                   <TableCell className="text-center"><RoleBadge role={u.role} /></TableCell>
+                  <TableCell className="text-center text-sm">
+                    {u.two_factor ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="text-emerald-700">{t("account.on")}</span>
+                        <button onClick={() => reset2fa(u)} className="text-xs text-gray-400 hover:text-red-600 underline" title={t("account.reset2faHint")}>
+                          {t("account.reset2fa")}
+                        </button>
+                      </span>
+                    ) : <span className="text-gray-400">{t("account.off")}</span>}
+                  </TableCell>
                   <TableCell className="text-center">
                     {new Date(u.created_at).toLocaleDateString(loc)}
                   </TableCell>

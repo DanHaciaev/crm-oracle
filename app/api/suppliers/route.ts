@@ -10,6 +10,9 @@ interface SupplierRow {
   CONTACT_EMAIL: string | null; ACTIVE: string;
   TOTAL_PURCHASES: number; LAST_PURCHASE: Date | string | null;
   PURCHASE_COUNT: number;
+  DISCOUNT_PCT: number | null;
+  GLOBALGAP_CERTIFIED: string | null;
+  GLOBALGAP_EXPIRY: Date | string | null;
 }
 
 async function requireAuth() {
@@ -26,7 +29,10 @@ export async function GET() {
     SELECT s.ID, s.CODE, s.NAME, s.COUNTRY, s.CONTACT_PHONE, s.CONTACT_EMAIL, s.ACTIVE,
            NVL(st.TOTAL_PURCHASES, 0) AS TOTAL_PURCHASES,
            st.LAST_PURCHASE,
-           NVL(st.PURCHASE_COUNT, 0) AS PURCHASE_COUNT
+           NVL(st.PURCHASE_COUNT, 0) AS PURCHASE_COUNT,
+           s.DISCOUNT_PCT,
+           s.GLOBALGAP_CERTIFIED,
+           s.GLOBALGAP_EXPIRY
     FROM AGRO_SUPPLIERS s
     LEFT JOIN (
       SELECT SUPPLIER_ID,
@@ -54,5 +60,10 @@ export async function GET() {
                       ? r.LAST_PURCHASE.toISOString()
                       : (r.LAST_PURCHASE ?? null),
     purchase_count: Number(r.PURCHASE_COUNT ?? 0),
+    discount_pct:   r.DISCOUNT_PCT != null ? Number(r.DISCOUNT_PCT) : 0,
+    globalgap_certified: r.GLOBALGAP_CERTIFIED === "Y",
+    globalgap_expiry: r.GLOBALGAP_EXPIRY instanceof Date
+                        ? r.GLOBALGAP_EXPIRY.toISOString()
+                        : (r.GLOBALGAP_EXPIRY ?? null),
   })));
 }

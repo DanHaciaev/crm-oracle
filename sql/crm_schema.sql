@@ -68,7 +68,8 @@ BEGIN
 END;
 /
 
--- Seed admin (default password: Artgranit2026#)
+-- Seed admin. Its initial password is NOT documented here on purpose —
+-- set a new one via Users right after installing (or reset the hash).
 MERGE INTO AGRO_USERS tgt
 USING (SELECT 'admin' AS USERNAME FROM DUAL) src
   ON (tgt.USERNAME = src.USERNAME)

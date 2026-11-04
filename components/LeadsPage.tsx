@@ -11,6 +11,7 @@ import {
   useDroppable, useDraggable,
 } from "@dnd-kit/core";
 import { useT } from "@/lib/locale";
+import { useUrlParam } from "@/hooks/useUrlParam";
 
 interface Lead {
   id: number; name: string; company: string | null;
@@ -837,6 +838,7 @@ export default function LeadsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  useUrlParam("q", setSearch);
   const [modal, setModal] = useState<"create" | null>(null);
   const [form, setForm] = useState<Partial<Lead>>(BLANK);
   const [saving, setSaving] = useState(false);

@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import type { PermissionMap, Role } from "@/lib/permissions";
 
 export interface AuthUser {
   id:         number;
   username:   string;
   first_name: string | null;
   last_name:  string | null;
-  role:       "admin" | "manager";
+  role:       Role;
+  permissions?: PermissionMap;
   created_at: string;
 }
 

@@ -9,9 +9,10 @@ import {
 } from "@/components/ui/table";
 import {
   LayoutList, Columns3, FileDown, X, MessageSquare,
-  Calendar, ArrowRight, ExternalLink, Clock, Receipt,
+  Calendar, ArrowRight, ExternalLink, Clock, Receipt, Printer, FileText,
 } from "lucide-react";
 import { useT } from "@/lib/locale";
+import { useUrlParam } from "@/hooks/useUrlParam";
 
 export interface SaleDoc {
   id:               number;
@@ -37,6 +38,16 @@ interface Activity {
   created_at: string | null;
 }
 
+interface SaleReturn {
+  id:            number;
+  return_number: string;
+  return_date:   string | null;
+  reason:        string | null;
+  created_by:    string | null;
+  qty_kg:        number;
+  amount:        number;
+}
+
 const STATUS_CLS: Record<string, string> = {
   draft:     "border-[#c8d3e8]    text-gray-500    bg-gray-100",
   confirmed: "border-blue-500/40  text-blue-400   bg-blue-500/10",
@@ -44,6 +55,7 @@ const STATUS_CLS: Record<string, string> = {
   delivered: "border-amber-500/40 text-amber-500  bg-amber-50",
   closed:    "border-emerald-500/40 text-emerald-400 bg-emerald-500/10",
   cancelled: "border-red-500/40   text-red-400    bg-red-500/10",
+  returned:  "border-orange-500/40 text-orange-500 bg-orange-50",
 };
 
 const TYPE_CLS: Record<string, string> = {
@@ -51,7 +63,7 @@ const TYPE_CLS: Record<string, string> = {
   export:   "border-sky-500/40   text-sky-400   bg-sky-500/10",
 };
 
-const KANBAN_STATUSES = ["draft", "confirmed", "shipped", "delivered", "closed", "cancelled"] as const;
+const KANBAN_STATUSES = ["draft", "confirmed", "shipped", "delivered", "closed", "returned", "cancelled"] as const;
 
 const KANBAN_COLORS: Record<string, { bar: string; dot: string; text: string }> = {
   draft:     { bar: "bg-gray-400",    dot: "bg-gray-400",    text: "text-gray-600" },
@@ -60,6 +72,7 @@ const KANBAN_COLORS: Record<string, { bar: string; dot: string; text: string }> 
   delivered: { bar: "bg-amber-500",   dot: "bg-amber-500",   text: "text-amber-700" },
   closed:    { bar: "bg-emerald-500", dot: "bg-emerald-500", text: "text-emerald-700" },
   cancelled: { bar: "bg-red-400",     dot: "bg-red-400",     text: "text-red-600" },
+  returned:  { bar: "bg-orange-500",  dot: "bg-orange-500",  text: "text-orange-700" },
 };
 
 const KANBAN_CARD_LEFT: Record<string, string> = {
@@ -69,6 +82,7 @@ const KANBAN_CARD_LEFT: Record<string, string> = {
   delivered: "border-l-amber-400",
   closed:    "border-l-emerald-400",
   cancelled: "border-l-red-300",
+  returned:  "border-l-orange-400",
 };
 
 const ACT_ICONS: Record<string, string> = {
@@ -149,6 +163,7 @@ function DealPanel({
   const [activities, setActs] = useState<Activity[]>([]);
   const [loadingActs, setLA]  = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [returns, setReturns] = useState<SaleReturn[]>([]);
 
   useEffect(() => {
     if (tab !== "activity" || !doc.customer_id) return;
@@ -159,6 +174,13 @@ function DealPanel({
       .catch(() => setActs([]))
       .finally(() => setLA(false));
   }, [tab, doc.customer_id]);
+
+  useEffect(() => {
+    fetch(`/api/sales/${doc.id}/returns`)
+      .then(r => r.ok ? r.json() : [])
+      .then((data: SaleReturn[]) => setReturns(data))
+      .catch(() => setReturns([]));
+  }, [doc.id]);
 
   async function changeStatus(newStatus: string) {
     setUpdating(true);
@@ -178,6 +200,7 @@ function DealPanel({
   const PIPELINE = ["draft", "confirmed", "shipped", "delivered", "closed"] as const;
   const pipeIdx  = PIPELINE.indexOf(doc.status as typeof PIPELINE[number]);
   const isCancelled = doc.status === "cancelled";
+  const isReturned  = doc.status === "returned";
   const accent = KANBAN_COLORS[doc.status] ?? KANBAN_COLORS.draft;
 
   return (
@@ -226,7 +249,11 @@ function DealPanel({
         </div>
 
         {/* Pipeline stepper */}
-        {!isCancelled ? (
+        {isReturned ? (
+          <div className="text-xs text-orange-600 font-medium">
+            Товар возвращён{returns.length > 0 && ` — ${fmtKg(returns.reduce((s, r) => s + r.qty_kg, 0))} кг`}
+          </div>
+        ) : !isCancelled ? (
           <div>
             <div className="flex gap-1 mb-1">
               {PIPELINE.map((s, i) => {
@@ -303,6 +330,25 @@ function DealPanel({
               <InfoRow icon={<MessageSquare className="w-3.5 h-3.5" />} label="Вес нетто" value={`${fmtKg(doc.total_net_kg)} кг`} padded />
             </div>
 
+            {/* Returns */}
+            {returns.length > 0 && (
+              <div className="rounded-xl border border-orange-200 bg-orange-50/60 divide-y divide-orange-100 overflow-hidden">
+                {returns.map(r => (
+                  <div key={r.id} className="px-3 py-2.5 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-xs text-orange-700">{r.return_number}</span>
+                      <span className="text-xs text-gray-500">{fmtDate(r.return_date)}</span>
+                    </div>
+                    <div className="flex items-center justify-between mt-0.5">
+                      <span className="text-gray-600">{fmtKg(r.qty_kg)} кг</span>
+                      <span className="font-medium tabular-nums">{fmtMoney(r.amount)} {doc.currency_code || "MDL"}</span>
+                    </div>
+                    {r.reason && <div className="text-xs text-gray-500 mt-0.5 italic">{r.reason}</div>}
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Action buttons */}
             <div className="grid grid-cols-2 gap-2 pt-1">
               <button
@@ -319,6 +365,30 @@ function DealPanel({
                 <Receipt className="w-4 h-4 text-gray-500" />
                 Фактура
               </button>
+              <Link
+                href={`/documents/print/sales_pallet_bon?id=${doc.id}`}
+                target="_blank"
+                className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-[#dde3ef] text-sm text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition"
+              >
+                <Printer className="w-4 h-4 text-gray-500" />
+                {t("documents.salesBon")}
+              </Link>
+              <Link
+                href={`/documents/print/shipping_note?id=${doc.id}`}
+                target="_blank"
+                className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-[#dde3ef] text-sm text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition"
+              >
+                <FileText className="w-4 h-4 text-gray-500" />
+                Aviz
+              </Link>
+              <Link
+                href={`/documents/print/export_decl?id=${doc.id}`}
+                target="_blank"
+                className="col-span-2 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-[#dde3ef] text-sm text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition"
+              >
+                <FileText className="w-4 h-4 text-gray-500" />
+                {t("documents.exportDecl")}
+              </Link>
             </div>
             {doc.customer_id && (
               <Link
@@ -460,6 +530,7 @@ export default function SalesTable({ customerId, compact = false }: Props) {
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState<string | null>(null);
   const [search, setSearch]         = useState("");
+  useUrlParam("q", setSearch);
   const [dateFrom, setFrom]         = useState("");
   const [dateTo, setTo]             = useState("");
   const [status, setStatus]         = useState("all");
@@ -546,6 +617,7 @@ export default function SalesTable({ customerId, compact = false }: Props) {
     { v: "delivered", label: t("sales.statuses.delivered"),  count: statusCounts.delivered  ?? 0 },
     { v: "closed",    label: t("sales.statuses.closed"),     count: statusCounts.closed     ?? 0 },
     { v: "draft",     label: t("sales.statuses.draft"),      count: statusCounts.draft      ?? 0 },
+    { v: "returned",  label: t("sales.statuses.returned"),   count: statusCounts.returned   ?? 0 },
     { v: "cancelled", label: t("sales.statuses.cancelled"),  count: statusCounts.cancelled  ?? 0 },
   ];
 
@@ -762,6 +834,20 @@ export default function SalesTable({ customerId, compact = false }: Props) {
                           className="inline-flex items-center justify-center w-7 h-7 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition">
                           <Receipt className="w-4 h-4" />
                         </button>
+                        <Link
+                          href={`/documents/print/sales_pallet_bon?id=${d.id}`}
+                          target="_blank"
+                          title={t("documents.salesBon")}
+                          className="inline-flex items-center justify-center w-7 h-7 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition">
+                          <Printer className="w-4 h-4" />
+                        </Link>
+                        <Link
+                          href={`/documents/print/shipping_note?id=${d.id}`}
+                          target="_blank"
+                          title={t("documents.shippingNote")}
+                          className="inline-flex items-center justify-center w-7 h-7 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition">
+                          <FileText className="w-4 h-4" />
+                        </Link>
                       </div>
                     </TableCell>
                   </TableRow>

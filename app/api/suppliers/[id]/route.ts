@@ -9,6 +9,10 @@ interface SupplierRow {
   COUNTRY: string | null; TAX_ID: string | null;
   CONTACT_PHONE: string | null; CONTACT_EMAIL: string | null;
   ADDRESS: string | null; ACTIVE: string;
+  DISCOUNT_PCT: number | null;
+  GLOBALGAP_CERTIFIED: string | null;
+  GLOBALGAP_CERT_NO: string | null;
+  GLOBALGAP_EXPIRY: Date | string | null;
 }
 interface PurchaseRow {
   [key: string]: unknown;
@@ -39,7 +43,8 @@ export async function GET(
 
   const [suppliers, purchases] = await Promise.all([
     query<SupplierRow>(`
-      SELECT ID, CODE, NAME, COUNTRY, TAX_ID, CONTACT_PHONE, CONTACT_EMAIL, ADDRESS, ACTIVE
+      SELECT ID, CODE, NAME, COUNTRY, TAX_ID, CONTACT_PHONE, CONTACT_EMAIL, ADDRESS, ACTIVE,
+             DISCOUNT_PCT, GLOBALGAP_CERTIFIED, GLOBALGAP_CERT_NO, GLOBALGAP_EXPIRY
       FROM AGRO_SUPPLIERS WHERE ID = :1
     `, [Number(id)]),
 
@@ -69,6 +74,10 @@ export async function GET(
       contact_email: s.CONTACT_EMAIL ?? null,
       address:       s.ADDRESS       ?? null,
       active:        s.ACTIVE === "Y",
+      discount_pct:  s.DISCOUNT_PCT != null ? Number(s.DISCOUNT_PCT) : 0,
+      globalgap_certified: s.GLOBALGAP_CERTIFIED === "Y",
+      globalgap_cert_no:   s.GLOBALGAP_CERT_NO ?? null,
+      globalgap_expiry:    iso(s.GLOBALGAP_EXPIRY as Date | string | null),
     },
     purchases: purchases.map(p => ({
       id:          Number(p.ID),

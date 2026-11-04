@@ -1,8 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { query } from "@/lib/oracle";
 import { sendText } from "@/lib/tg";
 
-const CRON_SECRET = process.env.CRON_SECRET;
 
 interface TaskRow {
   [key: string]: unknown;
@@ -18,10 +17,7 @@ function fmtDate(v: Date | string | null) {
   return isNaN(d.getTime()) ? String(v) : d.toLocaleDateString("ru-RU");
 }
 
-export async function GET(req: NextRequest) {
-  if (CRON_SECRET && req.headers.get("x-cron-secret") !== CRON_SECRET)
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
+export async function GET() {
   const adminChatId = process.env.TG_ADMIN_CHAT_ID
     ? Number(process.env.TG_ADMIN_CHAT_ID)
     : null;

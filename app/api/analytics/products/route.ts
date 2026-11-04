@@ -35,7 +35,8 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const months = Math.min(Number(searchParams.get("months") ?? "12"), 24);
-  const topN   = Math.min(Number(searchParams.get("top") ?? "10"), 20);
+  const topRaw = Number(searchParams.get("top") ?? "10");
+  const topN   = Number.isFinite(topRaw) && topRaw > 0 ? Math.min(Math.floor(topRaw), 20) : 10;
 
   const topRows = await query<TopRow>(`
     SELECT * FROM (

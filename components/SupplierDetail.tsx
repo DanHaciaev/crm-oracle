@@ -13,6 +13,8 @@ interface Supplier {
   country: string | null; tax_id: string | null;
   contact_phone: string | null; contact_email: string | null;
   address: string | null; active: boolean;
+  discount_pct: number; globalgap_certified: boolean;
+  globalgap_cert_no: string | null; globalgap_expiry: string | null;
 }
 interface Purchase {
   id: number; doc_number: string; doc_date: string | null;
@@ -93,6 +95,13 @@ export default function SupplierDetail({ id }: { id: string }) {
           <Field label="ИНН / Рег. номер"       value={s.tax_id} />
           <Field label={t("suppliers.phone")}   value={s.contact_phone} />
           <Field label={t("suppliers.email")}   value={s.contact_email} />
+          <Field label={t("suppliers.discount")} value={s.discount_pct > 0 ? `${s.discount_pct}%` : null} />
+          <Field
+            label={t("suppliers.globalgap")}
+            value={s.globalgap_certified
+              ? [s.globalgap_cert_no, s.globalgap_expiry && `до ${fmtDate(s.globalgap_expiry)}`].filter(Boolean).join(" · ") || "Сертифицирован"
+              : null}
+          />
           {s.address && (
             <div className="col-span-2 sm:col-span-4">
               <Field label="Адрес" value={s.address} />

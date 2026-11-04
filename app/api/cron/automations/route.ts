@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { query, execute } from "@/lib/oracle";
 import { sendText } from "@/lib/tg";
 import { sendEmail } from "@/lib/gmail";
@@ -37,13 +37,6 @@ interface CooldownRow {
 
 function render(template: string, vars: Record<string, string>): string {
   return template.replace(/\{\{(\w+)\}\}/g, (_, k: string) => vars[k] ?? `{{${k}}}`);
-}
-
-function checkSecret(req: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return true; // dev mode: no secret required
-  const auth = req.headers.get("authorization") ?? "";
-  return auth === `Bearer ${secret}`;
 }
 
 // ── Segment SQL helpers ───────────────────────────────────────
@@ -200,10 +193,9 @@ async function doEmailSend(
 
 // ── Main handler ──────────────────────────────────────────────
 
-export async function POST(req: NextRequest) {
-  if (!checkSecret(req)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+// Access (x-cron-secret header or a signed-in user allowed to edit
+// broadcasts) is checked in proxy.ts.
+export async function POST() {
 
   const rules = await query<RuleRow>(`
     SELECT ID, NAME, TRIGGER_TYPE, CONDITION_DAYS, ACTION_TYPE,
@@ -281,6 +273,6 @@ export async function POST(req: NextRequest) {
 }
 
 // Also support GET for easy manual testing in browser
-export async function GET(req: NextRequest) {
-  return POST(req);
+export async function GET() {
+  return POST();
 }

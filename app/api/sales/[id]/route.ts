@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { execute } from "@/lib/oracle";
 import { verifyToken } from "@/lib/auth";
 
-const VALID_STATUSES = new Set(["draft", "confirmed", "shipped", "delivered", "closed", "cancelled"]);
+const VALID_STATUSES = new Set(["draft", "confirmed", "shipped", "delivered", "closed", "cancelled", "returned"]);
 
 async function requireAuth() {
   const store = await cookies();

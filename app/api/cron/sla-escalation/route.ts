@@ -1,8 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { query, execute } from "@/lib/oracle";
 import { sendText } from "@/lib/tg";
 
-const CRON_SECRET = process.env.CRON_SECRET;
 
 interface EscalationRow {
   [key: string]: unknown;
@@ -14,10 +13,7 @@ interface EscalationRow {
   MANAGER_CHAT:  number | null;
 }
 
-export async function GET(req: NextRequest) {
-  if (CRON_SECRET && req.headers.get("x-cron-secret") !== CRON_SECRET)
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
+export async function GET() {
   // Leads in 'new' stage for more than 2 hours with no escalation task yet
   const rows = await query<EscalationRow>(`
     SELECT l.ID, l.NAME, l.STAGE,

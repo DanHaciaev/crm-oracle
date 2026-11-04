@@ -7,6 +7,7 @@ import {
   TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { useT, useLocale } from "@/lib/locale";
+import { useUrlParam } from "@/hooks/useUrlParam";
 
 interface Item {
   id:               number;
@@ -60,6 +61,7 @@ export default function ItemsTable({ hideHeader }: { hideHeader?: boolean } = {}
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
   const [search, setSearch]     = useState("");
+  useUrlParam("q", setSearch);
   const [group, setGroup]       = useState("all");
   const [sortKey, setSortKey]   = useState<SortKey>("name_ru");
   const [sortDir, setSortDir]   = useState<SortDir>("asc");

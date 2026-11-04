@@ -1,13 +1,14 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
+import type { Role } from "@/lib/permissions";
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 
 export interface TokenPayload {
   id:       number;
   username: string;
-  role:     "admin" | "manager";
+  role:     Role;
 }
 
 const SALT_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -55,7 +56,27 @@ export function signToken(payload: TokenPayload): string {
 
 export function verifyToken(token: string): TokenPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as TokenPayload;
+    const p = jwt.verify(token, JWT_SECRET) as TokenPayload & { purpose?: string };
+    // Only real session tokens — not e.g. a 2FA challenge signed with the same key.
+    if (p.purpose || typeof p.id !== "number") return null;
+    return p;
+  } catch {
+    return null;
+  }
+}
+
+// Second step of a 2FA sign-in: after the password checks out the client
+// gets this short-lived challenge and trades it (plus a TOTP code) for the
+// real session at /api/auth/login-2fa. `purpose` keeps it from ever being
+// accepted as a session token (verifyToken would reject it: no username).
+export function signTwoFaChallenge(userId: number): string {
+  return jwt.sign({ uid: userId, purpose: "2fa" }, JWT_SECRET, { expiresIn: "5m" });
+}
+
+export function verifyTwoFaChallenge(token: string): number | null {
+  try {
+    const p = jwt.verify(token, JWT_SECRET) as { uid?: number; purpose?: string };
+    return p.purpose === "2fa" && typeof p.uid === "number" ? p.uid : null;
   } catch {
     return null;
   }

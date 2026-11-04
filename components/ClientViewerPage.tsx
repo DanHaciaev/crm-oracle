@@ -59,14 +59,17 @@ function initials(name: string) {
 
 const STATUS_LABEL: Record<string, string> = {
   draft: "Черновик", confirmed: "Подтверждён",
-  shipped: "Отгружен", closed: "Закрыт", cancelled: "Отменён",
+  shipped: "Отгружен", delivered: "Доставлен",
+  closed: "Закрыт", cancelled: "Отменён", returned: "Возврат",
 };
 const STATUS_CLS: Record<string, string> = {
   draft:     "bg-gray-100 text-gray-500",
   confirmed: "bg-blue-50 text-blue-600",
   shipped:   "bg-amber-50 text-amber-600",
+  delivered: "bg-amber-50 text-amber-600",
   closed:    "bg-emerald-50 text-emerald-600",
   cancelled: "bg-red-50 text-red-400",
+  returned:  "bg-orange-50 text-orange-500",
 };
 const TYPE_LABEL: Record<string, string> = {
   domestic: "Внутренний",
@@ -325,32 +328,32 @@ function DealsGrid({ client, deals, loading }: {
           <div className="py-5 text-center text-sm text-gray-400">Сделок нет</div>
         )}
         {!loading && deals.length > 0 && (
-          <table className="w-full text-sm border-collapse min-w-130">
+          <table className="w-full text-sm border-collapse min-w-160">
             <thead className="sticky top-0 bg-white border-b border-gray-100">
               <tr>
-                <th className="text-left px-4 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide w-28">Документ</th>
-                <th className="text-left px-3 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Тип</th>
-                <th className="text-right px-3 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide w-32">Сумма</th>
-                <th className="text-left px-3 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide w-32">Стадия</th>
-                <th className="text-right px-4 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide w-24">Дата</th>
+                <th className="text-center px-4 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide w-44">Документ</th>
+                <th className="text-center px-3 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide w-24">Тип</th>
+                <th className="text-center px-3 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide w-36">Сумма</th>
+                <th className="text-center px-3 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide w-32">Стадия</th>
+                <th className="text-center px-4 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide w-28">Дата</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {deals.map(d => (
                 <tr key={d.id} className="hover:bg-gray-50/60 transition-colors">
-                  <td className="px-4 py-1.5 font-mono text-xs text-gray-500">{d.doc_number}</td>
-                  <td className="px-3 py-1.5 text-xs text-gray-400">{TYPE_LABEL[d.sale_type] ?? d.sale_type}</td>
-                  <td className="px-3 py-1.5 text-right tabular-nums text-sm">
+                  <td className="px-4 py-1.5 font-mono text-xs text-gray-500 whitespace-nowrap text-center">{d.doc_number}</td>
+                  <td className="px-3 py-1.5 text-xs text-gray-400 whitespace-nowrap text-center">{TYPE_LABEL[d.sale_type] ?? d.sale_type}</td>
+                  <td className="px-3 py-1.5 text-center tabular-nums text-sm whitespace-nowrap">
                     {d.total_amount_mdl > 0
                       ? <span className="font-medium text-gray-700">{fmtMoney(d.total_amount_mdl)} <span className="text-xs font-normal text-gray-400">MDL</span></span>
                       : <span className="text-gray-300">—</span>}
                   </td>
-                  <td className="px-3 py-1.5">
-                    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${STATUS_CLS[d.status] ?? "bg-gray-100 text-gray-500"}`}>
+                  <td className="px-3 py-1.5 text-center">
+                    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${STATUS_CLS[d.status] ?? "bg-gray-100 text-gray-500"}`}>
                       {STATUS_LABEL[d.status] ?? d.status}
                     </span>
                   </td>
-                  <td className="px-4 py-1.5 text-right text-xs text-gray-400 tabular-nums">{fmtDate(d.doc_date)}</td>
+                  <td className="px-4 py-1.5 text-center text-xs text-gray-400 tabular-nums whitespace-nowrap">{fmtDate(d.doc_date)}</td>
                 </tr>
               ))}
             </tbody>

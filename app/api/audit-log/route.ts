@@ -24,10 +24,14 @@ export async function GET(req: NextRequest) {
   const sp          = req.nextUrl.searchParams;
   const entityType  = sp.get("entity_type");
   const entityId    = sp.get("entity_id");
-  const limit       = Math.min(Number(sp.get("limit") ?? "50"), 200);
+  const rawLimit    = Number(sp.get("limit") ?? "50");
+  const limit       = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(Math.floor(rawLimit), 200) : 50;
 
-  const typeCond = entityType ? `AND a.ENTITY_TYPE = '${entityType}'` : "";
-  const idCond   = entityId   ? `AND a.ENTITY_ID   = ${Number(entityId)}` : "";
+  // Filters go in as binds — entity_type used to be pasted into the SQL text.
+  const binds: Record<string, string | number> = { lim: limit };
+  let cond = "";
+  if (entityType) { cond += " AND a.ENTITY_TYPE = :etype"; binds.etype = entityType.slice(0, 50); }
+  if (entityId && Number.isFinite(Number(entityId))) { cond += " AND a.ENTITY_ID = :eid"; binds.eid = Number(entityId); }
 
   const rows = await query<AuditRow>(`
     SELECT * FROM (
@@ -36,10 +40,10 @@ export async function GET(req: NextRequest) {
         a.ACTION, a.CHANGED_BY, a.CHANGED_AT,
         a.OLD_VALUES, a.NEW_VALUES
       FROM AGRO_CRM_AUDIT_LOG a
-      WHERE 1=1 ${typeCond} ${idCond}
+      WHERE 1=1${cond}
       ORDER BY a.CHANGED_AT DESC
-    ) WHERE ROWNUM <= ${limit}
-  `, []);
+    ) WHERE ROWNUM <= :lim
+  `, binds);
 
   return NextResponse.json(rows.map((r) => ({
     id:           Number(r.ID),

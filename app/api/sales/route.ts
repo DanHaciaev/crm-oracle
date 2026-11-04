@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
   const saleType   = sp.get("sale_type");
   const page       = Math.max(1, Number(sp.get("page") ?? "1") || 1);
 
-  const VALID_STATUSES = new Set(["draft","confirmed","shipped","closed","cancelled"]);
+  const VALID_STATUSES = new Set(["draft","confirmed","shipped","delivered","closed","cancelled","returned"]);
   const VALID_TYPES    = new Set(["domestic","export"]);
 
   const conditions: string[] = [];
