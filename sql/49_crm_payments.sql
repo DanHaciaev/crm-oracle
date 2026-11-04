@@ -1,0 +1,82 @@
+-- ============================================================
+-- Customer payments & receivables (CRM-only)
+-- ============================================================
+-- DIPP FRUICT records sales/shipments but not customer payments, so the
+-- CRM keeps them in its own tables. A payment is either linked to one sales
+-- document or "on account" (SALES_DOC_ID NULL) — the latter is applied FIFO
+-- to the customer's oldest open documents in the same currency when the
+-- receivables are computed. Payments are never deleted: STATUS='cancelled'.
+-- Oracle 11g: sequences + BEFORE INSERT triggers. Idempotent.
+
+DECLARE v INT;
+BEGIN
+  SELECT COUNT(*) INTO v FROM USER_TABLES WHERE TABLE_NAME = 'AGRO_CRM_PAYMENTS';
+  IF v = 0 THEN
+    EXECUTE IMMEDIATE '
+      CREATE TABLE AGRO_CRM_PAYMENTS (
+        ID              NUMBER         NOT NULL,
+        PAYMENT_NUMBER  VARCHAR2(30)   NOT NULL,
+        CUSTOMER_ID     NUMBER         NOT NULL,
+        SALES_DOC_ID    NUMBER,
+        PAY_DATE        DATE           NOT NULL,
+        AMOUNT          NUMBER(14,2)   NOT NULL,
+        CURRENCY_CODE   VARCHAR2(3)    NOT NULL,
+        RATE_TO_MDL     NUMBER(14,6),
+        AMOUNT_MDL      NUMBER(14,2),
+        METHOD          VARCHAR2(20)   DEFAULT ''bank'' NOT NULL,
+        REFERENCE       VARCHAR2(100),
+        NOTES           VARCHAR2(500),
+        STATUS          VARCHAR2(10)   DEFAULT ''active'' NOT NULL,
+        CREATED_BY      VARCHAR2(100),
+        CREATED_AT      DATE DEFAULT SYSDATE NOT NULL,
+        CANCELLED_BY    VARCHAR2(100),
+        CANCELLED_AT    DATE,
+        CANCEL_REASON   VARCHAR2(500),
+        CONSTRAINT PK_AGRO_CRM_PAYMENTS PRIMARY KEY (ID),
+        CONSTRAINT UQ_AGRO_CRM_PAYMENTS_NO UNIQUE (PAYMENT_NUMBER),
+        CONSTRAINT FK_AGRO_CRM_PAY_CUST FOREIGN KEY (CUSTOMER_ID) REFERENCES AGRO_CUSTOMERS (ID),
+        CONSTRAINT FK_AGRO_CRM_PAY_SALE FOREIGN KEY (SALES_DOC_ID) REFERENCES AGRO_SALES_DOCS (ID),
+        CONSTRAINT CK_AGRO_CRM_PAY_AMOUNT CHECK (AMOUNT > 0),
+        CONSTRAINT CK_AGRO_CRM_PAY_METHOD CHECK (METHOD IN (''bank'',''cash'',''card'',''offset'',''other'')),
+        CONSTRAINT CK_AGRO_CRM_PAY_STATUS CHECK (STATUS IN (''active'',''cancelled''))
+      )';
+    EXECUTE IMMEDIATE 'CREATE INDEX IX_AGRO_CRM_PAY_CUST ON AGRO_CRM_PAYMENTS (CUSTOMER_ID, CURRENCY_CODE, PAY_DATE)';
+    EXECUTE IMMEDIATE 'CREATE INDEX IX_AGRO_CRM_PAY_SALE ON AGRO_CRM_PAYMENTS (SALES_DOC_ID)';
+  END IF;
+  SELECT COUNT(*) INTO v FROM USER_SEQUENCES WHERE SEQUENCE_NAME = 'AGRO_CRM_PAYMENTS_SEQ';
+  IF v = 0 THEN
+    EXECUTE IMMEDIATE 'CREATE SEQUENCE AGRO_CRM_PAYMENTS_SEQ START WITH 1 INCREMENT BY 1 NOCACHE';
+  END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER AGRO_CRM_PAYMENTS_BI
+BEFORE INSERT ON AGRO_CRM_PAYMENTS FOR EACH ROW
+BEGIN
+  IF :NEW.ID IS NULL THEN
+    SELECT AGRO_CRM_PAYMENTS_SEQ.NEXTVAL INTO :NEW.ID FROM DUAL;
+  END IF;
+END;
+/
+
+-- Payment terms per customer (days of credit after the sales document date)
+-- and an optional credit limit in MDL. Customers without a row use the
+-- default from AGRO_MODULE_CONFIG.CRM_DEFAULT_PAYMENT_DAYS (30 if unset).
+DECLARE v INT;
+BEGIN
+  SELECT COUNT(*) INTO v FROM USER_TABLES WHERE TABLE_NAME = 'AGRO_CRM_CUSTOMER_TERMS';
+  IF v = 0 THEN
+    EXECUTE IMMEDIATE '
+      CREATE TABLE AGRO_CRM_CUSTOMER_TERMS (
+        CUSTOMER_ID       NUMBER        NOT NULL,
+        PAYMENT_DAYS      NUMBER(4),
+        CREDIT_LIMIT_MDL  NUMBER(14,2),
+        UPDATED_BY        VARCHAR2(100),
+        UPDATED_AT        DATE DEFAULT SYSDATE,
+        CONSTRAINT PK_AGRO_CRM_CUST_TERMS PRIMARY KEY (CUSTOMER_ID),
+        CONSTRAINT FK_AGRO_CRM_TERMS_CUST FOREIGN KEY (CUSTOMER_ID) REFERENCES AGRO_CUSTOMERS (ID),
+        CONSTRAINT CK_AGRO_CRM_TERMS_DAYS CHECK (PAYMENT_DAYS IS NULL OR PAYMENT_DAYS BETWEEN 0 AND 3650)
+      )';
+  END IF;
+END;
+/

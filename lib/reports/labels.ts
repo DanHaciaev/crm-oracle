@@ -6,6 +6,7 @@ import type { Lang } from "@/lib/documents/common";
 
 export const COLUMN_LABELS: Record<Lang, Record<string, string>> = {
   ro: {
+    billed: "Livrat", returned_amount: "Returnat", paid: "Achitat", balance: "Sold", balance_mdl: "Sold, MDL", overdue: "Restant", overdue_mdl: "Restant, MDL", aging_not_due: "Nescadent", aging_1_30: "1–30 zile", aging_31_60: "31–60 zile", aging_61_90: "61–90 zile", aging_90_plus: "Peste 90 zile", open_docs: "Documente deschise", oldest_overdue_days: "Cea mai veche restanță, zile", payment_days: "Termen plată, zile", credit_limit_mdl: "Limită credit, MDL", last_payment: "Ultima plată", payment_number: "Nr. plată", pay_date: "Data plății", method: "Metodă", reference: "Referință", payment_status: "Statut plată",
     return_status: "Statut retur",
     return_number: "Nr. retur", return_date: "Data retur",
     item_supplier: "Produs · furnizor", origin: "Proveniență", sold_kg: "Vândut, kg", revenue: "Venit, MDL", cost: "Cost, MDL", margin: "Marjă, MDL", margin_pct: "Marjă, %", cost_per_kg: "Cost / kg, MDL",
@@ -33,6 +34,7 @@ export const COLUMN_LABELS: Record<Lang, Record<string, string>> = {
     waste_kg: "Deseuri, kg", loss_kg: "Pierderi, kg", closing_kg: "Stoc final, kg", change_kg: "Variatie, kg",
   },
   ru: {
+    billed: "Отгружено", returned_amount: "Возвращено", paid: "Оплачено", balance: "Долг", balance_mdl: "Долг, MDL", overdue: "Просрочено", overdue_mdl: "Просрочено, MDL", aging_not_due: "Срок не наступил", aging_1_30: "1–30 дней", aging_31_60: "31–60 дней", aging_61_90: "61–90 дней", aging_90_plus: "Более 90 дней", open_docs: "Открытых накладных", oldest_overdue_days: "Макс. просрочка, дней", payment_days: "Отсрочка, дней", credit_limit_mdl: "Кредитный лимит, MDL", last_payment: "Последняя оплата", payment_number: "№ оплаты", pay_date: "Дата оплаты", method: "Способ", reference: "Основание", payment_status: "Статус оплаты",
     return_status: "Статус возврата",
     return_number: "№ возврата", return_date: "Дата возврата",
     item_supplier: "Товар · поставщик", origin: "Происхождение", sold_kg: "Продано, кг", revenue: "Выручка, MDL", cost: "Себестоимость, MDL", margin: "Маржа, MDL", margin_pct: "Маржа, %", cost_per_kg: "Себестоимость / кг, MDL",
@@ -60,6 +62,7 @@ export const COLUMN_LABELS: Record<Lang, Record<string, string>> = {
     waste_kg: "Отходы, кг", loss_kg: "Потери, кг", closing_kg: "Кон. остаток, кг", change_kg: "Изменение, кг",
   },
   en: {
+    billed: "Shipped", returned_amount: "Returned", paid: "Paid", balance: "Balance", balance_mdl: "Balance, MDL", overdue: "Overdue", overdue_mdl: "Overdue, MDL", aging_not_due: "Not due", aging_1_30: "1–30 days", aging_31_60: "31–60 days", aging_61_90: "61–90 days", aging_90_plus: "Over 90 days", open_docs: "Open documents", oldest_overdue_days: "Oldest overdue, days", payment_days: "Payment term, days", credit_limit_mdl: "Credit limit, MDL", last_payment: "Last payment", payment_number: "Payment no.", pay_date: "Payment date", method: "Method", reference: "Reference", payment_status: "Payment status",
     return_status: "Return status",
     return_number: "Return no.", return_date: "Return date",
     item_supplier: "Product · supplier", origin: "Origin", sold_kg: "Sold, kg", revenue: "Revenue, MDL", cost: "Cost, MDL", margin: "Margin, MDL", margin_pct: "Margin, %", cost_per_kg: "Cost / kg, MDL",
@@ -92,6 +95,7 @@ const YN = { ro: { Y: "Da", N: "Nu" }, ru: { Y: "Да", N: "Нет" }, en: { Y: 
 
 export const VALUE_LABELS: Record<Lang, Record<string, Record<string, string>>> = {
   ro: {
+    method: { bank: "Transfer bancar", cash: "Numerar", card: "Card", offset: "Compensare", other: "Altele" }, payment_status: { active: "Activă", cancelled: "Anulată" },
     return_status: { active: "Activ", cancelled: "Anulat" },
     origin: { purchase: "Achiziție", own: "Producție proprie", other: "Altă sursă" },
     movement_type: { receipt: "Recepție", shipment: "Livrare", transfer: "Transfer", adjustment: "Plus inventar", return: "Retur", loss: "Pierdere", processing: "Procesare" },
@@ -103,6 +107,7 @@ export const VALUE_LABELS: Record<Lang, Record<string, Record<string, string>>> 
     is_own_production: YN.ro, is_expired: YN.ro, is_blocked: YN.ro,
   },
   ru: {
+    method: { bank: "Банковский перевод", cash: "Наличные", card: "Карта", offset: "Взаимозачёт", other: "Другое" }, payment_status: { active: "Действует", cancelled: "Отменена" },
     return_status: { active: "Действует", cancelled: "Отменён" },
     origin: { purchase: "Закупка", own: "Собств. производство", other: "Другой источник" },
     movement_type: { receipt: "Приход", shipment: "Отгрузка", transfer: "Перемещение", adjustment: "Излишек", return: "Возврат", loss: "Потеря", processing: "Переработка" },
@@ -114,6 +119,7 @@ export const VALUE_LABELS: Record<Lang, Record<string, Record<string, string>>> 
     is_own_production: YN.ru, is_expired: YN.ru, is_blocked: YN.ru,
   },
   en: {
+    method: { bank: "Bank transfer", cash: "Cash", card: "Card", offset: "Offset", other: "Other" }, payment_status: { active: "Active", cancelled: "Cancelled" },
     return_status: { active: "Active", cancelled: "Cancelled" },
     origin: { purchase: "Purchase", own: "Own production", other: "Other source" },
     movement_type: { receipt: "Receipt", shipment: "Shipment", transfer: "Transfer", adjustment: "Surplus", return: "Return", loss: "Loss", processing: "Processing" },
@@ -128,6 +134,7 @@ export const VALUE_LABELS: Record<Lang, Record<string, Record<string, string>>> 
 
 export const REPORT_TITLES: Record<Lang, Record<string, string>> = {
   ro: {
+    receivables: "Datorii clienți", payments: "Plăți clienți",
     returns: "Retururi",
     profitability: "Profitabilitate pe loturi",
     movements: "Mișcări de stoc",
@@ -136,6 +143,7 @@ export const REPORT_TITLES: Record<Lang, Record<string, string>> = {
     mass_balance: "Bilanț de masă", expiry: "Termene de expirare",
   },
   ru: {
+    receivables: "Долги клиентов", payments: "Оплаты клиентов",
     returns: "Возвраты",
     profitability: "Прибыльность по партиям",
     movements: "Движения склада",
@@ -144,6 +152,7 @@ export const REPORT_TITLES: Record<Lang, Record<string, string>> = {
     mass_balance: "Баланс массы", expiry: "Сроки годности",
   },
   en: {
+    receivables: "Customer receivables", payments: "Customer payments",
     returns: "Returns",
     profitability: "Batch profitability",
     movements: "Stock movements",
