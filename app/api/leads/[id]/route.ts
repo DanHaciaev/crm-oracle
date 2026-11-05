@@ -139,6 +139,8 @@ export async function DELETE(
   if (!user) return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
 
   const { id } = await params;
+  // Quotes keep their addressee (CLIENT_NAME) — only the deal link goes.
+  await execute(`UPDATE AGRO_CRM_QUOTES SET LEAD_ID = NULL WHERE LEAD_ID = :1`, [Number(id)]);
   await execute(`DELETE FROM AGRO_CRM_LEADS WHERE ID = :1`, [Number(id)]);
   return NextResponse.json({ success: true });
 }

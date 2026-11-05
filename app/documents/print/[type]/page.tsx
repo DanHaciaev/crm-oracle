@@ -7,6 +7,7 @@ import { SalesPalletBon, ShippingNote, ExportDecl, ReturnAct, ReconciliationAct 
 import { PurchaseAct, CustodyReleaseAct, MassBalance } from "@/components/print/StockDocs";
 import { QaProtocol, GmpChecklist, HaccpReport } from "@/components/print/QualityDocs";
 import { TripSheet } from "@/components/print/TripDocs";
+import { QuoteDoc } from "@/components/print/QuoteDocs";
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- each renderer is typed against its own builder's return type */
 const RENDERERS: Record<string, { render: (d: any, lang: Lang) => ReactNode; landscape?: boolean }> = {
@@ -22,6 +23,7 @@ const RENDERERS: Record<string, { render: (d: any, lang: Lang) => ReactNode; lan
   gmp_checklist:       { render: (d, l) => <GmpChecklist d={d} lang={l} /> },
   haccp_report:        { render: (d, l) => <HaccpReport d={d} lang={l} /> },
   trip_sheet:          { render: (d, l) => <TripSheet d={d} lang={l} /> },
+  quote:               { render: (d, l) => <QuoteDoc d={d} lang={l} /> },
 };
 /* eslint-enable @typescript-eslint/no-explicit-any */
 

@@ -16,7 +16,7 @@ import {
   LayoutDashboard, Users, Target, TrendingUp, PieChart, AlertTriangle,
   MessageSquare, Mail, Megaphone, CheckSquare, Package, Scale,
   UserCog, History, UserCircle, LogOut, Truck, GitMerge, Search, MessagesSquare,
-  Warehouse, ShoppingCart, FileText, FileSpreadsheet, Gift, CalendarDays, Undo2, Wallet, ShieldCheck, Route,
+  Warehouse, ShoppingCart, FileText, FileSpreadsheet, Gift, CalendarDays, Undo2, Wallet, ShieldCheck, Route, FileSignature,
   ChevronDown, ChevronRight, Boxes, Building2, BadgePercent, Banknote, BookOpen, FileUp,
 } from "lucide-react"
 import { usePathname } from "next/navigation"
@@ -44,6 +44,7 @@ export function AppSidebar() {
       links: [
         { name: t("nav.customers"),    href: "/customers",     icon: Users },
         { name: t("nav.leads"),        href: "/leads",         icon: Target },
+        { name: t("nav.quotes"),       href: "/quotes",        icon: FileSignature },
         { name: t("nav.sales"),        href: "/sales",         icon: TrendingUp },
         { name: t("nav.returns"),      href: "/returns",       icon: Undo2 },
         { name: t("nav.receivables"),  href: "/receivables",   icon: Wallet },

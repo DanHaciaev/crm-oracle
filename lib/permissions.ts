@@ -16,7 +16,7 @@ export type ConfigurableRole = (typeof CONFIGURABLE_ROLES)[number];
 
 // One module per sidebar item, grouped the same way as the sidebar.
 export const MODULE_GROUPS = [
-  { key: "sales",     modules: ["customers", "leads", "sales", "returns", "payments", "quality", "client-viewer", "loyalty"] },
+  { key: "sales",     modules: ["customers", "leads", "quotes", "sales", "returns", "payments", "quality", "client-viewer", "loyalty"] },
   { key: "supply",    modules: ["warehouse", "deliveries", "suppliers", "purchases", "weight-tickets", "custody", "items", "directories"] },
   { key: "docs",      modules: ["documents", "reports", "rates", "profitability"] },
   { key: "analytics", modules: ["segments", "churn", "duplicates"] },
@@ -82,7 +82,7 @@ export function can(perms: PermissionMap | null | undefined, module: Module, lev
 // Path prefix → module. Pages not listed (dashboard, print pages opened
 // from an allowed section…) are open to every signed-in user.
 const PAGE_MODULES: [string, Module][] = [
-  ["/customers", "customers"], ["/leads", "leads"], ["/sales", "sales"], ["/returns", "returns"], ["/receivables", "payments"], ["/quality", "quality"],
+  ["/customers", "customers"], ["/leads", "leads"], ["/quotes", "quotes"], ["/sales", "sales"], ["/returns", "returns"], ["/receivables", "payments"], ["/quality", "quality"],
   ["/client-viewer", "client-viewer"], ["/loyalty", "loyalty"],
   ["/warehouse", "warehouse"], ["/deliveries", "deliveries"], ["/directories", "directories"], ["/suppliers", "suppliers"], ["/purchases", "purchases"], ["/weight-tickets", "weight-tickets"],
   ["/acts", "weight-tickets"], ["/custody", "custody"], ["/items", "items"], ["/analytics", "items"],
@@ -140,6 +140,7 @@ export const API_RULES: ApiRule[] = [
   { prefix: "/api/nps",                  read: ["customers", "client-viewer"], write: ["customers"] },
   { prefix: "/api/loyalty",              read: ["loyalty", "customers", "client-viewer"], write: ["loyalty"] },
   { prefix: "/api/client-viewer",        read: ["client-viewer"], write: [] },
+  { prefix: "/api/quotes",               read: ["quotes"], write: ["quotes"] },
   { prefix: "/api/leads",                read: ["leads"], write: ["leads"] },
   { prefix: "/api/pipelines",            read: ["leads"], write: ["leads"] },
   { prefix: "/api/import",               read: ["customers", "leads", "payments"], write: ["customers", "leads", "payments"] },
@@ -162,6 +163,7 @@ export const API_RULES: ApiRule[] = [
   { prefix: "/api/purchases",            read: ["purchases", "suppliers", "documents"], write: ["purchases"] },
   { prefix: "/api/weight-tickets",       read: ["weight-tickets", "purchases"], write: ["weight-tickets"] },
   { prefix: "/api/custody",              read: ["custody", "documents"], write: ["custody"] },
+  { prefix: "/api/documents/quote",      read: ["quotes", "documents"], write: [] },
   { prefix: "/api/documents/trip_sheet", read: ["deliveries", "documents"], write: [] },
   { prefix: "/api/documents/return_act", read: ["returns", "sales", "documents"], write: [] },
   { prefix: "/api/documents",            read: ["documents"], write: [] },
