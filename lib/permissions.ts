@@ -17,7 +17,7 @@ export type ConfigurableRole = (typeof CONFIGURABLE_ROLES)[number];
 // One module per sidebar item, grouped the same way as the sidebar.
 export const MODULE_GROUPS = [
   { key: "sales",     modules: ["customers", "leads", "sales", "returns", "payments", "quality", "client-viewer", "loyalty"] },
-  { key: "supply",    modules: ["warehouse", "suppliers", "purchases", "weight-tickets", "custody", "items", "directories"] },
+  { key: "supply",    modules: ["warehouse", "deliveries", "suppliers", "purchases", "weight-tickets", "custody", "items", "directories"] },
   { key: "docs",      modules: ["documents", "reports", "rates", "profitability"] },
   { key: "analytics", modules: ["segments", "churn", "duplicates"] },
   { key: "comms",     modules: ["staff-chat", "inbox", "email", "broadcasts"] },
@@ -49,7 +49,7 @@ export const DEFAULTS: Record<ConfigurableRole, PermissionMap> = {
   operator: fill("none", {
     customers: "view", sales: "view", returns: "view", rates: "view", directories: "view", "client-viewer": "view",
     warehouse: "edit", suppliers: "edit", purchases: "edit", "weight-tickets": "edit", custody: "edit", items: "edit",
-    documents: "view", reports: "view", "staff-chat": "edit", tasks: "edit", calendar: "edit", quality: "edit",
+    documents: "view", reports: "view", "staff-chat": "edit", tasks: "edit", calendar: "edit", quality: "edit", deliveries: "edit",
   }),
   // Read-only everywhere except the admin section.
   viewer: fill("view", ADMIN_ONLY),
@@ -84,7 +84,7 @@ export function can(perms: PermissionMap | null | undefined, module: Module, lev
 const PAGE_MODULES: [string, Module][] = [
   ["/customers", "customers"], ["/leads", "leads"], ["/sales", "sales"], ["/returns", "returns"], ["/receivables", "payments"], ["/quality", "quality"],
   ["/client-viewer", "client-viewer"], ["/loyalty", "loyalty"],
-  ["/warehouse", "warehouse"], ["/directories", "directories"], ["/suppliers", "suppliers"], ["/purchases", "purchases"], ["/weight-tickets", "weight-tickets"],
+  ["/warehouse", "warehouse"], ["/deliveries", "deliveries"], ["/directories", "directories"], ["/suppliers", "suppliers"], ["/purchases", "purchases"], ["/weight-tickets", "weight-tickets"],
   ["/acts", "weight-tickets"], ["/custody", "custody"], ["/items", "items"], ["/analytics", "items"],
   ["/documents", "documents"], ["/reports", "reports"], ["/rates", "rates"], ["/profitability", "profitability"],
   ["/segments", "segments"], ["/churn", "churn"], ["/duplicates", "duplicates"],
@@ -156,11 +156,13 @@ export const API_RULES: ApiRule[] = [
   { prefix: "/api/duplicates",           read: ["duplicates"], write: ["duplicates"] },
 
   { prefix: "/api/directories",          read: ["directories"], write: ["directories"] },
+  { prefix: "/api/deliveries",           read: ["deliveries"], write: ["deliveries"] },
   { prefix: "/api/warehouse",            read: ["warehouse"], write: ["warehouse"] },
   { prefix: "/api/suppliers",            read: ["suppliers", "purchases"], write: ["suppliers"] },
   { prefix: "/api/purchases",            read: ["purchases", "suppliers", "documents"], write: ["purchases"] },
   { prefix: "/api/weight-tickets",       read: ["weight-tickets", "purchases"], write: ["weight-tickets"] },
   { prefix: "/api/custody",              read: ["custody", "documents"], write: ["custody"] },
+  { prefix: "/api/documents/trip_sheet", read: ["deliveries", "documents"], write: [] },
   { prefix: "/api/documents/return_act", read: ["returns", "sales", "documents"], write: [] },
   { prefix: "/api/documents",            read: ["documents"], write: [] },
   // Profitability export lives under /api/reports but needs its own grant (purchase costs).

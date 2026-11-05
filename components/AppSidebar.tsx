@@ -16,7 +16,7 @@ import {
   LayoutDashboard, Users, Target, TrendingUp, PieChart, AlertTriangle,
   MessageSquare, Mail, Megaphone, CheckSquare, Package, Scale,
   UserCog, History, UserCircle, LogOut, Truck, GitMerge, Search, MessagesSquare,
-  Warehouse, ShoppingCart, FileText, FileSpreadsheet, Gift, CalendarDays, Undo2, Wallet, ShieldCheck,
+  Warehouse, ShoppingCart, FileText, FileSpreadsheet, Gift, CalendarDays, Undo2, Wallet, ShieldCheck, Route,
   ChevronDown, ChevronRight, Boxes, Building2, BadgePercent, Banknote, BookOpen, FileUp,
 } from "lucide-react"
 import { usePathname } from "next/navigation"
@@ -57,6 +57,7 @@ export function AppSidebar() {
       label: t("nav.groupSupply"),
       links: [
         { name: t("nav.warehouse"),     href: "/warehouse",      icon: Boxes },
+        { name: t("nav.deliveries"),    href: "/deliveries",     icon: Route },
         { name: t("nav.suppliers"),     href: "/suppliers",      icon: Truck },
         { name: t("nav.purchases"),     href: "/purchases",      icon: ShoppingCart },
         { name: t("nav.weightTickets"), href: "/weight-tickets", icon: Scale },
