@@ -138,3 +138,23 @@ export async function blockedBatches(lang: Lang) {
     warehouse: s(r.WAREHOUSE_NAME), blocked_by: s(r.BLOCKED_BY), reason: s(r.BLOCK_REASON), blocked_at: iso(r.BLOCKED_AT),
   }));
 }
+
+// ── Checklist templates (DIPP FRUICT QA → «Чек-листы», read-only) ────────
+
+export async function checklists(lang: Lang) {
+  const [lists, items, used] = await Promise.all([
+    query<Row>(`SELECT ID, CODE, NAME_RO, NAME_RU, CHECKLIST_TYPE, ACTIVE FROM AGRO_QA_CHECKLISTS ORDER BY CODE`, []),
+    query<Row>(`SELECT ID, CHECKLIST_ID, ITEM_ORDER, PARAMETER_NAME_RO, PARAMETER_NAME_RU, VALUE_TYPE, MIN_VALUE, MAX_VALUE, CHOICES, IS_CRITICAL
+                FROM AGRO_QA_CHECKLIST_ITEMS ORDER BY CHECKLIST_ID, ITEM_ORDER, ID`, []),
+    query<Row>(`SELECT CHECKLIST_ID, COUNT(*) AS N, MAX(CHECK_DATE) AS LAST FROM AGRO_QA_CHECKS GROUP BY CHECKLIST_ID`, []),
+  ]);
+  const use = new Map(used.map(u => [n(u.CHECKLIST_ID), { checks: n(u.N), last: iso(u.LAST) }]));
+  return lists.map(l => ({
+    id: n(l.ID), code: s(l.CODE), name: pickName(lang, l.NAME_RO, l.NAME_RU), type: s(l.CHECKLIST_TYPE), active: s(l.ACTIVE) !== "N",
+    checks: use.get(n(l.ID))?.checks ?? 0, last_check: use.get(n(l.ID))?.last ?? null,
+    items: items.filter(i => n(i.CHECKLIST_ID) === n(l.ID)).map(i => ({
+      id: n(i.ID), order: n(i.ITEM_ORDER), name: pickName(lang, i.PARAMETER_NAME_RO, i.PARAMETER_NAME_RU),
+      value_type: s(i.VALUE_TYPE), min: nn(i.MIN_VALUE), max: nn(i.MAX_VALUE), choices: s(i.CHOICES), critical: s(i.IS_CRITICAL) === "Y",
+    })),
+  }));
+}

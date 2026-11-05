@@ -25,6 +25,7 @@ export interface DirDef {
   table: string; seq: string; nameKey: string;
   audit?: boolean;                     // has CREATED_BY / UPDATED_BY / UPDATED_AT
   usage?: string;                      // SQL returning ID, N (how many records reference it)
+  readOnly?: boolean;                  // shown only — DIPP FRUICT admin keeps editing it
   fields: Field[];
 }
 
@@ -101,6 +102,24 @@ export const DIRECTORIES: Record<string, DirDef> = {
       num("accept_min_score", true), num("accept_good_score"),
     ],
   },
+  // Read-only: currencies drive the BNM rates and every document; the
+  // formula parameters drive DIPP FRUICT's purchase amount calculation.
+  currencies: {
+    table: "AGRO_CURRENCIES", seq: "AGRO_CURRENCIES_SEQ", nameKey: "code", readOnly: true,
+    fields: [
+      { key: "code", type: "text", list: true },
+      { key: "name", type: "text", list: true, wide: true },
+      { key: "symbol", type: "text", list: true },
+    ],
+  },
+  formulas: {
+    table: "AGRO_FORMULA_PARAMS", seq: "AGRO_FORMULA_PARAMS_SEQ", nameKey: "param_name", readOnly: true,
+    fields: [
+      { key: "param_name", type: "text", list: true, wide: true },
+      { key: "param_value", type: "text", list: true },
+      { key: "item_id", type: "ref", ref: "items", list: true },
+    ],
+  },
 };
 
 export class DirError extends Error {}
@@ -130,6 +149,7 @@ export async function listDirectory(kind: string, lang: Lang) {
   const used = new Map(usage.map(u => [Number(u.ID), Number(u.N)]));
   return {
     fields: def.fields,
+    read_only: !!def.readOnly,
     refs,
     rows: rows.map(r => {
       const o: Record<string, unknown> = { id: Number(r.ID), active: r.ACTIVE !== "N", used: used.get(Number(r.ID)) ?? 0 };
@@ -205,6 +225,7 @@ async function nextCode(kind: string, values: Record<string, unknown>, exec: Exe
 export async function saveDirectory(kind: string, id: number | null, body: Record<string, unknown>, user: string, dryRun = false) {
   const def = DIRECTORIES[kind];
   if (!def) throw new DirError("Неизвестный справочник");
+  if (def.readOnly) throw new DirError("Этот справочник меняется только в DIPP FRUICT");
   const values = clean(def, body, id == null);
   const active = "active" in body ? (body.active === false || body.active === "N" ? "N" : "Y") : null;
 

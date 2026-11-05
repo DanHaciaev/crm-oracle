@@ -12,7 +12,7 @@ import { useT } from "@/lib/locale";
 import { useUrlParam } from "@/hooks/useUrlParam";
 import { Select, StatTile, fmtDate, fmtKg, inputCls, useFetch, useLang } from "@/components/warehouse/shared";
 
-const TABS = ["checks", "haccp", "blocks"] as const;
+const TABS = ["checks", "checklists", "haccp", "blocks"] as const;
 type Tab = (typeof TABS)[number];
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
@@ -60,6 +60,7 @@ export default function QualityPage() {
       </div>
       {tab === "checks" && <ChecksTab />}
       {tab === "haccp" && <HaccpTab />}
+      {tab === "checklists" && <ChecklistsTab />}
       {tab === "blocks" && <BlocksTab />}
     </div>
   );
@@ -328,6 +329,62 @@ function BlocksTab() {
           </TableBody>
         </Table>
       </div>
+    </div>
+  );
+}
+
+// ── Checklist templates ──────────────────────────────────────────────────
+
+interface Checklist {
+  id: number; code: string; name: string; type: string; active: boolean; checks: number; last_check: string | null;
+  items: { id: number; order: number; name: string; value_type: string; min: number | null; max: number | null; choices: string; critical: boolean }[];
+}
+
+function ChecklistsTab() {
+  const t = useT();
+  const lang = useLang();
+  const { data, error } = useFetch<Checklist[]>(`/api/quality/checklists?lang=${lang}`);
+  const norm = (i: Checklist["items"][number]) =>
+    i.value_type === "boolean" ? t("qual.normYes")
+      : i.choices ? i.choices.split("|").join(" / ")
+      : i.min != null && i.max != null ? `${i.min} … ${i.max}` : i.min != null ? `≥ ${i.min}` : i.max != null ? `≤ ${i.max}` : "—";
+  return (
+    <div className="space-y-4">
+      <ReadOnlyNote text={t("qual.checklistsNote")} />
+      {error && <div className="text-sm text-red-600">{error}</div>}
+      {!data && !error && <div className="text-sm text-gray-400">{t("common.loading")}</div>}
+      {data?.length === 0 && <div className="text-sm text-gray-400">{t("qual.noChecklists")}</div>}
+      {data?.map(c => (
+        <section key={c.id} className={`border border-[#c8d3e8] rounded-xl p-4 ${c.active ? "" : "opacity-60"}`}>
+          <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3">
+            <h3 className="font-semibold">{c.name} <span className="text-xs font-mono text-gray-400">{c.code}</span>
+              {!c.active && <span className="ml-2 text-xs text-gray-400">({t("qual.inactive")})</span>}</h3>
+            <span className="text-xs text-gray-500">{t(`qual.clt_${c.type}`)} · {t("qual.checksDone")}: {c.checks}{c.last_check && ` · ${fmtDate(c.last_check)}`}</span>
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-10">#</TableHead>
+                <TableHead>{t("qual.parameter")}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t("qual.valueType")}</TableHead>
+                <TableHead>{t("qual.norm")}</TableHead>
+                <TableHead className="w-24" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {c.items.map(i => (
+                <TableRow key={i.id}>
+                  <TableCell className="text-sm text-gray-400 tabular-nums">{i.order}</TableCell>
+                  <TableCell className="text-sm">{i.name}</TableCell>
+                  <TableCell className="hidden sm:table-cell text-sm text-gray-500">{t(`qual.vt_${i.value_type}`)}</TableCell>
+                  <TableCell className="text-sm tabular-nums">{norm(i)}</TableCell>
+                  <TableCell>{i.critical && <span className="inline-flex items-center gap-1 text-xs text-red-700"><AlertTriangle className="w-3 h-3" />{t("qual.critical")}</span>}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </section>
+      ))}
     </div>
   );
 }

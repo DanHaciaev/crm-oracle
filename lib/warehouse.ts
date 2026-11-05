@@ -468,3 +468,51 @@ export async function options(lang: Lang) {
     suppliers: sup.map(r => ({ id: n(r.ID), name: s(r.NAME) })),
   };
 }
+
+// Barcodes and crates (DIPP FRUICT Receptie → «Coduri bare», read-only).
+// Labels are generated and printed in DIPP FRUICT — printing there marks the
+// code as printed, so the CRM only lists them.
+export async function barcodes(sp: URLSearchParams, lang: Lang) {
+  const w: string[] = [];
+  const b: Record<string, string> = {};
+  const type = sp.get("type") ?? "", state = sp.get("state") ?? "";
+  if (["internal", "external", "qr"].includes(type)) { w.push("bc.BARCODE_TYPE = :type"); b.type = type; }
+  if (state === "free") w.push("NVL(bc.ASSIGNED, 'N') = 'N'");
+  if (state === "assigned") w.push("bc.ASSIGNED = 'Y'");
+  if (state === "unprinted") w.push("NVL(bc.PRINTED, 'N') = 'N'");
+  const q = (sp.get("q") ?? "").trim().slice(0, 60);
+  if (q) { w.push("(UPPER(bc.BARCODE) LIKE :q OR UPPER(cr.EXTERNAL_BARCODE) LIKE :q OR UPPER(b.BATCH_NUMBER) LIKE :q)"); b.q = `%${q.toUpperCase()}%`; }
+  const rows = await query<Row>(`
+    SELECT * FROM (
+      SELECT bc.ID, bc.BARCODE, bc.BARCODE_TYPE, bc.GENERATED_AT, NVL(bc.PRINTED, 'N') AS PRINTED, NVL(bc.ASSIGNED, 'N') AS ASSIGNED,
+             b.ID AS BATCH_ID, b.BATCH_NUMBER,
+             cr.ID AS CRATE_ID, cr.EXTERNAL_BARCODE, cr.STATUS AS CRATE_STATUS, cr.GROSS_WEIGHT_KG, cr.TARE_WEIGHT_KG, cr.NET_WEIGHT_KG,
+             pt.NAME_RO AS PACK_RO, pt.NAME_RU AS PACK_RU
+      FROM AGRO_BARCODES bc
+      LEFT JOIN AGRO_BATCHES b ON b.ID = bc.BATCH_ID
+      LEFT JOIN AGRO_CRATES cr ON cr.BARCODE_ID = bc.ID
+      LEFT JOIN AGRO_PACKAGING_TYPES pt ON pt.ID = cr.PACKAGING_TYPE_ID
+      ${w.length ? "WHERE " + w.join(" AND ") : ""}
+      ORDER BY bc.ID DESC
+    ) WHERE ROWNUM <= 2000`, b);
+  const list = rows.map(r => ({
+    id: Number(r.ID), barcode: String(r.BARCODE ?? ""), type: String(r.BARCODE_TYPE ?? ""),
+    generated_at: r.GENERATED_AT instanceof Date ? r.GENERATED_AT.toISOString() : null,
+    printed: r.PRINTED === "Y", assigned: r.ASSIGNED === "Y",
+    batch_id: r.BATCH_ID == null ? null : Number(r.BATCH_ID), batch_number: String(r.BATCH_NUMBER ?? ""),
+    crate: r.CRATE_ID == null ? null : {
+      id: Number(r.CRATE_ID), external_barcode: String(r.EXTERNAL_BARCODE ?? ""), status: String(r.CRATE_STATUS ?? ""),
+      packaging: pickName(lang, r.PACK_RO, r.PACK_RU),
+      gross_kg: r.GROSS_WEIGHT_KG == null ? null : Number(r.GROSS_WEIGHT_KG),
+      tare_kg: r.TARE_WEIGHT_KG == null ? null : Number(r.TARE_WEIGHT_KG),
+      net_kg: r.NET_WEIGHT_KG == null ? null : Number(r.NET_WEIGHT_KG),
+    },
+  }));
+  return {
+    rows: list,
+    totals: {
+      count: list.length, printed: list.filter(x => x.printed).length, assigned: list.filter(x => x.assigned).length,
+      crates: list.filter(x => x.crate).length,
+    },
+  };
+}

@@ -14,11 +14,11 @@ import { can } from "@/lib/permissions";
 import type { Field } from "@/lib/directories";
 import { fmtKg, inputCls, useFetch, useLang } from "@/components/warehouse/shared";
 
-const KINDS = ["warehouses", "cells", "packaging", "varieties", "vehicles", "profiles"] as const;
+const KINDS = ["warehouses", "cells", "packaging", "varieties", "vehicles", "profiles", "currencies", "formulas"] as const;
 type Kind = (typeof KINDS)[number];
 
 interface Opt { id: number; label: string }
-interface Data { fields: Field[]; refs: Record<string, Opt[]>; rows: Record<string, unknown>[] }
+interface Data { fields: Field[]; read_only: boolean; refs: Record<string, Opt[]>; rows: Record<string, unknown>[] }
 
 // Reference tables shared with DIPP FRUICT. The form and table are generated
 // from the server's field config (lib/directories.ts), so both sides stay in step.
@@ -26,15 +26,17 @@ export default function DirectoriesPage() {
   const t = useT();
   const lang = useLang();
   const { user } = useAuth();
-  const canEdit = can(user?.permissions, "directories", "edit");
+  const mayEdit = can(user?.permissions, "directories", "edit");
   const [kind, setKind] = useState<Kind>("warehouses");
   const [showInactive, setShowInactive] = useState(false);
   const [editing, setEditing] = useState<Record<string, unknown> | null>(null);
   const { data, error, reload } = useFetch<Data>(`/api/directories/${kind}?lang=${lang}`);
+  const canEdit = mayEdit && data != null && !data.read_only;
 
   const label = (f: string) => t(`dirs.f_${f}`);
   const refLabel = (f: Field, v: unknown) => data?.refs[f.ref!]?.find(o => o.id === v)?.label ?? (v == null ? "—" : String(v));
   const show = (f: Field, v: unknown) => {
+    if (v == null && kind === "formulas" && f.key === "item_id") return t("dirs.allItems");
     if (v == null || v === "") return "—";
     if (f.type === "ref") return refLabel(f, v);
     if (f.type === "bool") return v ? t("dirs.yes") : t("dirs.no");
@@ -72,6 +74,11 @@ export default function DirectoriesPage() {
         ))}
       </div>
 
+      {data?.read_only && (
+        <div className="mb-3 flex items-start gap-2 rounded-lg border border-[#dde3ef] bg-gray-50 p-3 text-sm text-gray-600">
+          <Info className="w-4 h-4 mt-0.5 shrink-0" /><span>{t(`dirs.readOnly_${kind}`)}</span>
+        </div>
+      )}
       <div className="flex items-center gap-3 mb-3 flex-wrap">
         <span className="text-sm text-gray-400">{t("dirs.records")}: {data ? data.rows.length - inactiveCount : "…"}</span>
         {inactiveCount > 0 && (

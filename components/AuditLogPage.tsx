@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useT } from "@/lib/locale";
+import { DippActivityLog } from "@/components/DippActivityLog";
 
 interface AuditEntry {
   id: number; entity_type: string; entity_id: number;
@@ -50,6 +51,7 @@ const ACTION_CLS: Record<string, string> = {
 
 export default function AuditLogPage() {
   const t = useT();
+  const [source, setSource] = useState<"crm" | "dipp">("crm");
   const [entries, setEntries]       = useState<AuditEntry[]>([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState<string | null>(null);
@@ -82,6 +84,16 @@ export default function AuditLogPage() {
         <p className="text-sm text-gray-500 mt-1">{t("auditLog.subtitle")}</p>
       </div>
 
+      <div className="flex gap-1 mb-4 border-b border-[#dde3ef]">
+        {(["crm", "dipp"] as const).map(k => (
+          <button key={k} onClick={() => setSource(k)}
+                  className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition ${source === k ? "border-brand text-brand" : "border-transparent text-gray-500 hover:text-gray-800"}`}>
+            {t(`auditLog.source_${k}`)}
+          </button>
+        ))}
+      </div>
+
+      {source === "dipp" ? <DippActivityLog /> : <>
       <div className="flex items-center gap-2 mb-6 flex-wrap">
         {FILTERS.map(f => (
           <button key={f.v} onClick={() => setEntityType(f.v)}
@@ -147,6 +159,7 @@ export default function AuditLogPage() {
           {t("auditLog.showing")}: {entries.length} {t("auditLog.records")}
         </div>
       )}
+      </>}
     </div>
   );
 }
