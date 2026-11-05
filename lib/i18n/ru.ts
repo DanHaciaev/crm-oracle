@@ -291,6 +291,7 @@ export const ru = {
     dep_retail:         "розничных документов",
     dep_invoices:       "счетов",
     dep_acceptance:     "профилей приёмки",
+    alreadyDeleted: "Клиент уже удалён — список обновлён",
   },
   tasks: {
     deleteConfirm: "Удалить задачу?",

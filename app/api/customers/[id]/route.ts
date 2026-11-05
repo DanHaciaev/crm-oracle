@@ -248,7 +248,7 @@ export async function DELETE(
   }
   if (Object.keys(counts).length > 0) {
     return NextResponse.json({
-      error: "У клиента есть документы в DIPP FRUICT или оплаты — его можно только деактивировать.",
+      error: "У клиента есть документы в DIPP FRUICT — его можно только деактивировать.",
       code:  "HAS_DEPENDENCIES",
       counts,
     }, { status: 409 });

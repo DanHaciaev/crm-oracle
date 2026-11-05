@@ -291,6 +291,7 @@ export const en = {
     dep_retail:         "retail documents",
     dep_invoices:       "invoices",
     dep_acceptance:     "acceptance profiles",
+    alreadyDeleted: "The customer was already deleted — list refreshed",
   },
   tasks: {
     deleteConfirm: "Delete this task?",

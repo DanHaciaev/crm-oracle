@@ -291,6 +291,7 @@ export const ro = {
     dep_retail:         "documente retail",
     dep_invoices:       "facturi",
     dep_acceptance:     "profiluri de recepție",
+    alreadyDeleted: "Clientul a fost deja șters — lista a fost actualizată",
   },
   tasks: {
     deleteConfirm: "Ștergeți sarcina?",

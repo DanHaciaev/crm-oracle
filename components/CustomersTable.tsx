@@ -79,6 +79,12 @@ export default function CustomersTable() {
   }, [t]);
 
   useEffect(() => { fetchCustomers(); }, [fetchCustomers]);
+  // Customers also change in DIPP FRUICT and other tabs — refresh on return.
+  useEffect(() => {
+    const onFocus = () => { if (document.visibilityState === "visible") fetchCustomers(); };
+    document.addEventListener("visibilitychange", onFocus);
+    return () => document.removeEventListener("visibilitychange", onFocus);
+  }, [fetchCustomers]);
 
   const filtered = search
     ? customers.filter((c) =>
@@ -95,9 +101,12 @@ export default function CustomersTable() {
     const res  = await fetch(`/api/customers/${deleteTarget.id}`, { method: "DELETE" });
     const json = await res.json().catch(() => ({}));
     setWorking(false);
-    if (res.ok) {
+    if (res.ok || res.status === 404) {
+      // 404 = already gone (deleted in another tab or in DIPP FRUICT) — same outcome.
+      if (res.status === 404) toast.info(t("customers.alreadyDeleted"));
       setCustomers((prev) => prev.filter((c) => c.id !== deleteTarget.id));
       setDeleteTarget(null);
+      fetchCustomers();
     } else if (res.status === 409 && (json as { code?: string }).code === "HAS_DEPENDENCIES") {
       setDepCounts((json as { counts?: Record<string, number> }).counts ?? null);
       setModalStep("has_deps");
@@ -117,6 +126,11 @@ export default function CustomersTable() {
         prev.map((c) => c.id === deleteTarget.id ? { ...c, active: false } : c)
       );
       setDeleteTarget(null);
+    } else if (res.status === 404) {
+      toast.info(t("customers.alreadyDeleted"));
+      setCustomers((prev) => prev.filter((c) => c.id !== deleteTarget.id));
+      setDeleteTarget(null);
+      fetchCustomers();
     } else {
       toast.error((json as { error?: string }).error ?? t("customers.deactivateError"));
     }
