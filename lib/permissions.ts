@@ -16,8 +16,8 @@ export type ConfigurableRole = (typeof CONFIGURABLE_ROLES)[number];
 
 // One module per sidebar item, grouped the same way as the sidebar.
 export const MODULE_GROUPS = [
-  { key: "sales",     modules: ["customers", "leads", "quotes", "sales", "returns", "payments", "quality", "client-viewer", "loyalty"] },
-  { key: "supply",    modules: ["warehouse", "deliveries", "suppliers", "purchases", "weight-tickets", "custody", "items", "directories"] },
+  { key: "sales",     modules: ["customers", "leads", "sales", "returns", "payments", "quality", "client-viewer", "loyalty"] },
+  { key: "supply",    modules: ["warehouse", "suppliers", "purchases", "weight-tickets", "custody", "items", "directories"] },
   { key: "docs",      modules: ["documents", "reports", "rates", "profitability"] },
   { key: "analytics", modules: ["segments", "churn", "duplicates"] },
   { key: "comms",     modules: ["staff-chat", "inbox", "email", "broadcasts"] },
@@ -28,7 +28,7 @@ export const MODULE_GROUPS = [
 export type Module = (typeof MODULE_GROUPS)[number]["modules"][number];
 export const MODULES: Module[] = MODULE_GROUPS.flatMap(g => [...g.modules]);
 // Read-only by nature — the matrix offers only none/view for them.
-export const VIEW_ONLY_MODULES: Module[] = ["client-viewer", "returns", "rates", "documents", "reports", "profitability", "churn", "segments", "audit-log"];
+export const VIEW_ONLY_MODULES: Module[] = ["client-viewer", "returns", "quality", "rates", "documents", "reports", "profitability", "churn", "segments", "audit-log"];
 
 export type PermissionMap = Record<Module, Access>;
 
@@ -42,14 +42,14 @@ export const DEFAULTS: Record<ConfigurableRole, PermissionMap> = {
   // Sales side: works with clients, leads, orders; sees purchasing/stock.
   manager: fill("edit", {
     ...ADMIN_ONLY,
-    "client-viewer": "view", returns: "view", payments: "view", rates: "view", directories: "view", warehouse: "view", suppliers: "view", purchases: "view", "weight-tickets": "view",
+    "client-viewer": "view", returns: "view", quality: "view", payments: "view", rates: "view", directories: "view", warehouse: "view", suppliers: "view", purchases: "view", "weight-tickets": "view",
     custody: "view", items: "view", documents: "view", reports: "view", segments: "view", churn: "view",
   }),
   // Warehouse side: purchases, weighing, storage, stock; sees sales.
   operator: fill("none", {
     customers: "view", sales: "view", returns: "view", rates: "view", directories: "view", "client-viewer": "view",
     warehouse: "edit", suppliers: "edit", purchases: "edit", "weight-tickets": "edit", custody: "edit", items: "edit",
-    documents: "view", reports: "view", "staff-chat": "edit", tasks: "edit", calendar: "edit", quality: "edit", deliveries: "edit",
+    documents: "view", reports: "view", "staff-chat": "edit", tasks: "edit", calendar: "edit", quality: "view",
   }),
   // Read-only everywhere except the admin section.
   viewer: fill("view", ADMIN_ONLY),
@@ -82,9 +82,9 @@ export function can(perms: PermissionMap | null | undefined, module: Module, lev
 // Path prefix → module. Pages not listed (dashboard, print pages opened
 // from an allowed section…) are open to every signed-in user.
 const PAGE_MODULES: [string, Module][] = [
-  ["/customers", "customers"], ["/leads", "leads"], ["/quotes", "quotes"], ["/sales", "sales"], ["/returns", "returns"], ["/receivables", "payments"], ["/quality", "quality"],
+  ["/customers", "customers"], ["/leads", "leads"], ["/sales", "sales"], ["/returns", "returns"], ["/receivables", "payments"], ["/quality", "quality"],
   ["/client-viewer", "client-viewer"], ["/loyalty", "loyalty"],
-  ["/warehouse", "warehouse"], ["/deliveries", "deliveries"], ["/directories", "directories"], ["/suppliers", "suppliers"], ["/purchases", "purchases"], ["/weight-tickets", "weight-tickets"],
+  ["/warehouse", "warehouse"], ["/directories", "directories"], ["/suppliers", "suppliers"], ["/purchases", "purchases"], ["/weight-tickets", "weight-tickets"],
   ["/acts", "weight-tickets"], ["/custody", "custody"], ["/items", "items"], ["/analytics", "items"],
   ["/documents", "documents"], ["/reports", "reports"], ["/rates", "rates"], ["/profitability", "profitability"],
   ["/segments", "segments"], ["/churn", "churn"], ["/duplicates", "duplicates"],
@@ -140,7 +140,6 @@ export const API_RULES: ApiRule[] = [
   { prefix: "/api/nps",                  read: ["customers", "client-viewer"], write: ["customers"] },
   { prefix: "/api/loyalty",              read: ["loyalty", "customers", "client-viewer"], write: ["loyalty"] },
   { prefix: "/api/client-viewer",        read: ["client-viewer"], write: [] },
-  { prefix: "/api/quotes",               read: ["quotes"], write: ["quotes"] },
   { prefix: "/api/leads",                read: ["leads"], write: ["leads"] },
   { prefix: "/api/pipelines",            read: ["leads"], write: ["leads"] },
   { prefix: "/api/import",               read: ["customers", "leads", "payments"], write: ["customers", "leads", "payments"] },
@@ -149,7 +148,7 @@ export const API_RULES: ApiRule[] = [
   { prefix: "/api/reports/receivables",  read: ["payments"], write: [] },
   { prefix: "/api/reports/payments",     read: ["payments"], write: [] },
   { prefix: "/api/documents/reconciliation_act", read: ["payments"], write: [] },
-  { prefix: "/api/quality",              read: ["quality"], write: ["quality"] },
+  { prefix: "/api/quality",              read: ["quality", "warehouse"], write: [] },
   { prefix: "/api/returns",              read: ["returns", "sales"], write: [] },
   { prefix: "/api/reports/returns",      read: ["returns", "sales"], write: [] },
   { prefix: "/api/sales",                read: ["sales", "client-viewer", "customers", "documents"], write: ["sales"] },
@@ -157,14 +156,11 @@ export const API_RULES: ApiRule[] = [
   { prefix: "/api/duplicates",           read: ["duplicates"], write: ["duplicates"] },
 
   { prefix: "/api/directories",          read: ["directories"], write: ["directories"] },
-  { prefix: "/api/deliveries",           read: ["deliveries"], write: ["deliveries"] },
   { prefix: "/api/warehouse",            read: ["warehouse"], write: ["warehouse"] },
   { prefix: "/api/suppliers",            read: ["suppliers", "purchases"], write: ["suppliers"] },
   { prefix: "/api/purchases",            read: ["purchases", "suppliers", "documents"], write: ["purchases"] },
   { prefix: "/api/weight-tickets",       read: ["weight-tickets", "purchases"], write: ["weight-tickets"] },
   { prefix: "/api/custody",              read: ["custody", "documents"], write: ["custody"] },
-  { prefix: "/api/documents/quote",      read: ["quotes", "documents"], write: [] },
-  { prefix: "/api/documents/trip_sheet", read: ["deliveries", "documents"], write: [] },
   { prefix: "/api/documents/return_act", read: ["returns", "sales", "documents"], write: [] },
   { prefix: "/api/documents",            read: ["documents"], write: [] },
   // Profitability export lives under /api/reports but needs its own grant (purchase costs).

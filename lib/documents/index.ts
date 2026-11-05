@@ -6,8 +6,6 @@ import { massBalance, parsePeriod } from "./stock";
 import { qaProtocol, gmpChecklist, haccpReport } from "./quality";
 import { returnAct } from "./returns";
 import { reconciliationAct } from "./reconciliation";
-import { tripSheet } from "./trips";
-import { quoteDoc } from "./quote";
 
 export { DocNotFound, parseLang } from "./common";
 
@@ -24,8 +22,6 @@ export const DOC_BUILDERS: Record<string, Builder> = {
   purchase_act:        { kind: "record", build: purchaseAct },
   custody_release_act: { kind: "record", build: custodyReleaseAct },
   return_act:          { kind: "record", build: returnAct },
-  trip_sheet:          { kind: "record", build: tripSheet },
-  quote:               { kind: "record", build: quoteDoc },
   qa_protocol:         { kind: "record", build: qaProtocol },
   gmp_checklist:       { kind: "record", build: gmpChecklist },
   mass_balance:        { kind: "period", build: (sp, lang) => massBalance(parsePeriod(sp), lang) },
