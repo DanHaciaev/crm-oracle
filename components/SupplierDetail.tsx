@@ -72,7 +72,7 @@ export default function SupplierDetail({ id }: { id: string }) {
   const totalNetKg  = active.reduce((a, p) => a + p.net_kg, 0);
 
   return (
-    <div className="p-4 sm:p-8 space-y-6 max-w-5xl">
+    <div className="p-4 sm:p-8 space-y-6">
       <Link href="/suppliers" className="text-sm text-gray-400 hover:text-gray-700 transition">
         {t("suppliers.backToList")}
       </Link>

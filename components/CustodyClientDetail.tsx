@@ -72,7 +72,7 @@ export default function CustodyClientDetail({ id }: { id: string }) {
   const revenue    = releases.reduce((a, r) => a + r.total_amount, 0);
 
   return (
-    <div className="p-4 sm:p-8 space-y-6 max-w-5xl">
+    <div className="p-4 sm:p-8 space-y-6">
       <Link href="/custody" className="text-sm text-gray-400 hover:text-gray-700 transition">
         {t("custody.backToList")}
       </Link>

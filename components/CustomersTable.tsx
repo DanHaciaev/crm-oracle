@@ -66,7 +66,7 @@ export default function CustomersTable() {
 
   const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null);
   const [modalStep, setModalStep]       = useState<ModalStep>("confirm");
-  const [depCounts, setDepCounts]       = useState<{ sales: number; weight_tickets: number } | null>(null);
+  const [depCounts, setDepCounts]       = useState<Record<string, number> | null>(null);
   const [working, setWorking]           = useState(false);
 
   const fetchCustomers = useCallback(async () => {
@@ -99,22 +99,8 @@ export default function CustomersTable() {
       setCustomers((prev) => prev.filter((c) => c.id !== deleteTarget.id));
       setDeleteTarget(null);
     } else if (res.status === 409 && (json as { code?: string }).code === "HAS_DEPENDENCIES") {
-      setDepCounts((json as { counts?: { sales: number; weight_tickets: number } }).counts ?? null);
+      setDepCounts((json as { counts?: Record<string, number> }).counts ?? null);
       setModalStep("has_deps");
-    } else {
-      toast.error((json as { error?: string }).error ?? t("customers.deleteError"));
-    }
-  }
-
-  async function handleCascadeDelete() {
-    if (!deleteTarget) return;
-    setWorking(true);
-    const res  = await fetch(`/api/customers/${deleteTarget.id}?cascade=1`, { method: "DELETE" });
-    const json = await res.json().catch(() => ({}));
-    setWorking(false);
-    if (res.ok) {
-      setCustomers((prev) => prev.filter((c) => c.id !== deleteTarget.id));
-      setDeleteTarget(null);
     } else {
       toast.error((json as { error?: string }).error ?? t("customers.deleteError"));
     }
@@ -248,13 +234,11 @@ export default function CustomersTable() {
                   {depCounts && (
                     <span className="text-gray-700">
                       {": "}
-                      {depCounts.sales > 0 && `${depCounts.sales} ${t("sales.title").toLowerCase()}`}
-                      {depCounts.sales > 0 && depCounts.weight_tickets > 0 && ", "}
-                      {depCounts.weight_tickets > 0 && `${depCounts.weight_tickets} ${t("weightTickets.title").toLowerCase()}`}
+                      {Object.entries(depCounts).map(([k, n]) => `${n} ${t(`customers.dep_${k}`)}`).join(", ")}
                     </span>
                   )}
                 </p>
-                <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
                   {t("customers.hasDepsWarning")}
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
@@ -265,10 +249,6 @@ export default function CustomersTable() {
                   <button onClick={handleSoftDelete} disabled={working}
                     className="px-4 py-2 text-sm rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition disabled:opacity-50">
                     {working ? "..." : t("customers.deactivate")}
-                  </button>
-                  <button onClick={handleCascadeDelete} disabled={working}
-                    className="px-4 py-2 text-sm rounded-lg bg-red-700 text-white hover:bg-red-800 transition disabled:opacity-50">
-                    {working ? t("customers.deleting") : t("customers.deleteAll")}
                   </button>
                 </div>
               </>

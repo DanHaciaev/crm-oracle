@@ -25,7 +25,7 @@ export default function AccountPage() {
   const fullName = [acc.first_name, acc.last_name].filter(Boolean).join(" ");
 
   return (
-    <div className="p-4 sm:p-8 max-w-4xl space-y-4">
+    <div className="p-4 sm:p-8 space-y-4">
       <div>
         <h1 className="text-2xl font-bold">{t("account.title")}</h1>
         <p className="text-sm text-gray-500 mt-1">{acc.username}{fullName && ` · ${fullName}`} · {t(`roles.${acc.role}`)}</p>

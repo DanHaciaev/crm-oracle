@@ -218,7 +218,7 @@ export const en = {
     deactivateError: "Deactivation error",
     deleteConfirmTitle: "Delete customer?",
     hasDepsTitle:  "Has linked documents",
-    hasDepsWarning: "Deletion will destroy all sales, weight tickets, chats and history of this customer. This is irreversible.",
+    hasDepsWarning: "The customer is used in DIPP FRUICT documents or payments, so it cannot be deleted. You can deactivate it: it disappears from lists and all history is kept.",
     tabs: {
       info:       "Info",
       sales:      "Sales",
@@ -285,6 +285,12 @@ export const en = {
     customerName:    "Customer name",
     codeOptional:    "Code (optional — auto-generated)",
     codePlaceholder: "e.g. CUST-001 or leave empty",
+    dep_sales:          "sales",
+    dep_weight_tickets: "weight tickets",
+    dep_retail:         "retail documents",
+    dep_invoices:       "invoices",
+    dep_acceptance:     "acceptance profiles",
+    dep_payments:       "payments",
   },
   tasks: {
     deleteConfirm: "Delete this task?",

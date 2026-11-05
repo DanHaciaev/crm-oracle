@@ -103,7 +103,7 @@ export default function ImportPage() {
   const shown = result?.rows.filter(r => filter === "all" || r.status === filter) ?? [];
 
   return (
-    <div className="p-4 sm:p-8 max-w-6xl">
+    <div className="p-4 sm:p-8">
       <div className="mb-5">
         <h1 className="text-2xl font-bold flex items-center gap-2"><FileUp className="w-6 h-6 text-brand" />{t("imp.title")}</h1>
         <p className="text-sm text-gray-500 mt-1 flex items-start gap-1.5"><Info className="w-4 h-4 mt-0.5 shrink-0" />{t("imp.subtitle")}</p>

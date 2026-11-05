@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { query, execute } from "@/lib/oracle";
+import { query } from "@/lib/oracle";
 import { verifyToken } from "@/lib/auth";
 
 let tablesReady = false;
@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
       SELECT t.NAME AS TIER_NAME, t.COLOR, COUNT(m.ID) AS CNT
       FROM AGRO_CRM_LOYALTY_TIERS t
       LEFT JOIN AGRO_CRM_LOYALTY_MEMBERS m ON m.TIER_ID = t.ID
-      GROUP BY t.ID, t.NAME, t.COLOR
+      GROUP BY t.ID, t.NAME, t.COLOR, t.SORT_ORDER
       ORDER BY t.SORT_ORDER
     `);
 

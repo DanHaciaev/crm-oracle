@@ -78,7 +78,7 @@ export default function RatesPage() {
   const rate = from === "MDL" ? 1 : data.latest[from]?.rate ?? 0;
 
   return (
-    <div className="p-4 sm:p-8 max-w-5xl">
+    <div className="p-4 sm:p-8">
       <div className="mb-4">
         <h1 className="text-2xl font-bold">{t("rates.title")}</h1>
         <p className="text-sm text-gray-500 mt-1 flex items-start gap-1.5"><Info className="w-4 h-4 mt-0.5 shrink-0" />{t("rates.subtitle")}</p>

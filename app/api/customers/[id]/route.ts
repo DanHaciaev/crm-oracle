@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { query, execute } from "@/lib/oracle";
+import { query, execute, getConnection } from "@/lib/oracle";
 import { verifyToken } from "@/lib/auth";
 
 interface CustomerRow {
@@ -184,7 +184,36 @@ export async function PATCH(
   return NextResponse.json({ success: true });
 }
 
-interface CountRow { [key: string]: unknown; CNT: number }
+// Records in DIPP FRUICT's own tables (and CRM payments, which are financial
+// history) block a hard delete — such a customer can only be deactivated.
+// The CRM never deletes DIPP FRUICT documents.
+const BLOCKERS: { key: string; sql: string }[] = [
+  { key: "sales",          sql: `SELECT COUNT(*) N FROM AGRO_SALES_DOCS WHERE CUSTOMER_ID = :id` },
+  { key: "weight_tickets", sql: `SELECT COUNT(*) N FROM AGRO_WEIGHT_TICKETS WHERE CUSTOMER_ID = :id` },
+  { key: "retail",         sql: `SELECT (SELECT COUNT(*) FROM AGRO_RETAIL_DOCS WHERE SELLER_ID = :id) + (SELECT COUNT(*) FROM AGRO_RETAIL_SESSIONS WHERE SELLER_ID = :id) N FROM DUAL` },
+  { key: "invoices",       sql: `SELECT COUNT(*) N FROM AGRO_INVOICES WHERE CUSTOMER_ID = :id` },
+  { key: "acceptance",     sql: `SELECT COUNT(*) N FROM AGRO_ACCEPTANCE_PROFILES WHERE CUSTOMER_ID = :id` },
+  { key: "payments",       sql: `SELECT COUNT(*) N FROM AGRO_CRM_PAYMENTS WHERE CUSTOMER_ID = :id` },
+];
+
+// CRM-only data removed (or unlinked) together with the customer, in one
+// transaction — children first.
+const CRM_CLEANUP = [
+  `DELETE FROM AGRO_CRM_CHAT_MESSAGES WHERE APP_USER_ID IN (SELECT ID FROM AGRO_CRM_APP_USERS WHERE CUSTOMER_ID = :id)`,
+  `DELETE FROM AGRO_CRM_APP_USER_EVENTS WHERE APP_USER_ID IN (SELECT ID FROM AGRO_CRM_APP_USERS WHERE CUSTOMER_ID = :id)`,
+  `DELETE FROM AGRO_CRM_TG_BINDINGS WHERE CUSTOMER_ID = :id`,
+  `DELETE FROM AGRO_CRM_APP_USERS WHERE CUSTOMER_ID = :id`,
+  `DELETE FROM AGRO_CRM_LOYALTY_TX WHERE MEMBER_ID IN (SELECT ID FROM AGRO_CRM_LOYALTY_MEMBERS WHERE CUSTOMER_ID = :id)`,
+  `DELETE FROM AGRO_CRM_LOYALTY_MEMBERS WHERE CUSTOMER_ID = :id`,
+  `DELETE FROM AGRO_CRM_NPS WHERE CUSTOMER_ID = :id`,
+  `DELETE FROM AGRO_CRM_ACTIVITIES WHERE CUSTOMER_ID = :id`,
+  `DELETE FROM AGRO_CRM_AUTOMATION_LOG WHERE CUSTOMER_ID = :id`,
+  `DELETE FROM AGRO_CRM_ATTACHMENTS WHERE ENTITY_TYPE = 'customer' AND ENTITY_ID = :id`,
+  `DELETE FROM AGRO_CRM_CUSTOMER_TERMS WHERE CUSTOMER_ID = :id`,
+  `UPDATE AGRO_CRM_TASKS SET CUSTOMER_ID = NULL WHERE CUSTOMER_ID = :id`,
+  `UPDATE AGRO_CRM_LEADS SET CUSTOMER_ID = NULL WHERE CUSTOMER_ID = :id`,
+  `UPDATE AGRO_CRM_EMAILS SET CUSTOMER_ID = NULL WHERE CUSTOMER_ID = :id`,
+];
 
 export async function DELETE(
   request: Request,
@@ -199,76 +228,52 @@ export async function DELETE(
     return NextResponse.json({ error: "Bad id" }, { status: 400 });
   }
 
-  const exists = await query<{ ID: number }>(
-    `SELECT ID FROM AGRO_CUSTOMERS WHERE ID = :1`, [customerId]
+  const exists = await query<{ ID: number; NAME: string }>(
+    `SELECT ID, NAME FROM AGRO_CUSTOMERS WHERE ID = :1`, [customerId]
   );
   if (exists.length === 0) {
     return NextResponse.json({ error: "Клиент не найден" }, { status: 404 });
   }
 
-  const sp       = new URL(request.url).searchParams;
-  const soft     = sp.get("soft")    === "1";
-  const cascade  = sp.get("cascade") === "1";
-
   // ── Мягкое удаление ──────────────────────────────────────────────────────
-  if (soft) {
+  if (new URL(request.url).searchParams.get("soft") === "1") {
     await execute(`UPDATE AGRO_CUSTOMERS SET ACTIVE = 'N' WHERE ID = :1`, [customerId]);
     return NextResponse.json({ success: true, mode: "deactivated" });
   }
 
-  // ── Считаем зависимости ──────────────────────────────────────────────────
-  const [salesRow, wtRow] = await Promise.all([
-    query<CountRow>(`SELECT COUNT(*) CNT FROM AGRO_SALES_DOCS    WHERE CUSTOMER_ID = :1`, [customerId]),
-    query<CountRow>(`SELECT COUNT(*) CNT FROM AGRO_WEIGHT_TICKETS WHERE CUSTOMER_ID = :1`, [customerId]),
-  ]);
-  const salesCount = Number(salesRow[0]?.CNT ?? 0);
-  const wtCount    = Number(wtRow[0]?.CNT   ?? 0);
-  const hasDeps    = salesCount > 0 || wtCount > 0;
-
-  if (hasDeps && !cascade) {
+  // ── Зависимости в DIPP FRUICT → только деактивация ───────────────────────
+  const counts: Record<string, number> = {};
+  for (const b of BLOCKERS) {
+    const r = await query<{ N: number }>(b.sql, { id: customerId });
+    const n = Number(r[0]?.N ?? 0);
+    if (n > 0) counts[b.key] = n;
+  }
+  if (Object.keys(counts).length > 0) {
     return NextResponse.json({
-      error: "У клиента есть связанные документы.",
+      error: "У клиента есть документы в DIPP FRUICT или оплаты — его можно только деактивировать.",
       code:  "HAS_DEPENDENCIES",
-      counts: { sales: salesCount, weight_tickets: wtCount },
+      counts,
     }, { status: 409 });
   }
 
-  // ── Каскадное удаление всего ─────────────────────────────────────────────
-  if (hasDeps) {
-    // 1. Акты взвешивания
-    await execute(
-      `DELETE FROM AGRO_WEIGHT_TICKET_LINES
-         WHERE TICKET_ID IN (SELECT ID FROM AGRO_WEIGHT_TICKETS WHERE CUSTOMER_ID = :1)`,
-      [customerId]
+  // ── CRM-данные и сам клиент — одной транзакцией ──────────────────────────
+  const conn = await getConnection();
+  try {
+    for (const sql of CRM_CLEANUP) await conn.execute(sql, { id: customerId });
+    await conn.execute(`DELETE FROM AGRO_CUSTOMERS WHERE ID = :id`, { id: customerId });
+    await conn.execute(
+      `INSERT INTO AGRO_CRM_AUDIT_LOG (ENTITY_TYPE, ENTITY_ID, ENTITY_NAME, ACTION, CHANGED_BY)
+       VALUES ('customer', :id, :name, 'delete', :usr)`,
+      { id: customerId, name: String(exists[0].NAME).slice(0, 200), usr: auth.username }
     );
-    await execute(`DELETE FROM AGRO_WEIGHT_TICKETS WHERE CUSTOMER_ID = :1`, [customerId]);
-
-    // 2. Экспортные декларации (нет ON DELETE CASCADE)
-    await execute(
-      `DELETE FROM AGRO_EXPORT_DECLS
-         WHERE SALES_DOC_ID IN (SELECT ID FROM AGRO_SALES_DOCS WHERE CUSTOMER_ID = :1)`,
-      [customerId]
-    );
-    // 3. Продажи (AGRO_SALES_LINES + AGRO_BATCH_ALLOCATIONS каскадятся автоматически)
-    await execute(`DELETE FROM AGRO_SALES_DOCS WHERE CUSTOMER_ID = :1`, [customerId]);
+    await conn.commit();
+  } catch (e) {
+    await conn.rollback().catch(() => {});
+    console.error("[customers DELETE]", e);
+    return NextResponse.json({ error: "Не удалось удалить клиента" }, { status: 500 });
+  } finally {
+    await conn.close();
   }
-
-  // 4. CRM-связи — всегда чистим
-  await execute(
-    `DELETE FROM AGRO_CRM_CHAT_MESSAGES
-       WHERE APP_USER_ID IN (SELECT ID FROM AGRO_CRM_APP_USERS WHERE CUSTOMER_ID = :1)`,
-    [customerId]
-  );
-  await execute(
-    `DELETE FROM AGRO_CRM_APP_USER_EVENTS
-       WHERE APP_USER_ID IN (SELECT ID FROM AGRO_CRM_APP_USERS WHERE CUSTOMER_ID = :1)`,
-    [customerId]
-  );
-  await execute(`DELETE FROM AGRO_CRM_TG_BINDINGS WHERE CUSTOMER_ID = :1`, [customerId]);
-  await execute(`DELETE FROM AGRO_CRM_APP_USERS  WHERE CUSTOMER_ID = :1`, [customerId]);
-
-  // 5. Сам клиент
-  await execute(`DELETE FROM AGRO_CUSTOMERS WHERE ID = :1`, [customerId]);
 
   return NextResponse.json({ success: true, mode: "deleted" });
 }

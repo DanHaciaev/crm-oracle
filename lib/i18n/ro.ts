@@ -218,7 +218,7 @@ export const ro = {
     deactivateError: "Eroare la dezactivare",
     deleteConfirmTitle: "Ștergeți clientul?",
     hasDepsTitle:  "Există documente asociate",
-    hasDepsWarning: "Ștergerea va distruge toate vânzările, actele de cântărire, chat-urile și istoricul acestui client. Ireversibil.",
+    hasDepsWarning: "Clientul este folosit în documentele DIPP FRUICT sau în plăți, de aceea nu poate fi șters. Îl puteți dezactiva: dispare din liste, iar tot istoricul se păstrează.",
     tabs: {
       info:       "Informații",
       sales:      "Vânzări",
@@ -285,6 +285,12 @@ export const ro = {
     customerName:    "Nume client",
     codeOptional:    "Cod (opțional — generat automat)",
     codePlaceholder: "ex. CUST-001 sau lasă gol",
+    dep_sales:          "vânzări",
+    dep_weight_tickets: "acte de cântărire",
+    dep_retail:         "documente retail",
+    dep_invoices:       "facturi",
+    dep_acceptance:     "profiluri de recepție",
+    dep_payments:       "plăți",
   },
   tasks: {
     deleteConfirm: "Ștergeți sarcina?",

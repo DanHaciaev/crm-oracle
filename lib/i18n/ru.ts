@@ -218,7 +218,7 @@ export const ru = {
     deactivateError: "Ошибка деактивации",
     deleteConfirmTitle: "Удалить клиента?",
     hasDepsTitle:  "Есть связанные документы",
-    hasDepsWarning: "Удаление уничтожит все продажи, акты взвешивания, чаты и историю этого клиента. Это необратимо.",
+    hasDepsWarning: "Клиент используется в документах DIPP FRUICT или в оплатах, поэтому удалить его нельзя. Его можно деактивировать: он скроется из списков, а вся история сохранится.",
     tabs: {
       info:       "Информация",
       sales:      "Продажи",
@@ -285,6 +285,12 @@ export const ru = {
     customerName:    "Имя клиента",
     codeOptional:    "Код (необязательно — сгенерируется автоматически)",
     codePlaceholder: "например CUST-001 или оставь пусто",
+    dep_sales:          "продаж",
+    dep_weight_tickets: "актов взвешивания",
+    dep_retail:         "розничных документов",
+    dep_invoices:       "счетов",
+    dep_acceptance:     "профилей приёмки",
+    dep_payments:       "оплат",
   },
   tasks: {
     deleteConfirm: "Удалить задачу?",
