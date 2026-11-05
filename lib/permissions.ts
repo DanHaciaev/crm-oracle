@@ -82,9 +82,9 @@ export function can(perms: PermissionMap | null | undefined, module: Module, lev
 // Path prefix → module. Pages not listed (dashboard, print pages opened
 // from an allowed section…) are open to every signed-in user.
 const PAGE_MODULES: [string, Module][] = [
-  ["/customers", "customers"], ["/leads", "leads"], ["/sales", "sales"], ["/returns", "returns"], ["/quality", "quality"],
+  ["/customers", "customers"], ["/leads", "leads"], ["/sales", "sales"], ["/returns", "returns"], ["/export-decls", "sales"], ["/quality", "quality"],
   ["/client-viewer", "client-viewer"], ["/loyalty", "loyalty"],
-  ["/warehouse", "warehouse"], ["/directories", "directories"], ["/suppliers", "suppliers"], ["/purchases", "purchases"], ["/weight-tickets", "weight-tickets"],
+  ["/warehouse", "warehouse"], ["/directories", "directories"], ["/suppliers", "suppliers"], ["/purchases", "purchases"], ["/field-requests", "purchases"], ["/weight-tickets", "weight-tickets"],
   ["/acts", "weight-tickets"], ["/custody", "custody"], ["/items", "items"], ["/analytics", "items"],
   ["/documents", "documents"], ["/reports", "reports"], ["/rates", "rates"], ["/profitability", "profitability"],
   ["/segments", "segments"], ["/churn", "churn"], ["/duplicates", "duplicates"],
@@ -145,6 +145,7 @@ export const API_RULES: ApiRule[] = [
   { prefix: "/api/quality",              read: ["quality", "warehouse"], write: [] },
   { prefix: "/api/returns",              read: ["returns", "sales"], write: [] },
   { prefix: "/api/reports/returns",      read: ["returns", "sales"], write: [] },
+  { prefix: "/api/export-decls",         read: ["sales", "documents"], write: [] },
   { prefix: "/api/sales",                read: ["sales", "client-viewer", "customers", "documents"], write: ["sales"] },
   { prefix: "/api/churn",                read: ["churn"], write: ["churn"] },
   { prefix: "/api/duplicates",           read: ["duplicates"], write: ["duplicates"] },
@@ -152,6 +153,7 @@ export const API_RULES: ApiRule[] = [
   { prefix: "/api/directories",          read: ["directories"], write: ["directories"] },
   { prefix: "/api/warehouse",            read: ["warehouse"], write: ["warehouse"] },
   { prefix: "/api/suppliers",            read: ["suppliers", "purchases"], write: ["suppliers"] },
+  { prefix: "/api/field-requests",       read: ["purchases", "suppliers"], write: [] },
   { prefix: "/api/purchases",            read: ["purchases", "suppliers", "documents"], write: ["purchases"] },
   { prefix: "/api/weight-tickets",       read: ["weight-tickets", "purchases"], write: ["weight-tickets"] },
   { prefix: "/api/custody",              read: ["custody", "documents"], write: ["custody"] },

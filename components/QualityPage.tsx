@@ -12,7 +12,7 @@ import { useT } from "@/lib/locale";
 import { useUrlParam } from "@/hooks/useUrlParam";
 import { Select, StatTile, fmtDate, fmtKg, inputCls, useFetch, useLang } from "@/components/warehouse/shared";
 
-const TABS = ["checks", "checklists", "haccp", "blocks"] as const;
+const TABS = ["checks", "inspections", "checklists", "haccp", "blocks"] as const;
 type Tab = (typeof TABS)[number];
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
@@ -60,6 +60,7 @@ export default function QualityPage() {
       </div>
       {tab === "checks" && <ChecksTab />}
       {tab === "haccp" && <HaccpTab />}
+      {tab === "inspections" && <InspectionsTab />}
       {tab === "checklists" && <ChecklistsTab />}
       {tab === "blocks" && <BlocksTab />}
     </div>
@@ -329,6 +330,121 @@ function BlocksTab() {
           </TableBody>
         </Table>
       </div>
+    </div>
+  );
+}
+
+// ── Acceptance inspections ───────────────────────────────────────────────
+
+interface Inspection {
+  id: number; date: string | null; inspector: string; score: number | null; critical_fails: number; decision: string;
+  discount_pct: number | null; freshness: number | null; notes: string; batch_id: number | null; batch_number: string;
+  item: string; variety: string; profile: string;
+}
+interface InspValue { id: number; code: string; label: string; measured: string; threshold: string; pass: boolean; critical: boolean; weight: number | null; score: number | null }
+
+const DECISION_CLS: Record<string, string> = {
+  ACCEPT: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  ACCEPT_WITH_SORTING: "bg-amber-50 text-amber-700 border-amber-200",
+  REJECT: "bg-red-50 text-red-700 border-red-200",
+};
+
+function InspectionsTab() {
+  const t = useT();
+  const lang = useLang();
+  const [decision, setDecision] = useState("");
+  const [q, setQ] = useState("");
+  const [open, setOpen] = useState<Inspection | null>(null);
+  const sp = new URLSearchParams({ lang });
+  if (decision) sp.set("decision", decision);
+  if (q.trim()) sp.set("q", q.trim());
+  const { data, error } = useFetch<{ rows: Inspection[]; totals: { count: number; accept: number; sorting: number; reject: number } }>(`/api/quality/inspections?${sp.toString()}`);
+  const { data: values } = useFetch<InspValue[]>(open ? `/api/quality/inspections/${open.id}` : null);
+  const badge = (d: string) => <span className={`px-2 py-0.5 rounded-full border text-xs whitespace-nowrap ${DECISION_CLS[d] ?? ""}`}>{t(`qual.dec_${d}`)}</span>;
+
+  return (
+    <div className="space-y-4">
+      <ReadOnlyNote text={t("qual.inspectionsNote")} />
+      {data && (
+        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+          <StatTile label={t("qual.inspectionsCount")} value={String(data.totals.count)} />
+          <StatTile label={t("qual.dec_ACCEPT")} value={String(data.totals.accept)} />
+          <StatTile label={t("qual.dec_ACCEPT_WITH_SORTING")} value={String(data.totals.sorting)} tone={data.totals.sorting ? "warn" : undefined} />
+          <StatTile label={t("qual.dec_REJECT")} value={String(data.totals.reject)} tone={data.totals.reject ? "bad" : undefined} />
+        </div>
+      )}
+      <div className="flex flex-wrap items-end gap-2">
+        <Select value={decision} onChange={setDecision} all={t("qual.allDecisions")}
+                options={["ACCEPT", "ACCEPT_WITH_SORTING", "REJECT"].map(d => ({ value: d, label: t(`qual.dec_${d}`) }))} />
+        <input value={q} onChange={e => setQ(e.target.value)} placeholder={t("qual.searchChecks")} className={`${inputCls} w-full sm:w-56`} />
+      </div>
+      <div className="border border-[#c8d3e8] rounded-xl overflow-auto max-h-[60vh]">
+        <Table>
+          <TableHeader className="sticky top-0 bg-white z-10">
+            <TableRow>
+              <TableHead>{t("qual.colDate")}</TableHead>
+              <TableHead>{t("qual.batch")}</TableHead>
+              <TableHead className="hidden md:table-cell">{t("qual.profile")}</TableHead>
+              <TableHead className="text-right">{t("qual.score")}</TableHead>
+              <TableHead className="hidden sm:table-cell text-right">{t("qual.criticalFails")}</TableHead>
+              <TableHead className="hidden lg:table-cell text-right">{t("qual.discount")}</TableHead>
+              <TableHead>{t("qual.decision")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {error ? (
+              <TableRow><TableCell colSpan={7} className="text-center text-red-500 py-6">{error}</TableCell></TableRow>
+            ) : !data ? (
+              <TableRow><TableCell colSpan={7} className="text-center text-gray-400 py-6">{t("common.loading")}</TableCell></TableRow>
+            ) : data.rows.length === 0 ? (
+              <TableRow><TableCell colSpan={7} className="text-center text-gray-400 py-6">{t("qual.emptyInspections")}</TableCell></TableRow>
+            ) : data.rows.map(r => (
+              <TableRow key={r.id} className="cursor-pointer" onClick={() => setOpen(r)}>
+                <TableCell className="text-sm whitespace-nowrap">{fmtDate(r.date)}</TableCell>
+                <TableCell className="text-sm"><span className="font-mono">{r.batch_number || "—"}</span><div className="text-xs text-gray-500">{[r.item, r.variety].filter(Boolean).join(" · ")}</div></TableCell>
+                <TableCell className="hidden md:table-cell text-sm">{r.profile || "—"}</TableCell>
+                <TableCell className="text-right tabular-nums">{r.score ?? "—"}</TableCell>
+                <TableCell className={`hidden sm:table-cell text-right tabular-nums ${r.critical_fails ? "text-red-700" : ""}`}>{r.critical_fails}</TableCell>
+                <TableCell className="hidden lg:table-cell text-right tabular-nums">{r.discount_pct ? `${r.discount_pct}%` : "—"}</TableCell>
+                <TableCell>{badge(r.decision)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      <Sheet open={open != null} onOpenChange={o => { if (!o) setOpen(null); }}>
+        <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
+          <SheetHeader><SheetTitle>{open ? `${open.batch_number || "—"} · ${fmtDate(open.date)}` : "…"}</SheetTitle></SheetHeader>
+          {open && (
+            <div className="px-4 pb-6 space-y-5">
+              <div className="flex items-center gap-2">{badge(open.decision)}</div>
+              <div>
+                {kv(t("qual.batch"), open.batch_id ? <Link href={`/warehouse?batch=${open.batch_id}`} className="text-brand hover:underline font-mono">{open.batch_number}</Link> : "—")}
+                {kv(t("qual.item"), [open.item, open.variety].filter(Boolean).join(" · ") || "—")}
+                {kv(t("qual.profile"), open.profile || "—")}
+                {kv(t("qual.inspector"), open.inspector || "—")}
+                {kv(t("qual.score"), open.score ?? "—")}
+                {open.freshness != null && kv(t("qual.freshness"), open.freshness)}
+                {kv(t("qual.discount"), open.discount_pct ? `${open.discount_pct}%` : "—")}
+                {open.notes && kv(t("common.notes"), open.notes)}
+              </div>
+              <section>
+                <h4 className="font-semibold text-sm mb-2">{t("qual.parameters")}</h4>
+                {!values ? <div className="text-sm text-gray-400">{t("common.loading")}</div> : values.map(v => (
+                  <div key={v.id} className="flex justify-between gap-2 text-sm border-b border-gray-100 py-1.5">
+                    <span>{v.label}{v.critical && <span className="ml-1 text-xs text-red-600">{t("qual.critical")}</span>}
+                      {v.threshold && <div className="text-xs text-gray-400">{t("qual.norm")}: {v.threshold}</div>}</span>
+                    <span className={`text-right tabular-nums inline-flex items-center gap-1 ${v.pass ? "" : "text-red-700 font-medium"}`}>
+                      {v.pass ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> : <XCircle className="w-3.5 h-3.5" />}{v.measured || "—"}
+                      {v.score != null && <span className="text-xs text-gray-400 ml-1">({v.score})</span>}
+                    </span>
+                  </div>
+                ))}
+              </section>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

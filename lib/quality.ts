@@ -158,3 +158,50 @@ export async function checklists(lang: Lang) {
     })),
   }));
 }
+
+// ── Acceptance inspections (DIPP FRUICT Recepție → «Приёмка партий») ─────
+// Scoring of a batch against an acceptance profile: total score, critical
+// failures and the decision (accept / accept with sorting / reject).
+
+export async function inspections(sp: URLSearchParams, lang: Lang) {
+  const w: string[] = [];
+  const b: Record<string, string> = {};
+  const df = sp.get("date_from") ?? "", dt = sp.get("date_to") ?? "", dec = sp.get("decision") ?? "";
+  if (ISO.test(df)) { w.push("bi.INSPECTION_DATE >= TO_DATE(:df, 'YYYY-MM-DD')"); b.df = df; }
+  if (ISO.test(dt)) { w.push("bi.INSPECTION_DATE < TO_DATE(:dt, 'YYYY-MM-DD') + 1"); b.dt = dt; }
+  if (["ACCEPT", "ACCEPT_WITH_SORTING", "REJECT"].includes(dec)) { w.push("bi.DECISION = :dec"); b.dec = dec; }
+  const q = (sp.get("q") ?? "").trim().slice(0, 60);
+  if (q) { w.push("(UPPER(b.BATCH_NUMBER) LIKE :q OR UPPER(bi.INSPECTOR) LIKE :q)"); b.q = `%${q.toUpperCase()}%`; }
+  const rows = await query<Row>(`
+    SELECT * FROM (
+      SELECT bi.ID, bi.INSPECTION_DATE, bi.INSPECTOR, bi.TOTAL_SCORE, bi.CRITICAL_FAILS, bi.DECISION, bi.DISCOUNT_PCT,
+             bi.FRESHNESS_SCORE, bi.NOTES, b.ID AS BATCH_ID, b.BATCH_NUMBER, i.NAME_RO, i.NAME_RU,
+             v.NAME_RO AS VAR_RO, v.NAME_RU AS VAR_RU, p.CODE AS PROFILE_CODE, p.NAME_RO AS PROF_RO, p.NAME_RU AS PROF_RU
+      FROM AGRO_BATCH_INSPECTIONS bi
+      LEFT JOIN AGRO_BATCHES b ON b.ID = bi.BATCH_ID
+      LEFT JOIN AGRO_ITEMS i ON i.ID = b.ITEM_ID
+      LEFT JOIN AGRO_ITEM_VARIETIES v ON v.ID = bi.VARIETY_ID
+      LEFT JOIN AGRO_ACCEPTANCE_PROFILES p ON p.ID = bi.PROFILE_ID
+      ${w.length ? "WHERE " + w.join(" AND ") : ""}
+      ORDER BY bi.INSPECTION_DATE DESC, bi.ID DESC
+    ) WHERE ROWNUM <= 2000`, b);
+  const list = rows.map(r => ({
+    id: n(r.ID), date: iso(r.INSPECTION_DATE), inspector: s(r.INSPECTOR), score: nn(r.TOTAL_SCORE), critical_fails: n(r.CRITICAL_FAILS),
+    decision: s(r.DECISION), discount_pct: nn(r.DISCOUNT_PCT), freshness: nn(r.FRESHNESS_SCORE), notes: s(r.NOTES),
+    batch_id: nn(r.BATCH_ID), batch_number: s(r.BATCH_NUMBER), item: pickName(lang, r.NAME_RO, r.NAME_RU),
+    variety: pickName(lang, r.VAR_RO, r.VAR_RU), profile: pickName(lang, r.PROF_RO, r.PROF_RU) || s(r.PROFILE_CODE),
+  }));
+  const cnt = (k: string) => list.filter(r => r.decision === k).length;
+  return { rows: list, totals: { count: list.length, accept: cnt("ACCEPT"), sorting: cnt("ACCEPT_WITH_SORTING"), reject: cnt("REJECT") } };
+}
+
+export async function inspectionValues(id: number) {
+  const rows = await query<Row>(`
+    SELECT ID, PARAM_CODE, PARAM_LABEL, MEASURED_VALUE, THRESHOLD_VALUE, IS_PASS, IS_CRITICAL, WEIGHT, SCORE_CONTRIBUTION
+    FROM AGRO_BATCH_INSPECTION_VALUES WHERE INSPECTION_ID = :1 ORDER BY ID`, [id]);
+  return rows.map(r => ({
+    id: n(r.ID), code: s(r.PARAM_CODE), label: s(r.PARAM_LABEL) || s(r.PARAM_CODE), measured: s(r.MEASURED_VALUE),
+    threshold: s(r.THRESHOLD_VALUE), pass: s(r.IS_PASS) !== "N", critical: s(r.IS_CRITICAL) === "Y",
+    weight: nn(r.WEIGHT), score: nn(r.SCORE_CONTRIBUTION),
+  }));
+}

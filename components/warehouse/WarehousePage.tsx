@@ -11,9 +11,10 @@ import { OverviewTab, RotationTab, ControlTab } from "./SummaryTabs";
 import { BatchesTab, BatchSheet } from "./BatchesTab";
 import { MovementsTab, CellsTab } from "./JournalTabs";
 import { BarcodesTab } from "./BarcodesTab";
+import { TasksTab } from "./TasksTab";
 
-type Tab = "overview" | "batches" | "movements" | "cells" | "rotation" | "control" | "barcodes";
-const TABS: Tab[] = ["overview", "batches", "movements", "cells", "rotation", "control", "barcodes"];
+type Tab = "overview" | "batches" | "movements" | "cells" | "rotation" | "control" | "tasks" | "barcodes";
+const TABS: Tab[] = ["overview", "batches", "movements", "cells", "rotation", "control", "tasks", "barcodes"];
 
 // Warehouse section: a read-only control panel over DIPP FRUICT's stock data.
 // Kilograms only change in DIPP FRUICT; the CRM's two safe actions (block /
@@ -63,6 +64,7 @@ export default function WarehousePage() {
       {tab === "cells"     && <CellsTab canEdit={canEdit} />}
       {tab === "rotation"  && <RotationTab lang={lang} />}
       {tab === "control"   && <ControlTab lang={lang} onOpenBatch={setOpenBatch} />}
+      {tab === "tasks"     && <TasksTab lang={lang} onOpenBatch={setOpenBatch} />}
       {tab === "barcodes"  && <BarcodesTab lang={lang} onOpenBatch={setOpenBatch} />}
 
       <BatchSheet id={openBatch} lang={lang} canEdit={canEdit} onClose={() => setOpenBatch(null)} onChanged={() => setReloadKey(k => k + 1)} />

@@ -516,3 +516,41 @@ export async function barcodes(sp: URLSearchParams, lang: Lang) {
     },
   };
 }
+
+// Processing tasks (DIPP FRUICT Depozit → «Sarcini»): sorting / washing /
+// packing / labelling of a batch with input, output and waste kg. Read-only.
+export async function processingTasks(sp: URLSearchParams, lang: Lang) {
+  const w: string[] = [];
+  const b: Record<string, string> = {};
+  const st = sp.get("status") ?? "", type = sp.get("type") ?? "";
+  if (["pending", "in_progress", "completed", "cancelled"].includes(st)) { w.push("t.STATUS = :st"); b.st = st; }
+  if (["sorting", "washing", "packing", "labeling", "other"].includes(type)) { w.push("t.TASK_TYPE = :type"); b.type = type; }
+  const q = (sp.get("q") ?? "").trim().slice(0, 60);
+  if (q) { w.push("(UPPER(b.BATCH_NUMBER) LIKE :q OR UPPER(t.DESCRIPTION) LIKE :q OR UPPER(t.ASSIGNED_TO) LIKE :q)"); b.q = `%${q.toUpperCase()}%`; }
+  const rows = await query<Row>(`
+    SELECT * FROM (
+      SELECT t.ID, t.TASK_TYPE, t.DESCRIPTION, t.ASSIGNED_TO, t.STATUS, t.INPUT_QTY_KG, t.OUTPUT_QTY_KG, t.WASTE_QTY_KG,
+             t.STARTED_AT, t.COMPLETED_AT, t.NOTES, b.ID AS BATCH_ID, b.BATCH_NUMBER, i.NAME_RO, i.NAME_RU
+      FROM AGRO_PROCESSING_TASKS t
+      LEFT JOIN AGRO_BATCHES b ON b.ID = t.BATCH_ID
+      LEFT JOIN AGRO_ITEMS i ON i.ID = b.ITEM_ID
+      ${w.length ? "WHERE " + w.join(" AND ") : ""}
+      ORDER BY CASE t.STATUS WHEN 'in_progress' THEN 0 WHEN 'pending' THEN 1 ELSE 2 END, t.ID DESC
+    ) WHERE ROWNUM <= 2000`, b);
+  const kg = (v: unknown) => (v == null ? null : Number(v));
+  const ts = (v: unknown) => (v instanceof Date ? v.toISOString() : null);
+  const list = rows.map(r => ({
+    id: Number(r.ID), type: String(r.TASK_TYPE ?? ""), description: String(r.DESCRIPTION ?? ""), assigned_to: String(r.ASSIGNED_TO ?? ""),
+    status: String(r.STATUS ?? ""), input_kg: kg(r.INPUT_QTY_KG), output_kg: kg(r.OUTPUT_QTY_KG), waste_kg: kg(r.WASTE_QTY_KG),
+    started_at: ts(r.STARTED_AT), completed_at: ts(r.COMPLETED_AT), notes: String(r.NOTES ?? ""),
+    batch_id: r.BATCH_ID == null ? null : Number(r.BATCH_ID), batch_number: String(r.BATCH_NUMBER ?? ""), item: pickName(lang, r.NAME_RO, r.NAME_RU),
+  }));
+  const done = list.filter(x => x.status === "completed");
+  return {
+    rows: list,
+    totals: {
+      open: list.filter(x => x.status === "pending" || x.status === "in_progress").length, completed: done.length,
+      input_kg: done.reduce((a, x) => a + (x.input_kg ?? 0), 0), waste_kg: done.reduce((a, x) => a + (x.waste_kg ?? 0), 0),
+    },
+  };
+}

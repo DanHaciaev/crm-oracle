@@ -16,7 +16,7 @@ import {
   LayoutDashboard, Users, Target, TrendingUp, PieChart, AlertTriangle,
   MessageSquare, Mail, Megaphone, CheckSquare, Package, Scale,
   UserCog, History, UserCircle, LogOut, Truck, GitMerge, Search, MessagesSquare,
-  Warehouse, ShoppingCart, FileText, FileSpreadsheet, Gift, CalendarDays, Undo2, ShieldCheck,
+  Warehouse, ShoppingCart, FileText, FileSpreadsheet, Gift, CalendarDays, Undo2, ShieldCheck, ClipboardList, Stamp,
   ChevronDown, ChevronRight, Boxes, Building2, BadgePercent, Banknote, BookOpen,
 } from "lucide-react"
 import { usePathname } from "next/navigation"
@@ -46,6 +46,7 @@ export function AppSidebar() {
         { name: t("nav.leads"),        href: "/leads",         icon: Target },
         { name: t("nav.sales"),        href: "/sales",         icon: TrendingUp },
         { name: t("nav.returns"),      href: "/returns",       icon: Undo2 },
+        { name: t("nav.exportDecls"),  href: "/export-decls",  icon: Stamp },
         { name: t("nav.quality"),      href: "/quality",       icon: ShieldCheck },
         { name: t("nav.clientViewer"), href: "/client-viewer", icon: Search },
         { name: t("nav.loyalty"),      href: "/loyalty",       icon: Gift },
@@ -58,6 +59,7 @@ export function AppSidebar() {
         { name: t("nav.warehouse"),     href: "/warehouse",      icon: Boxes },
         { name: t("nav.suppliers"),     href: "/suppliers",      icon: Truck },
         { name: t("nav.purchases"),     href: "/purchases",      icon: ShoppingCart },
+        { name: t("nav.fieldRequests"), href: "/field-requests", icon: ClipboardList },
         { name: t("nav.weightTickets"), href: "/weight-tickets", icon: Scale },
         { name: t("nav.custody"),       href: "/custody",        icon: Warehouse },
         { name: t("nav.items"),         href: "/items",          icon: Package },
