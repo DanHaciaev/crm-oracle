@@ -140,7 +140,8 @@ export async function DELETE(
 
   const { id } = await params;
   // Quotes keep their addressee (CLIENT_NAME) — only the deal link goes.
-  await execute(`UPDATE AGRO_CRM_QUOTES SET LEAD_ID = NULL WHERE LEAD_ID = :1`, [Number(id)]);
+  try { await execute(`UPDATE AGRO_CRM_QUOTES SET LEAD_ID = NULL WHERE LEAD_ID = :1`, [Number(id)]); }
+  catch (e) { if (!String(e).includes("ORA-00942")) throw e; } // quotes table not migrated yet
   await execute(`DELETE FROM AGRO_CRM_LEADS WHERE ID = :1`, [Number(id)]);
   return NextResponse.json({ success: true });
 }

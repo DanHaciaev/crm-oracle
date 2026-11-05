@@ -261,7 +261,11 @@ export async function DELETE(
   // ── CRM-данные и сам клиент — одной транзакцией ──────────────────────────
   const conn = await getConnection();
   try {
-    for (const sql of CRM_CLEANUP) await conn.execute(sql, { id: customerId });
+    for (const sql of CRM_CLEANUP) {
+      // A CRM table whose migration isn't applied yet (ORA-00942) has nothing to clean.
+      try { await conn.execute(sql, { id: customerId }); }
+      catch (e) { if (!String(e).includes("ORA-00942")) throw e; }
+    }
     await conn.execute(`DELETE FROM AGRO_CUSTOMERS WHERE ID = :id`, { id: customerId });
     await conn.execute(
       `INSERT INTO AGRO_CRM_AUDIT_LOG (ENTITY_TYPE, ENTITY_ID, ENTITY_NAME, ACTION, CHANGED_BY)
