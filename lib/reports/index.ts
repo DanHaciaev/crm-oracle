@@ -7,7 +7,6 @@ import { Lang, pickName } from "@/lib/documents/common";
 import { massBalance } from "@/lib/documents/stock";
 import { MOVEMENTS_SQL, MOVEMENT_TYPES, movementWhere } from "@/lib/warehouse";
 import { profitabilityRows } from "@/lib/profitability";
-import { receivablesSummary, listPayments } from "@/lib/receivables";
 
 type Row = Record<string, unknown>;
 
@@ -368,38 +367,6 @@ export const REPORTS: Record<string, ReportDef> = {
                                 warehouse_id: f.warehouse_id, item_id: f.item_id, q: null });
       return norm(await query<Row>(MOVEMENTS_SQL(w.sql), w.binds), lang);
     },
-  },
-
-  // ── Receivables: debt per customer and currency with aging. ──
-  receivables: {
-    filters: [],
-    columns: [
-      ["customer_name", "text"], ["currency_code", "text"], ["billed", "money"], ["returned_amount", "money"], ["paid", "money"],
-      ["balance", "money"], ["balance_mdl", "mdl"], ["overdue", "money"], ["overdue_mdl", "mdl"],
-      ["aging_not_due", "money"], ["aging_1_30", "money"], ["aging_31_60", "money"], ["aging_61_90", "money"], ["aging_90_plus", "money"],
-      ["open_docs", "int"], ["oldest_overdue_days", "num"], ["payment_days", "num"], ["credit_limit_mdl", "mdl"], ["last_payment", "date"],
-    ],
-    run: async () => (await receivablesSummary()).rows.map(r => ({
-      customer_name: r.customer_name, currency_code: r.currency, billed: r.billed, returned_amount: r.returned, paid: r.paid,
-      balance: r.balance, balance_mdl: r.balance_mdl, overdue: r.overdue, overdue_mdl: r.overdue_mdl,
-      aging_not_due: r.aging.not_due, aging_1_30: r.aging.d1_30, aging_31_60: r.aging.d31_60, aging_61_90: r.aging.d61_90, aging_90_plus: r.aging.d90_plus,
-      open_docs: r.open_docs, oldest_overdue_days: r.oldest_overdue_days, payment_days: r.payment_days, credit_limit_mdl: r.credit_limit_mdl,
-      last_payment: r.last_payment,
-    })),
-  },
-
-  // ── Customer payments journal. ──
-  payments: {
-    filters: ["period", "customer"],
-    columns: [
-      ["payment_number", "text"], ["pay_date", "date"], ["customer_name", "text"], ["doc_number", "text"], ["amount", "money"],
-      ["currency_code", "text"], ["amount_mdl", "mdl"], ["method", "code"], ["reference", "text"], ["payment_status", "code"],
-      ["created_by", "text"], ["notes", "text"],
-    ],
-    run: async f => (await listPayments({ date_from: f.date_from, date_to: f.date_to, customer_id: f.customer_id, method: null, status: null, q: null }))
-      .map(p => ({ payment_number: p.number, pay_date: p.date, customer_name: p.customer_name, doc_number: p.sale_number,
-                   amount: p.amount, currency_code: p.currency, amount_mdl: p.amount_mdl, method: p.method, reference: p.reference,
-                   payment_status: p.status, created_by: p.created_by, notes: p.notes })),
   },
 
   // ── Customer returns, one row per returned line (returns page export). ──

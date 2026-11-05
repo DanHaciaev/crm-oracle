@@ -2,7 +2,6 @@
 
 import type { salesPalletBon, shippingNote, exportDecl } from "@/lib/documents/sales";
 import type { returnAct } from "@/lib/documents/returns";
-import type { reconciliationAct } from "@/lib/documents/reconciliation";
 import { Lang, f1, f2, f3, dash, Header, Signatures } from "./PrintShell";
 
 type Bon      = Awaited<ReturnType<typeof salesPalletBon>>;
@@ -374,75 +373,6 @@ export function ReturnAct({ d, lang }: { d: RetAct; lang: Lang }) {
       </table>
       <div className="boxed"><strong>{L.motiv}:</strong> {dash(d.reason)}</div>
       <Signatures labels={[L.predat, L.primit]} />
-      <div className="stamp-area">{L.stamp}</div>
-    </div>
-  );
-}
-
-// ── Act de verificare a decontărilor (reconciliation statement) ──────────
-type RecAct = Awaited<ReturnType<typeof reconciliationAct>>;
-
-const REC_T = {
-  ro: { title: "ACT DE VERIFICARE A DECONTĂRILOR", perioada: "Perioada", valuta: "Valuta", intre: "între", si: "și",
-        col_data: "Data", col_doc: "Document", col_debit: "Debit (livrat)", col_credit: "Credit (achitat / returnat)", col_sold: "Sold",
-        sold_inceput: "Sold la începutul perioadei", rulaj: "Rulaj", sold_final: "Sold la sfârșitul perioadei",
-        datorie: "Datoria clientului față de", avans: "Avansul clientului la", fara: "Nu sunt mișcări în perioadă",
-        k_sale: "Livrare", k_return: "Retur", k_payment: "Plată", director: "Director", contabil: "Contabil", client: "Client", stamp: "Ștampilă" },
-  ru: { title: "АКТ СВЕРКИ ВЗАИМОРАСЧЁТОВ", perioada: "Период", valuta: "Валюта", intre: "между", si: "и",
-        col_data: "Дата", col_doc: "Документ", col_debit: "Дебет (отгружено)", col_credit: "Кредит (оплачено / возврат)", col_sold: "Сальдо",
-        sold_inceput: "Сальдо на начало периода", rulaj: "Обороты", sold_final: "Сальдо на конец периода",
-        datorie: "Задолженность клиента перед", avans: "Аванс клиента у", fara: "Движений за период нет",
-        k_sale: "Отгрузка", k_return: "Возврат", k_payment: "Оплата", director: "Директор", contabil: "Бухгалтер", client: "Клиент", stamp: "М.П." },
-  en: { title: "STATEMENT OF ACCOUNT RECONCILIATION", perioada: "Period", valuta: "Currency", intre: "between", si: "and",
-        col_data: "Date", col_doc: "Document", col_debit: "Debit (shipped)", col_credit: "Credit (paid / returned)", col_sold: "Balance",
-        sold_inceput: "Opening balance", rulaj: "Turnover", sold_final: "Closing balance",
-        datorie: "Amount owed by the customer to", avans: "Customer advance held by", fara: "No movements in this period",
-        k_sale: "Shipment", k_return: "Return", k_payment: "Payment", director: "Director", contabil: "Accountant", client: "Customer", stamp: "Seal" },
-};
-
-export function ReconciliationAct({ d, lang }: { d: RecAct; lang: Lang }) {
-  const L = REC_T[lang];
-  const kind = { sale: L.k_sale, return: L.k_return, payment: L.k_payment } as const;
-  return (
-    <div className="doc">
-      <Header company={d.company_name} title={L.title} subtitle={`${L.intre} ${d.company_name} ${L.si} ${d.customer_name}`} />
-      <div className="doc-row">
-        <div>{L.perioada}: <strong>{d.date_from}</strong> — <strong>{d.date_to}</strong></div>
-        <div>{L.valuta}: <strong>{d.currency}</strong></div>
-      </div>
-      <table>
-        <thead><tr><th>{L.col_data}</th><th>{L.col_doc}</th><th className="num">{L.col_debit}</th><th className="num">{L.col_credit}</th><th className="num">{L.col_sold}</th></tr></thead>
-        <tbody>
-          <tr className="total-row"><td colSpan={4}>{L.sold_inceput}</td><td className="num">{f2(d.opening) === "—" ? "0.00" : d.opening.toFixed(2)}</td></tr>
-          {d.rows.map((r, i) => (
-            <tr key={i}><td>{r.date}</td><td>{kind[r.kind as keyof typeof kind]} {r.number}</td>
-              <td className="num">{r.debit ? r.debit.toFixed(2) : ""}</td><td className="num">{r.credit ? r.credit.toFixed(2) : ""}</td><td className="num">{r.balance.toFixed(2)}</td></tr>
-          ))}
-          {d.rows.length === 0 && <tr><td colSpan={5} className="empty">{L.fara}</td></tr>}
-        </tbody>
-        <tfoot>
-          <tr className="total-row"><td colSpan={2}>{L.rulaj}</td><td className="num">{d.turnover_debit.toFixed(2)}</td><td className="num">{d.turnover_credit.toFixed(2)}</td><td /></tr>
-          <tr className="total-row"><td colSpan={4}>{L.sold_final}</td><td className="num">{d.closing.toFixed(2)} {d.currency}</td></tr>
-        </tfoot>
-      </table>
-      <div className="boxed">
-        {d.closing >= 0
-          ? <>{L.datorie} {d.company_name}: <strong>{d.closing.toFixed(2)} {d.currency}</strong></>
-          : <>{L.avans} {d.company_name}: <strong>{(-d.closing).toFixed(2)} {d.currency}</strong></>}
-      </div>
-      <div className="parties">
-        <div className="party">
-          <div className="title">{d.company_name}</div>
-          <div>{L.director}: {d.company_director || "____________"}</div>
-          <div>{L.contabil}: {d.company_accountant || "____________"}</div>
-        </div>
-        <div className="party">
-          <div className="title">{L.client}: {d.customer_name}</div>
-          <div>{d.customer_address}</div>
-          <div>IDNO: {d.customer_tax_id}</div>
-        </div>
-      </div>
-      <Signatures labels={[d.company_name, d.customer_name]} />
       <div className="stamp-area">{L.stamp}</div>
     </div>
   );

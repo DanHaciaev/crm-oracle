@@ -5,7 +5,6 @@ import { custodyReleaseAct } from "./custody";
 import { massBalance, parsePeriod } from "./stock";
 import { qaProtocol, gmpChecklist, haccpReport } from "./quality";
 import { returnAct } from "./returns";
-import { reconciliationAct } from "./reconciliation";
 
 export { DocNotFound, parseLang } from "./common";
 
@@ -26,5 +25,4 @@ export const DOC_BUILDERS: Record<string, Builder> = {
   gmp_checklist:       { kind: "record", build: gmpChecklist },
   mass_balance:        { kind: "period", build: (sp, lang) => massBalance(parsePeriod(sp), lang) },
   haccp_report:        { kind: "period", build: (sp, lang) => haccpReport(parsePeriod(sp), lang) },
-  reconciliation_act:  { kind: "period", build: reconciliationAct },
 };

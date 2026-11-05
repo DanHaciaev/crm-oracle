@@ -42,19 +42,6 @@ const SECTIONS: { key: string; module: Module; severity: Section["severity"]; sq
           LEFT JOIN AGRO_STORAGE_CELLS c ON c.ID = a.CELL_ID
           WHERE NVL(a.ACKNOWLEDGED, 'N') <> 'Y' ORDER BY a.CREATED_AT DESC`,
     map: r => ({ id: `a${r.ID}`, title: `${r.CELL ?? "—"} · ${r.ALERT_TYPE ?? ""}`, subtitle: `${r.ACTUAL_VALUE ?? "—"} / ${r.THRESHOLD_VALUE ?? "—"}`, date: iso(r.CREATED_AT), href: "/warehouse" }) },
-  { key: "overdue_receivables", module: "payments", severity: "warning",
-    // Rough per-document signal (no FIFO): shipped docs past the payment term
-    // with nothing paid against them. The Receivables page has exact figures.
-    sql: `SELECT sd.ID, sd.CUSTOMER_ID, NVL(sd.INVOICE_NUMBER, sd.DOC_NUMBER) AS NUM, c.NAME AS CUSTOMER_NAME, sd.TOTAL_AMOUNT,
-                 NVL(sd.CURRENCY_CODE, 'MDL') AS CUR, sd.DOC_DATE + NVL(t.PAYMENT_DAYS, NVL((SELECT TO_NUMBER(CONFIG_VALUE) FROM AGRO_MODULE_CONFIG WHERE CONFIG_KEY = 'CRM_DEFAULT_PAYMENT_DAYS'), 30)) AS DUE
-          FROM AGRO_SALES_DOCS sd
-          JOIN AGRO_CUSTOMERS c ON c.ID = sd.CUSTOMER_ID
-          LEFT JOIN AGRO_CRM_CUSTOMER_TERMS t ON t.CUSTOMER_ID = sd.CUSTOMER_ID
-          WHERE sd.STATUS IN ('shipped','delivered','closed') AND sd.TOTAL_AMOUNT > 0
-            AND sd.DOC_DATE + NVL(t.PAYMENT_DAYS, NVL((SELECT TO_NUMBER(CONFIG_VALUE) FROM AGRO_MODULE_CONFIG WHERE CONFIG_KEY = 'CRM_DEFAULT_PAYMENT_DAYS'), 30)) < TRUNC(SYSDATE)
-            AND NOT EXISTS (SELECT 1 FROM AGRO_CRM_PAYMENTS p WHERE p.STATUS = 'active' AND p.CUSTOMER_ID = sd.CUSTOMER_ID)
-          ORDER BY DUE`,
-    map: r => ({ id: `o${r.ID}`, title: `${r.NUM} · ${r.CUSTOMER_NAME ?? ""}`, subtitle: `${Number(r.TOTAL_AMOUNT).toLocaleString("ru-RU", { maximumFractionDigits: 0 })} ${r.CUR}`, date: iso(r.DUE), href: `/receivables?customer=${r.CUSTOMER_ID}` }) },
   { key: "globalgap", module: "suppliers", severity: "warning",
     sql: `SELECT ID, NAME, GLOBALGAP_CERT_NO, GLOBALGAP_EXPIRY FROM AGRO_SUPPLIERS
           WHERE ACTIVE = 'Y' AND GLOBALGAP_CERTIFIED = 'Y' AND GLOBALGAP_EXPIRY < TRUNC(SYSDATE) + 31 ORDER BY GLOBALGAP_EXPIRY`,

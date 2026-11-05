@@ -184,8 +184,8 @@ export async function PATCH(
   return NextResponse.json({ success: true });
 }
 
-// Records in DIPP FRUICT's own tables (and CRM payments, which are financial
-// history) block a hard delete — such a customer can only be deactivated.
+// Records in DIPP FRUICT's own tables block a hard delete — such a customer
+// can only be deactivated.
 // The CRM never deletes DIPP FRUICT documents.
 const BLOCKERS: { key: string; sql: string }[] = [
   { key: "sales",          sql: `SELECT COUNT(*) N FROM AGRO_SALES_DOCS WHERE CUSTOMER_ID = :id` },
@@ -193,7 +193,6 @@ const BLOCKERS: { key: string; sql: string }[] = [
   { key: "retail",         sql: `SELECT (SELECT COUNT(*) FROM AGRO_RETAIL_DOCS WHERE SELLER_ID = :id) + (SELECT COUNT(*) FROM AGRO_RETAIL_SESSIONS WHERE SELLER_ID = :id) N FROM DUAL` },
   { key: "invoices",       sql: `SELECT COUNT(*) N FROM AGRO_INVOICES WHERE CUSTOMER_ID = :id` },
   { key: "acceptance",     sql: `SELECT COUNT(*) N FROM AGRO_ACCEPTANCE_PROFILES WHERE CUSTOMER_ID = :id` },
-  { key: "payments",       sql: `SELECT COUNT(*) N FROM AGRO_CRM_PAYMENTS WHERE CUSTOMER_ID = :id` },
 ];
 
 // CRM-only data removed (or unlinked) together with the customer, in one
@@ -209,7 +208,6 @@ const CRM_CLEANUP = [
   `DELETE FROM AGRO_CRM_ACTIVITIES WHERE CUSTOMER_ID = :id`,
   `DELETE FROM AGRO_CRM_AUTOMATION_LOG WHERE CUSTOMER_ID = :id`,
   `DELETE FROM AGRO_CRM_ATTACHMENTS WHERE ENTITY_TYPE = 'customer' AND ENTITY_ID = :id`,
-  `DELETE FROM AGRO_CRM_CUSTOMER_TERMS WHERE CUSTOMER_ID = :id`,
   `UPDATE AGRO_CRM_TASKS SET CUSTOMER_ID = NULL WHERE CUSTOMER_ID = :id`,
   `UPDATE AGRO_CRM_LEADS SET CUSTOMER_ID = NULL WHERE CUSTOMER_ID = :id`,
   `UPDATE AGRO_CRM_EMAILS SET CUSTOMER_ID = NULL WHERE CUSTOMER_ID = :id`,

@@ -16,7 +16,7 @@ export type ConfigurableRole = (typeof CONFIGURABLE_ROLES)[number];
 
 // One module per sidebar item, grouped the same way as the sidebar.
 export const MODULE_GROUPS = [
-  { key: "sales",     modules: ["customers", "leads", "sales", "returns", "payments", "quality", "client-viewer", "loyalty"] },
+  { key: "sales",     modules: ["customers", "leads", "sales", "returns", "quality", "client-viewer", "loyalty"] },
   { key: "supply",    modules: ["warehouse", "suppliers", "purchases", "weight-tickets", "custody", "items", "directories"] },
   { key: "docs",      modules: ["documents", "reports", "rates", "profitability"] },
   { key: "analytics", modules: ["segments", "churn", "duplicates"] },
@@ -42,7 +42,7 @@ export const DEFAULTS: Record<ConfigurableRole, PermissionMap> = {
   // Sales side: works with clients, leads, orders; sees purchasing/stock.
   manager: fill("edit", {
     ...ADMIN_ONLY,
-    "client-viewer": "view", returns: "view", quality: "view", payments: "view", rates: "view", directories: "view", warehouse: "view", suppliers: "view", purchases: "view", "weight-tickets": "view",
+    "client-viewer": "view", returns: "view", quality: "view", rates: "view", directories: "view", warehouse: "view", suppliers: "view", purchases: "view", "weight-tickets": "view",
     custody: "view", items: "view", documents: "view", reports: "view", segments: "view", churn: "view",
   }),
   // Warehouse side: purchases, weighing, storage, stock; sees sales.
@@ -82,7 +82,7 @@ export function can(perms: PermissionMap | null | undefined, module: Module, lev
 // Path prefix → module. Pages not listed (dashboard, print pages opened
 // from an allowed section…) are open to every signed-in user.
 const PAGE_MODULES: [string, Module][] = [
-  ["/customers", "customers"], ["/leads", "leads"], ["/sales", "sales"], ["/returns", "returns"], ["/receivables", "payments"], ["/quality", "quality"],
+  ["/customers", "customers"], ["/leads", "leads"], ["/sales", "sales"], ["/returns", "returns"], ["/quality", "quality"],
   ["/client-viewer", "client-viewer"], ["/loyalty", "loyalty"],
   ["/warehouse", "warehouse"], ["/directories", "directories"], ["/suppliers", "suppliers"], ["/purchases", "purchases"], ["/weight-tickets", "weight-tickets"],
   ["/acts", "weight-tickets"], ["/custody", "custody"], ["/items", "items"], ["/analytics", "items"],
@@ -142,12 +142,6 @@ export const API_RULES: ApiRule[] = [
   { prefix: "/api/client-viewer",        read: ["client-viewer"], write: [] },
   { prefix: "/api/leads",                read: ["leads"], write: ["leads"] },
   { prefix: "/api/pipelines",            read: ["leads"], write: ["leads"] },
-  { prefix: "/api/import",               read: ["customers", "leads", "payments"], write: ["customers", "leads", "payments"] },
-  { prefix: "/api/receivables",          read: ["payments"], write: ["payments"] },
-  { prefix: "/api/payments",             read: ["payments"], write: ["payments"] },
-  { prefix: "/api/reports/receivables",  read: ["payments"], write: [] },
-  { prefix: "/api/reports/payments",     read: ["payments"], write: [] },
-  { prefix: "/api/documents/reconciliation_act", read: ["payments"], write: [] },
   { prefix: "/api/quality",              read: ["quality", "warehouse"], write: [] },
   { prefix: "/api/returns",              read: ["returns", "sales"], write: [] },
   { prefix: "/api/reports/returns",      read: ["returns", "sales"], write: [] },
